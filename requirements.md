@@ -23,7 +23,7 @@ suggest some thing
 
 ## 3. Content Format
 
-All static content is authored as TypeScript files, importing types from `schemas.ts`. This provides compile-time validation. Save files remain JSON, validated with Zod.
+All static content is authored as TypeScript filesThis provides compile-time validation. Save files remain JSON, validated with Zod.
 
 ---
 
@@ -88,9 +88,7 @@ Each engine is a pure module in `packages/game-engine`. The server remains the s
 - Sexual attacks from enemies follow targeting rules based on `monsterSex` and `isHumanoidForm`
 - Miasma Reserve is enemy-only, does not regenerate mid-fight
 
-**Missing details:**
-- `BossScriptDef` type added, content pending for specific bosses
-- Procedural level scaling for enemies by region (formula exists, function needed)
+
 
 ### 5.2 Intimacy Engine
 
@@ -106,10 +104,7 @@ Each engine is a pure module in `packages/game-engine`. The server remains the s
 - Kink progression and triggers
 - Sexual response selection based on `actionCategory`, `positionId`, `arousalState`, `ledBy`
 
-**Missing details:**
-- Selection algorithm for response arrays (dialogue, sfx, internalThought, bodyResponse, expression)
-- Full content for `IntimateActionDef` and updated `PositionDef`
-- Generic NPC introduction flow in dialogue engine (separate but interacts)
+
 
 ### 5.3 Relationship Engine
 
@@ -123,8 +118,7 @@ Each engine is a pure module in `packages/game-engine`. The server remains the s
 - Flirt/Touch have diminishing returns; daily usage counters on actor (3 per NPC per day)
 - Move-in requirements: companions have per-character thresholds; generic NPCs use flat 60/60
 
-**Missing details:**
-- None significant after adding daily counters
+
 
 ### 5.4 Reputation Engine
 
@@ -136,8 +130,7 @@ Each engine is a pure module in `packages/game-engine`. The server remains the s
 - Bounty payoff computed live from score at `BountyOffice`
 - Positive Renown does not decay
 
-**Missing details:**
-- None
+
 
 ### 5.5 Quest Engine
 
@@ -149,9 +142,7 @@ Each engine is a pure module in `packages/game-engine`. The server remains the s
 - Main quest uses Act/Chapter spine
 - Repeatable quests have cooldowns based on `cooldownHours` and `lastCompletedAtGameDate`
 
-**Missing details:**
-- `getQuestLogView` aggregation function (read model) not yet implemented
-- UI for quest tracking open
+
 
 ### 5.6 Calendar & Time Engine
 
@@ -165,8 +156,7 @@ Each engine is a pure module in `packages/game-engine`. The server remains the s
 - Fatigue system: penalties based on `daysSinceLastSleep`; forced collapse at 5+ days
 - Passive regen on non-Sleep phase advance: +20% max stamina/CPW
 
-**Missing details:**
-- None
+
 
 ### 5.7 Economy & Inventory Engine
 
@@ -180,8 +170,7 @@ Each engine is a pure module in `packages/game-engine`. The server remains the s
 - Overflow handling for manual pickup (reject) vs combat loot (auto-convert to gold)
 - Gifting consumes item and applies flat Trust/Love bonus
 
-**Missing details:**
-- None
+
 
 ### 5.8 Crafting & Equipment Upgrade Engine
 
@@ -194,8 +183,7 @@ Each engine is a pure module in `packages/game-engine`. The server remains the s
 - Equipment upgrades +0 to +3, random (Forge) or guided (Alchemy Lab, tier 4+)
 - Upgrades stored in item instance `upgradeBonuses`
 
-**Missing details:**
-- None after adding pendingCraftingJobs
+
 
 ### 5.9 NPC Population & Simulation Engine
 
@@ -209,10 +197,7 @@ Each engine is a pure module in `packages/game-engine`. The server remains the s
 - Child NPCs have only `familiarity`
 - Schedules per class via `NpcScheduleDef`
 
-**Missing details:**
-- `generateAppearance` algorithm not specified
-- `spawnWorldNpc` function not fully specified
-- Generic NPC introduction content and engine flow still pending
+
 
 ### 5.10 Dialogue Engine
 
@@ -223,9 +208,7 @@ Each engine is a pure module in `packages/game-engine`. The server remains the s
 - Generic NPCs share class-level trees; introduction node used once
 - Sets story flags and advances dialogue
 
-**Missing details:**
-- Content for introduction nodes
-- Engine logic to force introduction on first talk and set `hasBeenIntroduced`
+
 
 ### 5.11 Skill & Ability Engine
 
@@ -237,8 +220,7 @@ Each engine is a pure module in `packages/game-engine`. The server remains the s
 - Active skills use CPW; passives always active
 - Effect keys mapped to engine functions
 
-**Missing details:**
-- None
+
 
 ### 5.12 Status Effect Engine
 
@@ -249,8 +231,7 @@ Each engine is a pure module in `packages/game-engine`. The server remains the s
 - Stacking refreshes duration, increments stacks up to max
 - Fatigue not stored as status; separate system
 
-**Missing details:**
-- None
+
 
 ### 5.13 Achievement Engine
 
@@ -260,8 +241,7 @@ Each engine is a pure module in `packages/game-engine`. The server remains the s
 - Trigger conditions as string keys, evaluated post-action
 - Grants AP/BP and titles
 
-**Missing details:**
-- Condition evaluator implementation
+
 
 ### 5.14 World Movement & Pathing Engine
 
@@ -276,8 +256,7 @@ Each engine is a pure module in `packages/game-engine`. The server remains the s
 - Fast travel cost based on region crossings
 - Last safe location updates only on `isSafe` locations
 
-**Missing details:**
-- None
+
 
 ### 5.15 Pregnancy, Lineage & Offspring Engine
 
@@ -289,9 +268,7 @@ Each engine is a pure module in `packages/game-engine`. The server remains the s
 - Offspring stats snapshot from parents' current `CombatAttributes`
 - Alignment roll flat 34/33/33 heroic/troubled/criminal
 
-**Missing details:**
-- Offspring appearance generation (if they become interactable)
-- Integration with NPC spawn mechanism not finalized
+
 
 ### 5.16 Manor & Passive Generation Engine
 
@@ -302,8 +279,7 @@ Each engine is a pure module in `packages/game-engine`. The server remains the s
 - Suites assigned to moved-in occupants
 - Passive generation per occupant, capped, collected at Manor
 
-**Missing details:**
-- None
+
 
 ### 5.17 Save/Load & Migration Engine
 
@@ -314,8 +290,7 @@ Each engine is a pure module in `packages/game-engine`. The server remains the s
 - Versioned schema, migration functions
 - Autosave nightly separate file
 
-**Missing details:**
-- Migration functions not yet written
+
 
 ### 5.18 Purification Engine
 
@@ -327,8 +302,7 @@ Each engine is a pure module in `packages/game-engine`. The server remains the s
 - Miasma Reserve limits enemy sexual attacks
 - Purified enemy counts as defeated, grants small Astraea Approval bonus
 
-**Missing details:**
-- Numeric balance unplaytested
+
 
 ### 5.19 Contact & Profile Read Model Engine
 
@@ -339,8 +313,7 @@ Each engine is a pure module in `packages/game-engine`. The server remains the s
 - Profile assembles all fields on demand
 - `firstIntimacyCompleted` present on both companions and NPCs
 
-**Missing details:**
-- None
+
 
 ### 5.20 Procedural Content Generation Engine
 
@@ -352,8 +325,7 @@ Each engine is a pure module in `packages/game-engine`. The server remains the s
 - Appearance from rules (algorithm missing)
 - Enemy level scaling by region
 
-**Missing details:**
-- Appearance generation algorithm open
+
 
 ---
 
@@ -366,39 +338,6 @@ Versioned JSON files. New Game+ requires explicit confirmation. Autosave nightly
 ## 7. Calendar System
 
 Five phases. Sleep action as described. Fatigue and recovery as described.
-
----
-
-## 8. Gaps and Pending Work
-
-| Gap | Status |
-|---|---|
-| UI/UX screens | Open |
-| Quest tracking UI | Logic done, UI open |
-| Generic NPC introduction | Schema done, content/engine pending |
-| NPC appearance algorithm | Open |
-| API error handling | Open |
-| Purification balance | Needs playtesting |
-| Seed data migration to v6 | Open |
-| Content authoring (IntimateActionDef, responses, appearance rules, introductions) | Open |
-| Save migration functions | Open |
-
----
-
-## 9. Acceptance Criteria
-
-Key criteria remain from previous versions, updated for new schema fields:
-
-- Intimate eligibility function rejects Child/Protected.
-- Loot vs StripAndLoot different results.
-- Quest objectives have specific type/target.
-- NPC spawn produces all required fields.
-- Contact cap = 200.
-- Sleeping NPC non-con gates correctly.
-- QuestLogView returns proper data.
-- Generic NPC introduction fires once.
-- PenetrationTarget conflict prevents simultaneous same-cavity actions.
-- Daily flirt/touch counters reset at day-end.
 
 
 ```
