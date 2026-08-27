@@ -18,7 +18,7 @@ import {
     MonsterType,
     NpcLegalClass,
 } from "../schemas/schemas";
-import { BODY_SHAPE_TO_CATEGORY_MAP, getHeightTag } from "../seed_data/appearance_options_seed_data";
+import { BODY_SHAPE_TO_CATEGORY_MAP, getHeightTag } from "./appearance_options_seed_data";
 
 // ---------------------------------------------------------------------------
 // Helpers
