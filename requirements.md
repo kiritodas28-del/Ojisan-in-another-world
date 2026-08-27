@@ -1,7 +1,5 @@
 ```markdown
-# Ojisan in Another World — Implementation Requirements Document (v3.0)
-
-This document supersedes v2.0. It incorporates the unified character state architecture, all engine definitions, schema v6, and the resolution of previously identified gaps. The authoritative schema is `schemas.ts` (v6). This document explains decisions, formulas, and system behavior for all engines.
+# Ojisan in Another World — Implementation Requirements/Design Document
 
 ---
 
@@ -18,15 +16,7 @@ This document supersedes v2.0. It incorporates the unified character state archi
 ## 2. Repository Structure
 
 ```
-/apps
-  /web
-/packages
-  /schema         — schemas.ts (v6)
-  /game-engine    — pure functions
-  /storage        — atomic file read/write, save-slot locking
-/data
-  /saves
-  /content        — TypeScript seed data
+suggest some thing
 ```
 
 ---
@@ -41,18 +31,7 @@ All static content is authored as TypeScript files, importing types from `schema
 
 ### 4.1 Unified Character State
 
-All actors share a common parent interface:
-
-```ts
-interface CharacterActorState {
-  id: string;
-  displayName: string;
-  vitals: CharacterVitals;
-  combatAttributes: CombatAttributes;
-  eroticAttributes: EroticAttributes;
-  statusEffects: StatusEffectInstance[];
-}
-```
+All actors should share a common parent interface:
 
 - `CharacterVitals` holds current HP, Arousal, Stamina, optional Crest Power.
 - `CombatAttributes` holds permanent STR, AGI, WIS, DEF, LCK.
@@ -99,12 +78,6 @@ Each engine is a pure module in `packages/game-engine`. The server remains the s
 
 **Purpose:** Resolve turn-based combat encounters.
 
-**Schema interactions:**
-- `EncounterDef`, `EnemyCombatantDef`, `EnemyAbilityDef`
-- `CombatCombatantRuntime`, `CombatEncounterRuntimeState`
-- `CharacterVitals`, `CombatAttributes`
-- `BossScriptDef` for scripted bosses
-
 **Mechanics:**
 - Initiative: `agi + d10`, ties by `lck`
 - Turn order computed once per encounter
@@ -122,13 +95,6 @@ Each engine is a pure module in `packages/game-engine`. The server remains the s
 ### 5.2 Intimacy Engine
 
 **Purpose:** Resolve intimate encounter scenes.
-
-**Schema interactions:**
-- `IntimateActionDef`, `PositionDef`, `PenetrationTarget`
-- `IntimateEncounterRuntimeState`
-- `CharacterVitals`, `EroticAttributes`, `CombatAttributes`
-- `SexualResponseLineDef`, `KinkDef`, `StatusEffectInstance`
-- `ItemUsageRequirement` for item-gated actions
 
 **Mechanics:**
 - Scene start reasons: `CONSENSUAL`, `FORCE_INTIMACY`, `FORCE_INTIMACY_SLEEPING`
@@ -149,11 +115,6 @@ Each engine is a pure module in `packages/game-engine`. The server remains the s
 
 **Purpose:** Manage Trust/Love values, relationship status matrix, and move-in eligibility.
 
-**Schema interactions:**
-- `TrustLoveState`, `RelationshipStatusId`
-- `CompanionRuntimeState`, `WorldNpcInstance`
-- `CharacterThoughtDef`
-
 **Mechanics:**
 - Trust and Love range -100 to 100
 - Relationship status via 4-band matrix (Low, Neutral, High, VeryHigh)
@@ -169,10 +130,6 @@ Each engine is a pure module in `packages/game-engine`. The server remains the s
 
 **Purpose:** Manage regional reputation score and decay.
 
-**Schema interactions:**
-- `RegionReputationState`
-- `DefeatOutcome`, `QuestDef`
-
 **Mechanics:**
 - Single signed score per region (-800 to +800)
 - Decay at day-end: negative moves toward zero by min(15, abs(score))
@@ -185,12 +142,6 @@ Each engine is a pure module in `packages/game-engine`. The server remains the s
 ### 5.5 Quest Engine
 
 **Purpose:** Manage quest progression, objectives, and rewards.
-
-**Schema interactions:**
-- `QuestDef`, `QuestObjective`, `QuestRuntimeState`
-- `QuestObjectiveType`
-- `ChapterDef`, `ActDef`
-- `QuestTrackingEntry`, `QuestLogView`
 
 **Mechanics:**
 - Objectives are structured: Kill, Collect, Talk, Interact, Escort, Travel
@@ -205,12 +156,6 @@ Each engine is a pure module in `packages/game-engine`. The server remains the s
 ### 5.6 Calendar & Time Engine
 
 **Purpose:** Manage day phases, sleep, fatigue, and day-end processing.
-
-**Schema interactions:**
-- `GameCalendarState`, `DayPhase`
-- `PlayerCharacterState.daysSinceLastSleep`
-- `CompanionRuntimeState.daysSinceLastSleep`
-- `ManorState.constructionState`, `PregnancyState`
 
 **Mechanics:**
 - Five phases: Morning, Afternoon, Evening, Night, Midnight
@@ -227,11 +172,6 @@ Each engine is a pure module in `packages/game-engine`. The server remains the s
 
 **Purpose:** Manage gold, items, inventory, gifting, and shop transactions.
 
-**Schema interactions:**
-- `ItemDef`, `InventorySlotState`, `EquipmentLoadout`
-- `ItemTag`
-- `PlayerCharacterState.inventory`, `CompanionRuntimeState.inventory`
-
 **Mechanics:**
 - Buy/sell using `sellValueGold` and shop discount
 - Bag slots max 20 base, expandable via Manor
@@ -247,12 +187,6 @@ Each engine is a pure module in `packages/game-engine`. The server remains the s
 
 **Purpose:** Create new items from recipes; upgrade equipment.
 
-**Schema interactions:**
-- `CraftingRecipeDef`, `EquipmentUpgradeDef`
-- `ItemDef`, `InventorySlotState`
-- `ManorState.pendingCraftingJobs`
-- `SkillNodeDef` (Artisan's Insight)
-
 **Mechanics:**
 - Requires Artisan's Insight skill and Manor tier 2+
 - Crafting consumes Raw materials, produces Composite items
@@ -266,11 +200,6 @@ Each engine is a pure module in `packages/game-engine`. The server remains the s
 ### 5.9 NPC Population & Simulation Engine
 
 **Purpose:** Spawn and manage procedural NPCs, service NPCs, and child NPCs.
-
-**Schema interactions:**
-- `ProcNpcClassDef`, `WorldNpcInstance`, `ChildNpcInstance`, `ServiceNpcDef`
-- `LocationPopulationDef`, `NpcScheduleDef`
-- `ProceduralAppearanceRule`, `appearanceSeed`
 
 **Mechanics:**
 - Standard interactable NPCs spawned per location population range, refreshed every 3 game-days
@@ -289,11 +218,6 @@ Each engine is a pure module in `packages/game-engine`. The server remains the s
 
 **Purpose:** Traverse dialogue trees, evaluate conditions, and select responses.
 
-**Schema interactions:**
-- `DialogueNodeDef`, `DialogueCondition`
-- `CharacterDialogueTreeDef`, `GenericNpcDialogueSetDef`
-- `WorldNpcInstance.hasBeenIntroduced`
-
 **Mechanics:**
 - Conditions: TRUST_AT_LEAST, LOVE_AT_LEAST, QUEST_STAGE_AT_LEAST, STORY_FLAG_SET, STORY_FLAG_UNSET, FIRST_TALK
 - Generic NPCs share class-level trees; introduction node used once
@@ -306,10 +230,6 @@ Each engine is a pure module in `packages/game-engine`. The server remains the s
 ### 5.11 Skill & Ability Engine
 
 **Purpose:** Manage skill trees, point spending, and effect resolution.
-
-**Schema interactions:**
-- `SkillNodeDef`, `PlayerSkillState`
-- `CombatAttributes`, `EroticAttributes`
 
 **Mechanics:**
 - Two trees: Ardor (AP) and Battle (BP)
@@ -324,10 +244,6 @@ Each engine is a pure module in `packages/game-engine`. The server remains the s
 
 **Purpose:** Apply, track, and expire status effects.
 
-**Schema interactions:**
-- `StatusEffectInstance`
-- `CombatStatusEffectId`, `SexualStatusEffectId`
-
 **Mechanics:**
 - Duration ticks down per turn
 - Stacking refreshes duration, increments stacks up to max
@@ -339,9 +255,6 @@ Each engine is a pure module in `packages/game-engine`. The server remains the s
 ### 5.13 Achievement Engine
 
 **Purpose:** Evaluate achievement conditions and grant rewards.
-
-**Schema interactions:**
-- `AchievementDef`, `AchievementRuntimeState`
 
 **Mechanics:**
 - Trigger conditions as string keys, evaluated post-action
@@ -355,8 +268,6 @@ Each engine is a pure module in `packages/game-engine`. The server remains the s
 **Purpose:** Handle map traversal, fast travel, and encounter rolls.
 
 **Schema interactions:**
-- `LocationDef`, `PathEdgeDef`
-- `PlayerCharacterState.currentLocationId`, `lastSafeLocationId`
 - `RegionMonsterProfile`
 
 **Mechanics:**
@@ -372,10 +283,6 @@ Each engine is a pure module in `packages/game-engine`. The server remains the s
 
 **Purpose:** Track pregnancies, generate offspring.
 
-**Schema interactions:**
-- `PregnancyState`, `OffspringNpc`
-- `CompanionRuntimeState.pregnancy`
-
 **Mechanics:**
 - Gestation 12 in-game days
 - Birth at day-end tick for `currentWeek >= 12`
@@ -390,10 +297,6 @@ Each engine is a pure module in `packages/game-engine`. The server remains the s
 
 **Purpose:** Manage Manor tiers, construction, suites, and passive resource generation.
 
-**Schema interactions:**
-- `ManorState`, `PassiveGenerationDef`
-- `CompanionRuntimeState`, `WorldNpcInstance`
-
 **Mechanics:**
 - Construction timer decrements at day-end
 - Suites assigned to moved-in occupants
@@ -406,10 +309,6 @@ Each engine is a pure module in `packages/game-engine`. The server remains the s
 
 **Purpose:** Persist and restore game state.
 
-**Schema interactions:**
-- `GameState` root
-- Zod validation
-
 **Mechanics:**
 - Atomic JSON writes
 - Versioned schema, migration functions
@@ -421,11 +320,6 @@ Each engine is a pure module in `packages/game-engine`. The server remains the s
 ### 5.18 Purification Engine
 
 **Purpose:** Alternate defeat path through arousal.
-
-**Schema interactions:**
-- `CombatCombatantRuntime`
-- `EnemyCombatantDef`, `EnemyAbilityDef`
-- `ContentToggle.HostileArousalAttacks`
 
 **Mechanics:**
 - Enemy arousal raised by player Sex Skills
@@ -440,10 +334,6 @@ Each engine is a pure module in `packages/game-engine`. The server remains the s
 
 **Purpose:** Assemble contact list and profile views.
 
-**Schema interactions:**
-- `ContactListEntry`, `ContactProfileView`
-- `CompanionRuntimeState`, `WorldNpcInstance`, `OffspringNpc`
-
 **Mechanics:**
 - Contact List from companions and individuated NPCs
 - Profile assembles all fields on demand
@@ -455,10 +345,6 @@ Each engine is a pure module in `packages/game-engine`. The server remains the s
 ### 5.20 Procedural Content Generation Engine
 
 **Purpose:** Generate NPC appearances, names, and enemy scaling.
-
-**Schema interactions:**
-- `ProceduralAppearanceRule`, `appearanceSeed`
-- `npc_name_pools_seed_data.ts`
 
 **Mechanics:**
 - Names rolled from pools
@@ -514,5 +400,5 @@ Key criteria remain from previous versions, updated for new schema fields:
 - PenetrationTarget conflict prevents simultaneous same-cavity actions.
 - Daily flirt/touch counters reset at day-end.
 
-This document reflects the current state of implementation. The authoritative schema is `schemas.ts` (v6).
+
 ```
