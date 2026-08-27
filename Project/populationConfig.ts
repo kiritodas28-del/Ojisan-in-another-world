@@ -6,7 +6,9 @@ import {
     Race, MaleBodyType, FemaleBodyType, MaleAttractiveness,
     FemaleAttractiveness, CockSize, HairColor, PregnancyStage,
     SkinTone, SocialClass, Occupation, ResistanceProfileType,
-    SexualLean, FertilityRating, OrgasmType, WetnessLevel
+    SexualLean, FertilityRating, OrgasmType, WetnessLevel,
+    RegionOfOrigin,
+    AgeBodyCategory
 } from "./enums";
 
 export interface PopulationConfig {
@@ -44,6 +46,8 @@ export interface PopulationConfig {
     traumaRate: number;
     // Experience rate
     virginRate: number;
+    regionWeights: Record<RegionOfOrigin, number>;
+    ageCategoryWeights: Record<AgeBodyCategory, number>;
 }
 
 export const POPULATION_CONFIGS = {
@@ -423,6 +427,27 @@ export const POPULATION_CONFIGS = {
         defaultFertilityRating: FertilityRating.High,
         defaultBaselineWetness: WetnessLevel.Damp,
         traumaRate: 0.08,
-        virginRate: 0.15
+        virginRate: 0.15,
+        regionWeights: {
+            [RegionOfOrigin.Heartlands]: 8,
+            [RegionOfOrigin.VerdantReach]: 5,
+            [RegionOfOrigin.StonebackRange]: 4,
+            [RegionOfOrigin.Ashfen]: 3,
+            [RegionOfOrigin.SunkenCoast]: 5,
+            [RegionOfOrigin.AbyssalRealm]: 1,
+            [RegionOfOrigin.CelestialSpire]: 0,
+            [RegionOfOrigin.DeepForest]: 3,
+            [RegionOfOrigin.VolcanicWastes]: 2,
+            [RegionOfOrigin.FrozenNorth]: 2,
+            [RegionOfOrigin.DesertBadlands]: 2,
+            [RegionOfOrigin.CoastalIslands]: 3
+        },
+        ageCategoryWeights: {
+            [AgeBodyCategory.Young]: 8,
+            [AgeBodyCategory.RipeningMilf]: 5,
+            [AgeBodyCategory.RipeMilf]: 4,
+            [AgeBodyCategory.MatureMilf]: 3,
+            [AgeBodyCategory.OldMilf]: 1
+        }
     } as PopulationConfig
 };

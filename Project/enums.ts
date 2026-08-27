@@ -107,7 +107,9 @@ export enum SkinTone {
     DeepPurple = "DEEP_PURPLE",
     TealGreen = "TEAL_GREEN",
     GoldenMetallic = "GOLDEN_METALLIC",
-    ObsidianBlack = "OBSIDIAN_BLACK"
+    ObsidianBlack = "OBSIDIAN_BLACK",
+    Ruddy = "RUDDY",       // reddish-tan, cold climate, heavy labor — for Dwarf
+    Crimson = "CRIMSON"    // deep red — for Demon race profiles
 }
 
 export enum SkinUndertone {
@@ -976,4 +978,178 @@ export enum Occupation {
     Innkeeper = "INNKEEPER",
     Guard = "GUARD",
     Adventurer = "ADVENTURER"
+}
+
+export enum CockType {
+    Straight = "STRAIGHT",
+    CurvedUp = "CURVED_UP",
+    CurvedDown = "CURVED_DOWN",
+    CurvedLeft = "CURVED_LEFT",
+    CurvedRight = "CURVED_RIGHT",
+    Tapered = "TAPERED",
+    Flared = "FLARED",
+    Uniform = "UNIFORM",
+    Knotted = "KNOTTED",
+    Barbed = "BARBED",
+    Ridged = "RIDGED",
+    Bifurcated = "BIFURCATED"
+}
+
+export enum RegionOfOrigin {
+    Heartlands = "HEARTLANDS",
+    VerdantReach = "VERDANT_REACH",
+    StonebackRange = "STONEBACK_RANGE",
+    Ashfen = "ASHFEN",
+    SunkenCoast = "SUNKEN_COAST",
+    AbyssalRealm = "ABYSSAL_REALM",
+    CelestialSpire = "CELESTIAL_SPIRE",
+    DeepForest = "DEEP_FOREST",
+    VolcanicWastes = "VOLCANIC_WASTES",
+    FrozenNorth = "FROZEN_NORTH",
+    DesertBadlands = "DESERT_BADLANDS",
+    CoastalIslands = "COASTAL_ISLANDS"
+}
+
+// ─── AGE CATEGORY ───────────────────────────────────────────
+
+export enum AgeBodyCategory {
+    Young = "YOUNG",                    // apparent 18-30
+    RipeningMilf = "RIPENING_MILF",    // apparent 30-35
+    RipeMilf = "RIPE_MILF",            // apparent 35-43
+    MatureMilf = "MATURE_MILF",        // apparent 43-50
+    OldMilf = "OLD_MILF"               // apparent 50+
+}
+
+export enum PetiteCategory {
+    Petite = "PETITE",
+    NonPetite = "NON_PETITE"
+}
+
+
+// ─── PUBLIC PERSONA ─────────────────────────────────────────
+// How the character presents to the world
+// What others see and what the character maintains consciously
+
+export enum PublicPersona {
+    // Role-based
+    Caretaker = "CARETAKER",           // maternal, nurturing, managing others
+    Authority = "AUTHORITY",           // commands, leads, expects compliance
+    Professional = "PROFESSIONAL",     // composed, capable, task-focused
+    Socialite = "SOCIALITE",           // warm, engaging, people-oriented
+    Wallflower = "WALLFLOWER",         // quiet, background, avoidant
+    Rebel = "REBEL",                   // defiant, provocative, anti-authority
+    // Disposition-based
+    Cheerful = "CHEERFUL",             // upbeat, approachable, light
+    Stoic = "STOIC",                   // controlled, flat affect, unreadable
+    Aggressive = "AGGRESSIVE",         // confrontational, dominant, forward
+    Meek = "MEEK",                     // deferential, soft-spoken, yielding
+    Proud = "PROUD",                   // dignified, self-possessed, above others
+    Flirtatious = "FLIRTATIOUS",       // openly suggestive, attention-seeking
+    Mysterious = "MYSTERIOUS",         // withholding, cryptic, observed not open
+    Innocent = "INNOCENT"              // naive presentation, wide-eyed, unbothered
+}
+
+// ─── PRIVATE SELF ───────────────────────────────────────────
+// Who they are in unguarded moments
+// Not sexual specifically — just the authentic self
+// May or may not match public persona
+
+export enum PrivateSelf {
+    Lonely = "LONELY",
+    Tired = "TIRED",                   // exhausted beneath the performance
+    Hungry = "HUNGRY",                 // yearning for something unspecified
+    Resentful = "RESENTFUL",          // anger held inward
+    Tender = "TENDER",                // soft and caring under hard exterior
+    Curious = "CURIOUS",              // genuinely interested, privately exploratory
+    Frightened = "FRIGHTENED",        // anxiety beneath composure
+    Proud = "PROUD",                  // genuine pride vs performed pride
+    Ashamed = "ASHAMED",              // specific private shame
+    Desperate = "DESPERATE",          // urgency not shown in public
+    Content = "CONTENT",              // genuinely at peace
+    Restless = "RESTLESS",            // need for change, friction, stimulation
+    Sad = "SAD",                      // grief or loss carried quietly
+    Playful = "PLAYFUL",              // lightness hidden under public seriousness
+    Needful = "NEEDFUL"               // specific need for connection or touch
+}
+
+// ─── HIDDEN DESIRE LEAN ─────────────────────────────────────
+// The sexual/emotional direction they actually want
+// May be completely opposite to public persona
+// May be something they have never acted on
+// May be something they have never even consciously acknowledged
+
+export enum HiddenDesireLean {
+    // Submission spectrum
+    WantsToBeControlled = "WANTS_TO_BE_CONTROLLED",
+    WantsToBeOverpowered = "WANTS_TO_BE_OVERPOWERED",
+    WantsToObey = "WANTS_TO_OBEY",
+    WantsToBePraised = "WANTS_TO_BE_PRAISED",
+    WantsToBeTaken = "WANTS_TO_BE_TAKEN",
+    WantsToBeUsed = "WANTS_TO_BE_USED",
+    WantsToBeDegraded = "WANTS_TO_BE_DEGRADED",
+    WantsToBePunished = "WANTS_TO_BE_PUNISHED",
+    WantsToBeHurt = "WANTS_TO_BE_HURT",
+    WantsToBeFilled = "WANTS_TO_BE_FILLED",
+    WantsToBeOwned = "WANTS_TO_BE_OWNED",
+    // Dominance spectrum
+    WantsToControl = "WANTS_TO_CONTROL",
+    WantsToBreak = "WANTS_TO_BREAK",
+    WantsToDominate = "WANTS_TO_DOMINATE",
+    WantsToWatch = "WANTS_TO_WATCH",
+    WantsToTeach = "WANTS_TO_TEACH",
+    // Affection spectrum
+    WantsToBeHeld = "WANTS_TO_BE_HELD",
+    WantsToBeChosen = "WANTS_TO_BE_CHOSEN",
+    WantsToBeNoticed = "WANTS_TO_BE_NOTICED",
+    WantsToBeNeeded = "WANTS_TO_BE_NEEDED",
+    WantsToBeLoved = "WANTS_TO_BE_LOVED",
+    WantsToBeKeptSafe = "WANTS_TO_BE_KEPT_SAFE",
+    // Experience spectrum
+    WantsToLoseControl = "WANTS_TO_LOSE_CONTROL",
+    WantsToBeShocked = "WANTS_TO_BE_SHOCKED",
+    WantsToBeWatched = "WANTS_TO_BE_WATCHED",
+    WantsToSurrender = "WANTS_TO_SURRENDER",
+    WantsToBeFreed = "WANTS_TO_BE_FREED",
+    // Mixed
+    WantsBothControlAndSurrender = "WANTS_BOTH_CONTROL_AND_SURRENDER",
+    WantsConnectionThroughPain = "WANTS_CONNECTION_THROUGH_PAIN",
+    WantsTrustThroughVulnerability = "WANTS_TRUST_THROUGH_VULNERABILITY"
+}
+
+// ─── DESIRE AWARENESS ───────────────────────────────────────
+// How conscious is the character of their own hidden desires
+// This affects how they respond when those desires are triggered
+
+export enum DesireAwareness {
+    Unaware = "UNAWARE",               // does not know this is what they want; body responds before mind does
+    Suspected = "SUSPECTED",           // has wondered; not admitted even privately
+    Privately_Acknowledged = "PRIVATELY_ACKNOWLEDGED", // knows but has never acted on it
+    Accepted = "ACCEPTED",             // knows, has made peace with it, still hidden from others
+    Openly_Hidden = "OPENLY_HIDDEN"    // everyone can see it but them
+}
+
+// ─── PERSONA GAP ────────────────────────────────────────────
+// How large the distance is between public persona and hidden desires
+// Large gap = stronger reaction when the gap is bridged
+// Small gap = more consistent character throughout
+
+export enum PersonaGap {
+    None = "NONE",                     // public persona and hidden desires are aligned
+    Slight = "SLIGHT",                 // small discrepancy; mostly consistent
+    Moderate = "MODERATE",             // meaningful difference; visible tension
+    Large = "LARGE",                   // significant contradiction; denial is active
+    Extreme = "EXTREME"                // complete inversion; the persona is armor
+}
+
+// ─── TRIGGER SENSITIVITY ────────────────────────────────────
+// How easily the hidden desire is triggered / surfaces
+// Higher gap + lower awareness + high trigger sensitivity = explosive reaction
+// when something finally reaches through the persona
+
+export enum TriggerSensitivity {
+    Resistant = "RESISTANT",           // very hard to reach the hidden self
+    Low = "LOW",                       // takes sustained effort
+    Moderate = "MODERATE",             // responds to deliberate approach
+    High = "HIGH",                     // responds to moderate pressure
+    HairTrigger = "HAIR_TRIGGER"       // surfaces at the slightest relevant stimulus
 }

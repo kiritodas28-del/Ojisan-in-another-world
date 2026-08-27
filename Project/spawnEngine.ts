@@ -27,6 +27,11 @@ import {
     SocialClass, Occupation, MoodValue, BondType,
     PregnancyStage, HeightTag
 } from "./enums";
+import { RACE_PROFILES } from "./raceProfiles";
+import { FEMALE_BODY_TYPES } from "./bodyTypes";
+import { getHeightTag } from "./physicalCore";
+import { selectBodyTypeWithAgeBias, getAgeBodyCategory } from "./ageBodyProfile";
+import { createStaminaFromHistory } from "./patches";
 
 import { RACE_PROFILES, RaceProfile } from "./raceProfiles";
 import { FEMALE_BODY_TYPES, MALE_BODY_TYPES, PREGNANCY_STAGE_OVERRIDES } from "./bodyTypes";
@@ -52,6 +57,14 @@ import {
 import {
     CharacterDynamicState, createInitialDynamicState
 } from "./dynamicState";
+import { PREGNANCY_STAGE_OVERRIDES } from "./bodyTypes";
+import {
+    generateFemaleSexualPhysiology, generatePersonality,
+    generateSexualPsychology, generateHistory,
+    generateVoice, generateSocial, generateSkin,
+    generateFace, generateHair
+} from "./spawnEngine";
+import { updateBondType, updateBrokenFlag } from "./dynamicState";
 
 // ─── FULL CHARACTER INTERFACES ──────────────────────────────
 
@@ -242,26 +255,54 @@ function generateHair(config: PopulationConfig, raceProfile: RaceProfile): HairP
 
 // ─── RACE FEATURES ──────────────────────────────────────────
 
-function generateRaceFeatures(raceProfile: RaceProfile, gender: Gender): RacePhysicalFeatures {
+export function generateRaceFeatures(
+    raceProfile: import("./raceProfiles").RaceProfile,
+    gender: import("./enums").Gender
+): RacePhysicalFeatures {
     const f = raceProfile.features;
-    const cockTexture = gender === Gender.Male && f.cockTextureOptions.length > 0
-        ? randomFrom(f.cockTextureOptions)
-        : CockTextureType.Smooth;
+
+    if (gender === import("./enums").Gender.Male) {
+        const cockTextureOptions = f.cockTextureOptions;
+        const cockTexture = cockTextureOptions.length > 0
+            ? randomFrom(cockTextureOptions)
+            : import("./enums").CockTextureType.Smooth;
+        const cockType = deriveCockTypesFromTexture(cockTexture);
+        return {
+            wings: f.wings,
+            tail: f.tail,
+            ears: f.ears,
+            horns: f.horns,
+            specialFeatures: f.specialFeatures,
+            cockTexture,
+            cockType
+        } as MaleRacePhysicalFeatures;
+    }
+
     return {
         wings: f.wings,
         tail: f.tail,
         ears: f.ears,
         horns: f.horns,
-        cockTexture: gender === Gender.Male ? cockTexture : undefined as any,
         specialFeatures: f.specialFeatures
-    } as RacePhysicalFeatures & { cockTexture?: CockTextureType };
+    } as FemaleRacePhysicalFeatures;
+}
+
+function deriveCockTypesFromTexture(texture: import("./enums").CockTextureType): CockType {
+    const { CockTextureType } = require("./enums");
+    switch (texture) {
+        case CockTextureType.Knotted: return CockType.Knotted;
+        case CockTextureType.Barbed: return CockType.Barbed;
+        case CockTextureType.Ridged: return CockType.Ridged;
+        case CockTextureType.Flared: return CockType.Flared;
+        case CockTextureType.Tapered: return CockType.Tapered;
+        default: return randomFrom([CockType.Straight, CockType.CurvedUp, CockType.Uniform]);
+    }
 }
 
 // ─── APPARENT AGE ───────────────────────────────────────────
 
 function generateApparentAge(raceProfile: RaceProfile, actualAge: number): number {
     if (raceProfile.apparentAgeRatio === 0.0) {
-        // Immortal — choose any apparent age up to cap
         return Math.round(randomInRange(18, raceProfile.apparentAgeCap));
     }
     const apparent = actualAge * raceProfile.apparentAgeRatio;
@@ -273,12 +314,26 @@ function generateApparentAge(raceProfile: RaceProfile, actualAge: number): numbe
 function generateBackground(
     config: PopulationConfig,
     raceProfile: RaceProfile,
-    traumaRate: number
+    traumaRate: number,
+    race: Race
 ): BackgroundProfile {
+    const extension = RACE_PROFILE_EXTENSIONS[race];
     const lifespan = raceProfile.lifespan === 0 ? 10000 : raceProfile.lifespan;
-    const actualAge = Math.round(randomInRange(18, Math.min(lifespan, 500)));
+    const minAge = extension.minActualAgeAtSpawn;
+    const actualAge = Math.round(randomInRange(minAge, Math.min(lifespan, 500)));
     const apparentAge = generateApparentAge(raceProfile, actualAge);
     const traumaPresent = Math.random() < traumaRate;
+
+    // Region — prefer race default regions, weight by config if available
+    const raceRegions = extension.defaultRegions;
+    const regionWeights: Partial<Record<RegionOfOrigin, number>> = {};
+    for (const region of raceRegions) {
+        regionWeights[region] = (config.regionWeights[region] || 1) + 5;
+    }
+    for (const [region, weight] of Object.entries(config.regionWeights) as [RegionOfOrigin, number][]) {
+        if (!regionWeights[region]) regionWeights[region] = weight * 0.3;
+    }
+    const regionOfOrigin = weightedRandom(regionWeights as Record<RegionOfOrigin, number>);
 
     return {
         socialClass: weightedRandom(config.socialClassWeights),
@@ -288,7 +343,8 @@ function generateBackground(
         traumaPresent,
         traumaSeverity: traumaPresent
             ? randomFrom(["MILD", "MODERATE", "SEVERE"] as const)
-            : "NONE"
+            : "NONE",
+        regionOfOrigin
     };
 }
 
@@ -647,7 +703,10 @@ function generateMalePhysicalDetail(
         cumConsistency: randomFrom(Object.values(CumConsistency)),
         cumColor: randomFrom(Object.values(CumColor)),
         ballSize: randomFrom(Object.values(BallSize)),
-        refractoryPeriod: randomFrom(Object.values(RefractoryPeriod))
+        refractoryPeriod: randomFrom(Object.values(RefractoryPeriod)),
+        cockType: randomFrom(raceProfile.features.cockTextureOptions.length > 0
+            ? deriveCockTypesFromRace(raceProfile)
+            : Object.values(CockType).filter(t => !isFantasyType(t)))
     };
 }
 
@@ -680,46 +739,103 @@ function applyPregnancyToMeasurements(
 
 // ─── MAIN SPAWN FUNCTIONS ───────────────────────────────────
 
-export function spawnFemale(config: PopulationConfig): FemaleCharacter {
+export function spawnFemale(config: PopulationConfig): import("./spawnEngine").FemaleCharacter {
+    const { Gender, Race, PregnancyStage } = require("./enums");
+
+    // 1. Race
     const race = weightedRandom(config.raceWeights);
     const raceProfile = RACE_PROFILES[race];
 
-    const bodyType = raceAwareBodyType(
+    // 2. Height first — needed for petite determination before body type
+    //    Use race height range if available, else config mean
+    const heightCm = Math.round(clamp(
+        generateHeightNormal(
+            config.heightDistribution.meanFemale,
+            config.heightDistribution.stdDev
+        ),
+        145,
+        188
+    ));
+    const heightTag = getHeightTag(heightCm, Gender.Female);
+
+    // 3. Background — needed for apparentAge before body type
+    const background = generateBackground(config, raceProfile, config.traumaRate, race);
+
+    // 4. Body type — now uses height and apparentAge for petite + age bias
+    const bodyType = selectBodyTypeWithAgeBias(
         config.femaleBodyTypeWeights,
-        raceProfile.femaleBodyTypeBias
-    ) as FemaleBodyType;
+        raceProfile.femaleBodyTypeBias,
+        background.apparentAge,
+        heightCm
+    );
 
-    const raceFeatures = generateRaceFeatures(raceProfile, Gender.Female);
-    const skin = generateSkin(config, raceProfile);
-    const face = generateFace(Gender.Female, raceProfile);
-    const hair = generateHair(config, raceProfile);
-    const background = generateBackground(config, raceProfile, config.traumaRate);
+    // 5. History
     const history = generateHistory(config);
-    const measurements = generateFemaleMeasurements(config, bodyType, raceProfile);
-    const physicalDetail = generateFemalePhysicalDetail(config);
-    const personality = generatePersonality(background);
-    const sexualPsychology = generateSexualPsychology(config, background, history);
-    const voice = generateVoice();
-    const social = generateSocial(personality);
-    const sexualPhysiology = generateFemaleSexualPhysiology(config, history);
 
-    // Pregnancy
-    const isPregnant = Math.random() < config.pregnancyRate;
+    // 6. Base measurements — pass height in so it is not regenerated
+    const baseMeasurements = generateFemaleMeasurementsWithHeight(config, bodyType, raceProfile, heightCm, heightTag);
+
+    // 7. Physical detail (without attractiveness — needs body type + age)
+    const rawPhysicalDetail = generateFemalePhysicalDetailWithoutAttractiveness();
+
+    // 8. Attractiveness — now race + body + age aware
+    const ageCategory = getAgeBodyCategory(background.apparentAge);
+    const attractiveness = rollAttractivenessWithBias(
+        config.femaleAttractivenessWeights,
+        bodyType,
+        ageCategory,
+        race
+    );
+
+    const physicalDetail = { ...rawPhysicalDetail, attractiveness };
+
+    // 9. Age modifiers + pregnancy in correct order
     const pregnancyStageWeightsNoBase = {
         ...config.pregnancyStageWeights,
         [PregnancyStage.NotPregnant]: 0
     };
+    const isPregnant = Math.random() < config.pregnancyRate;
     const pregnancyStage = isPregnant
         ? weightedRandom(pregnancyStageWeightsNoBase)
         : PregnancyStage.NotPregnant;
 
-    const finalMeasurements = applyPregnancyToMeasurements(measurements, pregnancyStage);
-    const override = PREGNANCY_STAGE_OVERRIDES[pregnancyStage];
+    const ageAndPregnancyResult = applyAgeAndPregnancyInOrder(
+        baseMeasurements,
+        physicalDetail.breastSoftness,
+        physicalDetail.assSoftness,
+        background.apparentAge,
+        pregnancyStage
+    );
 
-    const state = createInitialDynamicState();
+    // 10. Sexual physiology
+    const sexualPhysiology = generateFemaleSexualPhysiology(config, history);
+
+    // 11. Personality — expanded, race-biased
+    const basePersonality = generateBasePersonality(background);
+    const personality = generateExpandedPersonality(basePersonality, background, history, race);
+
+    // 12. Sexual psychology
+    const sexualPsychology = generateSexualPsychology(config, background, history);
+
+    // 13. Voice + social
+    const voice = generateVoice();
+    const social = generateSocial(basePersonality);
+
+    // 14. Race features
+    const raceFeatures = generateRaceFeatures(raceProfile, Gender.Female);
+
+    // 15. Skin + face + hair
+    const skin = generateSkin(config, raceProfile);
+    const face = generateFace(Gender.Female, raceProfile);
+    const hair = generateHair(config, raceProfile);
+
+    // 16. Initial dynamic state — all trackers present, stamina from history
+    const override = PREGNANCY_STAGE_OVERRIDES[pregnancyStage];
+    const state = createInitialDynamicState(sexualPhysiology.wetnessTrack.baseline);
+    state.physical.stamina = createStaminaFromHistory(history);
+    state.physical.lactating = override.lactating;
     state.body.pregnancyStage = pregnancyStage;
     state.body.lactating = override.lactating;
-    state.physical.lactating = override.lactating;
 
     return {
         gender: Gender.Female,
@@ -729,16 +845,20 @@ export function spawnFemale(config: PopulationConfig): FemaleCharacter {
         skin,
         face,
         hair,
-        measurements: finalMeasurements,
-        physicalDetail,
+        measurements: ageAndPregnancyResult.finalMeasurements,
+        physicalDetail: {
+            ...physicalDetail,
+            breastSoftness: ageAndPregnancyResult.breastSoftness,
+            assSoftness: ageAndPregnancyResult.assSoftness
+        },
         sexualPhysiology,
-        personality,
+        personality: personality as any,
         sexualPsychology,
         voice,
         social,
-        background,
-        history,
-        state
+        background: background as any,
+        history: history as any,
+        state: state as any
     };
 }
 
@@ -803,4 +923,80 @@ export function spawnPopulation(
         }
     }
     return characters;
+}
+
+
+
+function generateHeightNormal(mean: number, stdDev: number): number {
+    const u1 = Math.random();
+    const u2 = Math.random();
+    const z = Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
+    return mean + z * stdDev;
+}
+
+function generateFemaleMeasurementsWithHeight(
+    config: PopulationConfig,
+    bodyType: import("./enums").FemaleBodyType,
+    raceProfile: import("./raceProfiles").RaceProfile,
+    heightCm: number,
+    heightTag: import("./enums").HeightTag
+): FemaleMeasurements {
+    const def = FEMALE_BODY_TYPES[bodyType];
+    const clampedHeight = clamp(heightCm, def.heightRange.minCm, def.heightRange.maxCm);
+    const scale = clampedHeight / def.heightRange.baseCm;
+
+    let bustCm = Math.round(randomInRange(...def.bustRange) * scale);
+    let waistCm = Math.round(randomInRange(...def.waistRange) * scale);
+    let hipCm = Math.round(randomInRange(...def.hipRange) * scale);
+
+    bustCm = Math.min(bustCm, clampedHeight * 0.72);
+    waistCm = clamp(waistCm, clampedHeight * 0.35, clampedHeight * 0.60);
+    hipCm = Math.min(hipCm, clampedHeight * 0.80);
+
+    const cups = Object.values(import("./enums").CupSize);
+    const minCupIndex = cups.indexOf(def.cupSizeRange[0]);
+    const maxCupIndex = cups.indexOf(def.cupSizeRange[1]);
+    const cupSize = cups[clamp(Math.round(randomInRange(minCupIndex, maxCupIndex)), 0, cups.length - 1)];
+
+    const assSizes = Object.values(import("./enums").AssSize);
+    const minAssIndex = assSizes.indexOf(def.assSizeRange[0]);
+    const maxAssIndex = assSizes.indexOf(def.assSizeRange[1]);
+    const assSize = assSizes[clamp(Math.round(randomInRange(minAssIndex, maxAssIndex)), 0, assSizes.length - 1)];
+
+    const stomachType = randomFrom(def.stomachTypes);
+    const stomachSoftness = randomFrom(def.stomachSoftness);
+    const muscleTone = randomFrom(def.muscleToneRange);
+    const bodyFatPercent = Math.round(randomInRange(...def.bodyFatRange));
+
+    return {
+        heightCm: clampedHeight,
+        heightTag,
+        bustCm,
+        waistCm,
+        hipCm,
+        cupSize,
+        assSize,
+        stomachType,
+        stomachSoftness,
+        muscleTone,
+        bodyFatPercent,
+        effectiveBustCm: bustCm,
+        effectiveWaistCm: waistCm,
+        effectiveHipCm: hipCm,
+        effectiveCupSize: cupSize,
+        effectiveStomachType: stomachType,
+        effectiveStomachSoftness: stomachSoftness
+    };
+}
+
+function generateFemalePhysicalDetailWithoutAttractiveness() {
+    return {
+        breastShape: randomFrom(Object.values(import("./enums").BreastShape)),
+        breastSoftness: randomFrom(Object.values(import("./enums").BreastSoftness)),
+        nippleType: randomFrom(Object.values(import("./enums").NippleType)),
+        nippleColor: randomFrom(Object.values(import("./enums").NippleColor)),
+        assShape: randomFrom(Object.values(import("./enums").AssShape)),
+        assSoftness: randomFrom(Object.values(import("./enums").AssSoftness)),
+        attractiveness: import("./enums").FemaleAttractiveness.Plain   // placeholder — overwritten
+    };
 }

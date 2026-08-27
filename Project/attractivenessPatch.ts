@@ -3,7 +3,7 @@
 // ============================================================
 
 import {
-    FemaleBodyType, FemaleAttractiveness, AgeBodyCategory
+    FemaleBodyType, FemaleAttractiveness, AgeBodyCategory, Race
 } from "./enums";
 
 // Body type to attractiveness bias
@@ -235,14 +235,109 @@ export const AGE_ATTRACTIVENESS_BIAS: Record<AgeBodyCategory, Partial<Record<Fem
     }
 };
 
+
+export const RACE_ATTRACTIVENESS_BIAS: Partial<Record<Race, Partial<Record<FemaleAttractiveness, number>>>> = {
+    [Race.Goddess]: {
+        [FemaleAttractiveness.Transcendent]: 30,
+        [FemaleAttractiveness.Breathtaking]: 15,
+        [FemaleAttractiveness.Stunning]: 8,
+        [FemaleAttractiveness.Beautiful]: 4
+    },
+    [Race.Succubus]: {
+        [FemaleAttractiveness.Transcendent]: 8,
+        [FemaleAttractiveness.Breathtaking]: 10,
+        [FemaleAttractiveness.Stunning]: 10,
+        [FemaleAttractiveness.Exotic]: 8,
+        [FemaleAttractiveness.Beautiful]: 5
+    },
+    [Race.HighElf]: {
+        [FemaleAttractiveness.Breathtaking]: 6,
+        [FemaleAttractiveness.Stunning]: 8,
+        [FemaleAttractiveness.Beautiful]: 8,
+        [FemaleAttractiveness.Exotic]: 5
+    },
+    [Race.Elf]: {
+        [FemaleAttractiveness.Beautiful]: 5,
+        [FemaleAttractiveness.Stunning]: 4,
+        [FemaleAttractiveness.Pretty]: 4,
+        [FemaleAttractiveness.Exotic]: 3
+    },
+    [Race.DarkElf]: {
+        [FemaleAttractiveness.Exotic]: 10,
+        [FemaleAttractiveness.Stunning]: 6,
+        [FemaleAttractiveness.Beautiful]: 5,
+        [FemaleAttractiveness.Breathtaking]: 3
+    },
+    [Race.FoxGirl]: {
+        [FemaleAttractiveness.Cute]: 6,
+        [FemaleAttractiveness.Pretty]: 6,
+        [FemaleAttractiveness.Beautiful]: 5,
+        [FemaleAttractiveness.Exotic]: 5,
+        [FemaleAttractiveness.Stunning]: 3
+    },
+    [Race.DragonGirl]: {
+        [FemaleAttractiveness.Exotic]: 10,
+        [FemaleAttractiveness.Stunning]: 6,
+        [FemaleAttractiveness.Breathtaking]: 5,
+        [FemaleAttractiveness.Beautiful]: 4
+    },
+    [Race.CowGirl]: {
+        [FemaleAttractiveness.CutePlain]: 4,
+        [FemaleAttractiveness.Cute]: 4,
+        [FemaleAttractiveness.Pretty]: 4,
+        [FemaleAttractiveness.Plain]: 3,
+        [FemaleAttractiveness.Exotic]: 3
+    },
+    [Race.Goblin]: {
+        [FemaleAttractiveness.Plain]: 6,
+        [FemaleAttractiveness.Homely]: 5,
+        [FemaleAttractiveness.CutePlain]: 4,
+        [FemaleAttractiveness.Cute]: 3,
+        [FemaleAttractiveness.Exotic]: 3
+    },
+    [Race.Orc]: {
+        [FemaleAttractiveness.Plain]: 4,
+        [FemaleAttractiveness.CutePlain]: 3,
+        [FemaleAttractiveness.Exotic]: 8,
+        [FemaleAttractiveness.Pretty]: 2,
+        [FemaleAttractiveness.Homely]: 2
+    },
+    [Race.DevilGirl]: {
+        [FemaleAttractiveness.Exotic]: 8,
+        [FemaleAttractiveness.Stunning]: 6,
+        [FemaleAttractiveness.Beautiful]: 5,
+        [FemaleAttractiveness.Breathtaking]: 3
+    },
+    [Race.Demon]: {
+        [FemaleAttractiveness.Exotic]: 7,
+        [FemaleAttractiveness.Stunning]: 5,
+        [FemaleAttractiveness.Beautiful]: 4,
+        [FemaleAttractiveness.Plain]: 2
+    },
+    [Race.Fairy]: {
+        [FemaleAttractiveness.Cute]: 8,
+        [FemaleAttractiveness.Pretty]: 6,
+        [FemaleAttractiveness.Beautiful]: 5,
+        [FemaleAttractiveness.Exotic]: 4
+    },
+    [Race.WolfGirl]: {
+        [FemaleAttractiveness.Exotic]: 6,
+        [FemaleAttractiveness.Pretty]: 4,
+        [FemaleAttractiveness.Beautiful]: 4,
+        [FemaleAttractiveness.CutePlain]: 3
+    }
+};
+
 // ─── COMBINED ATTRACTIVENESS ROLL ───────────────────────────
 // Replaces the plain weightedRandom call in generateFemalePhysicalDetail
 
 export function rollAttractivenessWithBias(
     baseWeights: Record<FemaleAttractiveness, number>,
-    bodyType: FemaleBodyType,
-    ageCategory: AgeBodyCategory
+    bodyType: import("./enums").FemaleBodyType,
+    ageCategory: AgeBodyCategory,
+    race: Race
 ): FemaleAttractiveness {
+    const { BODY_TYPE_ATTRACTIVENESS_BIAS, AGE_ATTRACTIVENESS_BIAS } = require("./attractivenessPatch");
     const combined = { ...baseWeights };
 
     // Apply body type bias
@@ -252,12 +347,17 @@ export function rollAttractivenessWithBias(
     }
 
     // Apply age bias
-    const ageBias = AGE_ATTRACTIVENESS_BIAS[ageCategory];
+    const ageBias = AGE_ATTRACTIVENESS_BIAS[ageCategory] ?? {};
     for (const [attr, add] of Object.entries(ageBias) as [FemaleAttractiveness, number][]) {
         combined[attr] = (combined[attr] || 0) + add;
     }
 
-    // Weighted random from combined
+    // Apply race bias — ADDED
+    const raceBias = RACE_ATTRACTIVENESS_BIAS[race] ?? {};
+    for (const [attr, add] of Object.entries(raceBias) as [FemaleAttractiveness, number][]) {
+        combined[attr] = (combined[attr] || 0) + add;
+    }
+
     const entries = Object.entries(combined) as [FemaleAttractiveness, number][];
     const filtered = entries.filter(([, w]) => w > 0);
     const total = filtered.reduce((sum, [, w]) => sum + w, 0);

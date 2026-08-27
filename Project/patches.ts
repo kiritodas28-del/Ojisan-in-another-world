@@ -15,6 +15,7 @@ import { SexualPsychology, ResistanceProfile, CorruptionShameTrack } from "./psy
 import { SexualActFlags } from "./historyProfile";
 import { CharacterDynamicState, PhysicalState, StaminaTrack } from "./dynamicState";
 import { ExperienceHistory } from "./historyProfile";
+import { updateBondType, updateBrokenFlag } from "./dynamicState";
 
 // ============================================================
 // PATCH 1: Pleasure level as distinct from arousal
@@ -454,32 +455,8 @@ export function tryAcquireKinkFromAct(
     return { ...psychology, acquiredKinks: acquired };
 }
 
-// ============================================================
-// PATCH 12: Cock type enum and field
-// ============================================================
 
-export enum CockType {
-    Straight = "STRAIGHT",
-    CurvedUp = "CURVED_UP",
-    CurvedDown = "CURVED_DOWN",
-    CurvedLeft = "CURVED_LEFT",
-    CurvedRight = "CURVED_RIGHT",
-    Tapered = "TAPERED",
-    Flared = "FLARED",
-    Uniform = "UNIFORM",
-    // Fantasy types
-    Knotted = "KNOTTED",
-    Barbed = "BARBED",
-    Ridged = "RIDGED",
-    Bifurcated = "BIFURCATED"
-}
 
-// Add to MalePhysicalDetail in physicalCore.ts:
-// cockType: CockType;
-// Generate in spawnEngine.ts generateMalePhysicalDetail:
-// cockType: randomFrom(raceProfile.features.cockTextureOptions.length > 0
-//     ? deriveCockTypesFromRace(raceProfile)
-//     : Object.values(CockType).filter(t => !isFantasyType(t))),
 
 export function deriveCockTypesFromRace(raceFeatures: { cockTextureOptions: import("./enums").CockTextureType[] }): CockType[] {
     const { cockTextureOptions } = raceFeatures;
@@ -496,22 +473,6 @@ export function deriveCockTypesFromRace(raceFeatures: { cockTextureOptions: impo
 // PATCH 13: Region for Mixed race characters
 // ============================================================
 
-export enum RegionOfOrigin {
-    // Standard regions
-    Heartlands = "HEARTLANDS",
-    VerdantReach = "VERDANT_REACH",
-    StonebackRange = "STONEBACK_RANGE",
-    Ashfen = "ASHFEN",
-    SunkenCoast = "SUNKEN_COAST",
-    // Fantasy specific
-    AbyssalRealm = "ABYSSAL_REALM",
-    CelestialSpire = "CELESTIAL_SPIRE",
-    DeepForest = "DEEP_FOREST",
-    VolcanicWastes = "VOLCANIC_WASTES",
-    FrozenNorth = "FROZEN_NORTH",
-    DesertBadlands = "DESERT_BADLANDS",
-    CoastalIslands = "COASTAL_ISLANDS"
-}
 
 export interface RegionSkinBias {
     region: RegionOfOrigin;
@@ -582,52 +543,6 @@ export const REGION_SKIN_BIAS: Record<RegionOfOrigin, RegionSkinBias> = {
     }
 };
 
-// Add to BackgroundProfile in historyProfile.ts:
-// regionOfOrigin: RegionOfOrigin;
-// For Mixed race characters, region determines dominant skin tone
-
-// ============================================================
-// PATCH 14: Apparent age body type bias in spawn engine
-// ============================================================
-// This replaces the raceAwareBodyType call in spawnFemale
-// Now uses selectBodyTypeWithAgeBias from ageBodyProfile.ts
-
-// Updated spawnFemale excerpt — replace the bodyType generation:
-/*
-    // Generate height first so we know petite status before body type
-    const def_height = config.heightDistribution.meanFemale;
-    const heightCm = generateHeight(
-        def_height,
-        config.heightDistribution.stdDev,
-        145,
-        188
-    );
-
-    // Generate background early so we have apparentAge
-    const background = generateBackground(config, raceProfile, config.traumaRate);
-
-    // Now select body type with age and petite awareness
-    const bodyType = selectBodyTypeWithAgeBias(
-        config.femaleBodyTypeWeights,
-        raceProfile.femaleBodyTypeBias,
-        background.apparentAge,
-        heightCm
-    );
-*/
-
-// ============================================================
-// PATCH 15: Ruddy skin tone fix
-// ============================================================
-// Add to SkinTone enum in enums.ts:
-// Ruddy = "RUDDY"
-// This is a natural reddish-tan tone common in cold-climate heavy-labor races
-// Used by Dwarf race profile
-
-// The fix is simply adding this to the enum:
-export const RUDDY_SKIN_TONE_ADDITION = `
-// Add to SkinTone enum in enums.ts, after Ebony:
-Ruddy = "RUDDY",    // reddish-tan, cold climate, heavy labor
-`;
 
 // ============================================================
 // FULL ENCOUNTER RESOLUTION FUNCTION
@@ -806,10 +721,9 @@ export function resolvePostEncounter(
     };
 
     // Update bond type
-    state = import("./dynamicState").updateBondType(state);
+    state = updateBondType(state);
 
-    // Update broken flag
-    state = import("./dynamicState").updateBrokenFlag(state);
+    state = updateBrokenFlag(state);
 
     return {
         result: {
@@ -826,3 +740,4 @@ export function resolvePostEncounter(
         }
     };
 }
+

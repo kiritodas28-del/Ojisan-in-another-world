@@ -5,7 +5,8 @@
 import {
     Race, Gender, WingType, TailType, EarType, HornType,
     CockTextureType, SkinTone, EyeColor, HairColor,
-    FemaleBodyType, MaleBodyType
+    FemaleBodyType, MaleBodyType,
+    RegionOfOrigin
 } from "./enums";
 
 export interface RaceFeatures {
@@ -29,6 +30,8 @@ export interface RaceProfile {
     femaleBodyTypeBias: Partial<Record<FemaleBodyType, number>>; // weight multipliers on top of pop config
     maleBodyTypeBias: Partial<Record<MaleBodyType, number>>;
     description: string;
+    defaultRegions: RegionOfOrigin[];
+    minActualAgeAtSpawn: number;
 }
 
 export const RACE_PROFILES: Record<Race, RaceProfile> = {
@@ -63,7 +66,8 @@ export const RACE_PROFILES: Record<Race, RaceProfile> = {
         },
         femaleBodyTypeBias: {},
         maleBodyTypeBias: {},
-        description: "Standard human. No supernatural features. Full skin tone range."
+        description: "Standard human. No supernatural features. Full skin tone range.",
+        defaultRegions: [RegionOfOrigin.Heartlands, RegionOfOrigin.SunkenCoast, RegionOfOrigin.StonebackRange], minActualAgeAtSpawn: 18
     },
 
     [Race.Elf]: {
@@ -99,7 +103,8 @@ export const RACE_PROFILES: Record<Race, RaceProfile> = {
             [MaleBodyType.Lean]: 3,
             [MaleBodyType.Athletic]: 2
         },
-        description: "Graceful, long-lived, pointed ears. Slim to elegant builds. Ageless appearance."
+        description: "Graceful, long-lived, pointed ears. Slim to elegant builds. Ageless appearance.",
+        defaultRegions: [RegionOfOrigin.VerdantReach, RegionOfOrigin.DeepForest], minActualAgeAtSpawn: 80
     },
 
     [Race.HighElf]: {
@@ -133,7 +138,8 @@ export const RACE_PROFILES: Record<Race, RaceProfile> = {
             [MaleBodyType.Lean]: 4,
             [MaleBodyType.Athletic]: 2
         },
-        description: "Ancient, near-perfect beings. Ethereal appearance. Very long ears. Otherworldly eyes."
+        description: "Ancient, near-perfect beings. Ethereal appearance. Very long ears. Otherworldly eyes.",
+        defaultRegions: [RegionOfOrigin.VerdantReach, RegionOfOrigin.CelestialSpire], minActualAgeAtSpawn: 200
     },
 
     [Race.DarkElf]: {
@@ -170,7 +176,8 @@ export const RACE_PROFILES: Record<Race, RaceProfile> = {
             [MaleBodyType.Athletic]: 3,
             [MaleBodyType.Muscular]: 2
         },
-        description: "Dark-skinned elves. Predatory and elegant. Striking pale hair against dark skin."
+        description: "Dark-skinned elves. Predatory and elegant. Striking pale hair against dark skin.",
+        defaultRegions: [RegionOfOrigin.Ashfen, RegionOfOrigin.VolcanicWastes], minActualAgeAtSpawn: 80
     },
 
     [Race.Dwarf]: {
@@ -205,7 +212,8 @@ export const RACE_PROFILES: Record<Race, RaceProfile> = {
             [MaleBodyType.Stocky]: 4,
             [MaleBodyType.Hypermasculine]: 2
         },
-        description: "Short and dense. Compact powerful builds. Strong and durable. Heavy hair."
+        description: "Short and dense. Compact powerful builds. Strong and durable. Heavy hair.",
+        defaultRegions: [RegionOfOrigin.StonebackRange], minActualAgeAtSpawn: 30
     },
 
     [Race.Fairy]: {
@@ -242,7 +250,8 @@ export const RACE_PROFILES: Record<Race, RaceProfile> = {
             [MaleBodyType.Androgynous]: 3,
             [MaleBodyType.Lean]: 3
         },
-        description: "Very small. Insect wings. Fantasy coloring. Eternally youthful appearance."
+        description: "Very small. Insect wings. Fantasy coloring. Eternally youthful appearance.",
+        defaultRegions: [RegionOfOrigin.VerdantReach, RegionOfOrigin.DeepForest], minActualAgeAtSpawn: 20
     },
 
     [Race.Orc]: {
@@ -278,7 +287,8 @@ export const RACE_PROFILES: Record<Race, RaceProfile> = {
             [MaleBodyType.Hypermasculine]: 4,
             [MaleBodyType.Stocky]: 2
         },
-        description: "Green-skinned, powerful. Tusks. Heavy muscle. Knotted or ridged cock options."
+        description: "Green-skinned, powerful. Tusks. Heavy muscle. Knotted or ridged cock options.",
+        defaultRegions: [RegionOfOrigin.StonebackRange, RegionOfOrigin.Ashfen], minActualAgeAtSpawn: 18
     },
 
     [Race.Goblin]: {
@@ -311,7 +321,8 @@ export const RACE_PROFILES: Record<Race, RaceProfile> = {
             [MaleBodyType.Lean]: 3,
             [MaleBodyType.Average]: 2
         },
-        description: "Very short. Green skin. Large ears. Sharp teeth. Quick and wiry."
+        description: "Very short. Green skin. Large ears. Sharp teeth. Quick and wiry.",
+        defaultRegions: [RegionOfOrigin.Ashfen, RegionOfOrigin.VolcanicWastes], minActualAgeAtSpawn: 12
     },
 
     [Race.Demon]: {
@@ -348,7 +359,8 @@ export const RACE_PROFILES: Record<Race, RaceProfile> = {
             [MaleBodyType.Muscular]: 3,
             [MaleBodyType.Hypermasculine]: 2
         },
-        description: "Immortal. Dark coloring. Bat wings. Demon horns and tail. Dangerous presence."
+        description: "Immortal. Dark coloring. Bat wings. Demon horns and tail. Dangerous presence.",
+        defaultRegions: [RegionOfOrigin.AbyssalRealm], minActualAgeAtSpawn: 100
     },
 
     [Race.DevilGirl]: {
@@ -377,7 +389,8 @@ export const RACE_PROFILES: Record<Race, RaceProfile> = {
             [FemaleBodyType.SlimCurvy]: 2
         },
         maleBodyTypeBias: {},
-        description: "Female devil archetype. Red or dark skin. Forked tail and small horns. Seductive."
+        description: "Female devil archetype. Red or dark skin. Forked tail and small horns. Seductive.",
+        defaultRegions: [RegionOfOrigin.AbyssalRealm], minActualAgeAtSpawn: 100
     },
 
     [Race.DevilBoy]: {
@@ -403,7 +416,8 @@ export const RACE_PROFILES: Record<Race, RaceProfile> = {
             [MaleBodyType.Athletic]: 3,
             [MaleBodyType.Muscular]: 2
         },
-        description: "Male devil archetype. Dark coloring. Forked tail and horns."
+        description: "Male devil archetype. Dark coloring. Forked tail and horns.",
+        defaultRegions: [RegionOfOrigin.AbyssalRealm], minActualAgeAtSpawn: 100
     },
 
     [Race.Succubus]: {
@@ -443,7 +457,8 @@ export const RACE_PROFILES: Record<Race, RaceProfile> = {
             [FemaleBodyType.HourglassSlim]: 2
         },
         maleBodyTypeBias: {},
-        description: "Female sex demon. Perfect figure. Supernatural arousal field. Wings, tail, horns."
+        description: "Female sex demon. Perfect figure. Supernatural arousal field. Wings, tail, horns.",
+        defaultRegions: [RegionOfOrigin.AbyssalRealm], minActualAgeAtSpawn: 200
     },
 
     [Race.Incubus]: {
@@ -477,7 +492,8 @@ export const RACE_PROFILES: Record<Race, RaceProfile> = {
             [MaleBodyType.Muscular]: 3,
             [MaleBodyType.Lean]: 2
         },
-        description: "Male sex demon. Supernaturally handsome. Wings, tail, horns. Seduction specialist."
+        description: "Male sex demon. Supernaturally handsome. Wings, tail, horns. Seduction specialist.",
+        defaultRegions: [RegionOfOrigin.AbyssalRealm], minActualAgeAtSpawn: 200
     },
 
     [Race.FoxGirl]: {
@@ -510,7 +526,8 @@ export const RACE_PROFILES: Record<Race, RaceProfile> = {
             [FemaleBodyType.PetiteHourglass]: 2
         },
         maleBodyTypeBias: {},
-        description: "Fox spirit girl. Fox ears and tail. Cunning and alluring. Amber or gold eyes."
+        description: "Fox spirit girl. Fox ears and tail. Cunning and alluring. Amber or gold eyes.",
+        defaultRegions: [RegionOfOrigin.DeepForest, RegionOfOrigin.VerdantReach], minActualAgeAtSpawn: 30
     },
 
     [Race.FoxBoy]: {
@@ -539,7 +556,8 @@ export const RACE_PROFILES: Record<Race, RaceProfile> = {
             [MaleBodyType.Androgynous]: 2,
             [MaleBodyType.Athletic]: 2
         },
-        description: "Fox spirit boy. Fox ears and tail. Slim and agile."
+        description: "Fox spirit boy. Fox ears and tail. Slim and agile.",
+        defaultRegions: [RegionOfOrigin.DeepForest, RegionOfOrigin.VerdantReach], minActualAgeAtSpawn: 30
     },
 
     [Race.WolfGirl]: {
@@ -571,7 +589,8 @@ export const RACE_PROFILES: Record<Race, RaceProfile> = {
             [FemaleBodyType.Athletic]: 2
         },
         maleBodyTypeBias: {},
-        description: "Wolf spirit girl. Powerful and athletic. Wolf ears and tail. Pack instincts."
+        description: "Wolf spirit girl. Powerful and athletic. Wolf ears and tail. Pack instincts.",
+        defaultRegions: [RegionOfOrigin.StonebackRange, RegionOfOrigin.FrozenNorth], minActualAgeAtSpawn: 20
     },
 
     [Race.WolfBoy]: {
@@ -600,7 +619,8 @@ export const RACE_PROFILES: Record<Race, RaceProfile> = {
             [MaleBodyType.Muscular]: 3,
             [MaleBodyType.Stocky]: 2
         },
-        description: "Wolf spirit boy. Athletic and powerful. Knotted cock option."
+        description: "Wolf spirit boy. Athletic and powerful. Knotted cock option.",
+        defaultRegions: [RegionOfOrigin.StonebackRange, RegionOfOrigin.FrozenNorth], minActualAgeAtSpawn: 20
     },
 
     [Race.CowGirl]: {
@@ -632,7 +652,8 @@ export const RACE_PROFILES: Record<Race, RaceProfile> = {
             [FemaleBodyType.Zaftig]: 2
         },
         maleBodyTypeBias: {},
-        description: "Cow spirit girl. Large bust tendency. Naturally lactating. Cow ears, tail, horns."
+        description: "Cow spirit girl. Large bust tendency. Naturally lactating. Cow ears, tail, horns.",
+        defaultRegions: [RegionOfOrigin.Heartlands], minActualAgeAtSpawn: 18
     },
 
     [Race.CowBoy]: {
@@ -659,7 +680,8 @@ export const RACE_PROFILES: Record<Race, RaceProfile> = {
             [MaleBodyType.Muscular]: 3,
             [MaleBodyType.Hypermasculine]: 2
         },
-        description: "Cow spirit boy. Heavy and powerful. Bull horns. Flared cock option."
+        description: "Cow spirit boy. Heavy and powerful. Bull horns. Flared cock option.",
+        defaultRegions: [RegionOfOrigin.Heartlands], minActualAgeAtSpawn: 18
     },
 
     [Race.DragonGirl]: {
@@ -699,7 +721,8 @@ export const RACE_PROFILES: Record<Race, RaceProfile> = {
             [FemaleBodyType.HourglassCurvy]: 2
         },
         maleBodyTypeBias: {},
-        description: "Dragon spirit girl. Dragon wings, tail, curved horns. Scales on skin. Ancient power."
+        description: "Dragon spirit girl. Dragon wings, tail, curved horns. Scales on skin. Ancient power.",
+        defaultRegions: [RegionOfOrigin.VolcanicWastes, RegionOfOrigin.StonebackRange], minActualAgeAtSpawn: 500
     },
 
     [Race.DragonBoy]: {
@@ -733,7 +756,8 @@ export const RACE_PROFILES: Record<Race, RaceProfile> = {
             [MaleBodyType.Hypermasculine]: 3,
             [MaleBodyType.Athletic]: 2
         },
-        description: "Dragon spirit boy. Wings, tail, horns. Scale markings. Ridged or flared cock."
+        description: "Dragon spirit boy. Wings, tail, horns. Scale markings. Ridged or flared cock.",
+        defaultRegions: [RegionOfOrigin.VolcanicWastes, RegionOfOrigin.StonebackRange], minActualAgeAtSpawn: 500
     },
 
     [Race.Goddess]: {
@@ -772,7 +796,8 @@ export const RACE_PROFILES: Record<Race, RaceProfile> = {
             [FemaleBodyType.HourglassSlim]: 3
         },
         maleBodyTypeBias: {},
-        description: "Divine being. Perfect form. Feathered wings. Glowing aura. Eternal youth."
+        description: "Divine being. Perfect form. Feathered wings. Glowing aura. Eternal youth.",
+        defaultRegions: [RegionOfOrigin.CelestialSpire], minActualAgeAtSpawn: 1000
     },
 
     [Race.God]: {
@@ -806,7 +831,8 @@ export const RACE_PROFILES: Record<Race, RaceProfile> = {
             [MaleBodyType.Muscular]: 3,
             [MaleBodyType.Hypermasculine]: 2
         },
-        description: "Divine male being. Perfect physique. Feathered wings. Golden aura."
+        description: "Divine male being. Perfect physique. Feathered wings. Golden aura.",
+        defaultRegions: [RegionOfOrigin.CelestialSpire], minActualAgeAtSpawn: 1000
     },
 
     [Race.Mixed]: {
@@ -827,6 +853,7 @@ export const RACE_PROFILES: Record<Race, RaceProfile> = {
         },
         femaleBodyTypeBias: {},
         maleBodyTypeBias: {},
-        description: "Mixed race. Any combination of parent race features. Full range of appearance."
+        description: "Mixed race. Any combination of parent race features. Full range of appearance.",
+        defaultRegions: Object.values(RegionOfOrigin), minActualAgeAtSpawn: 18
     }
 };

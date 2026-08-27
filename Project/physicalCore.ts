@@ -130,13 +130,25 @@ export interface MalePhysicalDetail {
     cumColor: CumColor;
     ballSize: BallSize;
     refractoryPeriod: RefractoryPeriod;
+    cockType: CockType;
 }
 
 // ─── RACE PHYSICAL FEATURES ─────────────────────────────────
-export interface RacePhysicalFeatures {
+export interface BaseRacePhysicalFeatures {
     wings: import("./enums").WingType;
     tail: import("./enums").TailType;
     ears: import("./enums").EarType;
     horns: import("./enums").HornType;
     specialFeatures: string[];
 }
+
+export interface MaleRacePhysicalFeatures extends BaseRacePhysicalFeatures {
+    cockTexture: import("./enums").CockTextureType;
+    cockType: CockType;
+}
+
+export interface FemaleRacePhysicalFeatures extends BaseRacePhysicalFeatures {
+    // no cock fields
+}
+
+export type RacePhysicalFeatures = MaleRacePhysicalFeatures | FemaleRacePhysicalFeatures;

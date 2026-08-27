@@ -8,6 +8,7 @@ import {
     LubricationSpeed, PostOrgasmSensitivity, FertilityRating,
     PregnancyStage, PregnancyHistory
 } from "./enums";
+import { SexualActFlags } from "./historyProfile";
 
 // ─── SENSITIVITY TRACK ──────────────────────────────────────
 // Each sensitivity point is tracked independently
@@ -142,4 +143,47 @@ export function calculateWetnessFromArousal(track: WetnessTrack, arousalLevel: n
     const targetIndex = Math.round(baselineIndex + arousalProgress * (maxPossibleIndex - baselineIndex));
 
     return WETNESS_ORDER[Math.min(targetIndex, maxPossibleIndex)];
+}
+
+export function updateFemaleSensitivityFromActs(
+    physiology: FemaleSexualPhysiology,
+    actsPerformed: Partial<SexualActFlags>
+): FemaleSexualPhysiology {
+    let s = { ...physiology.sensitivity };
+
+    if (actsPerformed.nippleSuck) s.nipple = tryIncreaseSensitivity(s.nipple);
+    if (actsPerformed.nipplePull) s.nipple = tryIncreaseSensitivity(s.nipple);
+    if (actsPerformed.breastFuck) s.breast = tryIncreaseSensitivity(s.breast);
+    if (actsPerformed.breastSwing) s.breast = tryIncreaseSensitivity(s.breast);
+    if (actsPerformed.vaginalPenetration) s.vagina = tryIncreaseSensitivity(s.vagina);
+    if (actsPerformed.fingeringReceived) s.clit = tryIncreaseSensitivity(s.clit);
+    if (actsPerformed.analPenetration) s.ass = tryIncreaseSensitivity(s.ass);
+    if (actsPerformed.oralReceiving) s.clit = tryIncreaseSensitivity(s.clit);
+    if (actsPerformed.deepthroat) s.lips = tryIncreaseSensitivity(s.lips);
+    if (actsPerformed.oralGiving) s.tongue = tryIncreaseSensitivity(s.tongue);
+    if (actsPerformed.cumOnBody) s.skin = tryIncreaseSensitivity(s.skin);
+    // Cervix and womb require very deep penetration — handled by specific act flag
+    if (actsPerformed.vaginalPenetration && Math.random() < 0.1)
+        s.cervix = tryIncreaseSensitivity(s.cervix);
+    if (actsPerformed.vaginalCreampie && Math.random() < 0.05)
+        s.womb = tryIncreaseSensitivity(s.womb);
+
+    return { ...physiology, sensitivity: s };
+}
+
+export function updateMaleSensitivityFromEncounter(
+    physiology: MaleSexualPhysiology,
+    actsPerformed: Partial<SexualActFlags>
+): MaleSexualPhysiology {
+    let sensitivity = { ...physiology.sensitivity };
+
+    if (actsPerformed.oralReceiving) sensitivity.cock = tryIncreaseSensitivity(sensitivity.cock);
+    if (actsPerformed.handjobGiven) sensitivity.cock = tryIncreaseSensitivity(sensitivity.cock);
+    if (actsPerformed.analPenetration) sensitivity.ass = tryIncreaseSensitivity(sensitivity.ass);
+    if (actsPerformed.nippleSuck) sensitivity.nipple = tryIncreaseSensitivity(sensitivity.nipple);
+    if (actsPerformed.nipplePull) sensitivity.nipple = tryIncreaseSensitivity(sensitivity.nipple);
+    if (actsPerformed.deepthroat) sensitivity.cock = tryIncreaseSensitivity(sensitivity.cock);
+    if (actsPerformed.fingeringReceived) sensitivity.skin = tryIncreaseSensitivity(sensitivity.skin);
+
+    return { ...physiology, sensitivity };
 }

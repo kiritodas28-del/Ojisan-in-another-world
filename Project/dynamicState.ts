@@ -6,6 +6,9 @@ import {
     MoodValue, BondType, PregnancyStage, WetnessLevel, OrgasmType
 } from "./enums";
 import { SexualActFlags } from "./historyProfile";
+import { PleasureTrack, createPleasureTrack } from "./patches";
+import { SubspaceTracker, createSubspaceTracker, AfterglowTracker, createAfterglowTracker } from "./patches";
+import { SuppressionState } from "./personalityExpansion";
 
 // ─── STAMINA TRACK ──────────────────────────────────────────
 export interface StaminaTrack {
@@ -20,7 +23,7 @@ export interface PhysicalState {
     arousalLevel: number;                   // 0-100
     currentWetness: WetnessLevel;           // female only — calculated from arousal
     painLevel: number;                      // 0-100; sexual pain state
-    pleasureLevel: number;                  // 0-100; distinct tracking from arousal
+    pleasureTrack: PleasureTrack;
     stamina: StaminaTrack;
     lactating: boolean;
     clothingState: "FULLY_CLOTHED" | "PARTIALLY_CLOTHED" | "EXPOSED" | "NAKED";
@@ -33,8 +36,9 @@ export interface MentalState {
     corruptionCurrent: number;              // 0-100
     shameCurrent: number;                   // 0-100
     brokenFlag: boolean;                    // true when corruption > 85 and shame < 10
-    subspaceFlag: boolean;                  // true when arousal > 90 AND pain > 60 sustained
-    afterglowFlag: boolean;                 // true post-encounter for a period
+    subspaceTracker: SubspaceTracker;               // ADDED — replaces plain subspaceFlag
+    afterglowTracker: AfterglowTracker;             // ADDED — replaces plain afterglowFlag
+    suppressionState: SuppressionState;             // ADDED
     trustWithPlayer: number;                // 0-100; separate from baseline trust
     attachmentWithPlayer: number;           // 0-100
     submissionToPlayer: number;             // 0-100
@@ -127,74 +131,80 @@ export function updateBondType(state: CharacterDynamicState): CharacterDynamicSt
 
 export function createInitialDynamicState(): CharacterDynamicState {
     return {
-        physical: {
-            arousalLevel: 0,
-            currentWetness: WetnessLevel.Dry,
-            painLevel: 0,
-            pleasureLevel: 0,
-            stamina: {
-                current: 100,
-                max: 100,
-                recoveryRate: 20,
-                depletionRate: 10
+        return {
+            physical: {
+                arousalLevel: 0,
+                currentWetness: wetnessBaseline,            // FIXED — was hardcoded Dry
+                painLevel: 0,
+                pleasureTrack: createPleasureTrack(),       // FIXED — was plain number
+                stamina: {                                   // placeholder — overwritten by createStaminaFromHistory
+                    current: 100,
+                    max: 100,
+                    recoveryRate: 20,
+                    depletionRate: 10
+                },
+                lactating: false,
+                clothingState: "FULLY_CLOTHED",
+                restraintState: 0
             },
-            lactating: false,
-            clothingState: "FULLY_CLOTHED",
-            restraintState: 0
-        },
-        mental: {
-            currentMood: MoodValue.Defiant,
-            corruptionCurrent: 0,
-            shameCurrent: 80,
-            brokenFlag: false,
-            subspaceFlag: false,
-            afterglowFlag: false,
-            trustWithPlayer: 10,
-            attachmentWithPlayer: 0,
-            submissionToPlayer: 0
-        },
-        relationship: {
-            encounterCountWithPlayer: 0,
-            actsPerformedWithPlayer: createEmptyRelationshipActFlags(),
-            bondType: BondType.None,
-            bondStrength: 0
-        },
-        body: {
-            pregnancyStage: PregnancyStage.NotPregnant,
-            pregnancyWeek: 0,
-            lactating: false,
-            postpartum: false,
-            postpartumWeek: 0
-        }
-    };
-}
+            mental: {
+                currentMood: import("./enums").MoodValue.Defiant,
+                corruptionCurrent: 0,
+                shameCurrent: 80,
+                brokenFlag: false,
+                subspaceTracker: createSubspaceTracker(),   // FIXED — was plain boolean
+                afterglowTracker: createAfterglowTracker(), // FIXED — was plain boolean
+                suppressionState: {                         // FIXED — was missing
+                    cracked: false,
+                    crackLevel: 0,
+                    crackTrigger: null
+                },
+                trustWithPlayer: 10,
+                attachmentWithPlayer: 0,
+                submissionToPlayer: 0
+            },
+            relationship: {
+                encounterCountWithPlayer: 0,
+                actsPerformedWithPlayer: createEmptyActFlagsV2() as any,
+                bondType: import("./enums").BondType.None,
+                bondStrength: 0
+            },
+            body: {
+                pregnancyStage: import("./enums").PregnancyStage.NotPregnant,
+                pregnancyWeek: 0,
+                lactating: false,
+                postpartum: false,
+                postpartumWeek: 0
+            }
+        };
+    }
 
-function createEmptyRelationshipActFlags(): SexualActFlags {
-    return {
-        vaginalPenetration: false,
-        vaginalCreampie: false,
-        analPenetration: false,
-        analCreampie: false,
-        oralGiving: false,
-        oralReceiving: false,
-        deepthroat: false,
-        breastFuck: false,
-        nippleSuck: false,
-        nipplePull: false,
-        fingeringReceived: false,
-        handjobGiven: false,
-        orgasmTypesExperienced: new Set(),
-        kinksExperienced: new Set(),
-        bondageExperienced: false,
-        impactExperienced: false,
-        chokingExperienced: false,
-        edgingExperienced: false,
-        squirtingAchieved: false,
-        multipleOrgasmAchieved: false,
-        facialReceived: false,
-        cumSwallowed: false,
-        creampieReceived: false,
-        toyUsed: false,
-        vibratorUsed: false
-    };
-}
+    function createEmptyRelationshipActFlags(): SexualActFlags {
+        return {
+            vaginalPenetration: false,
+            vaginalCreampie: false,
+            analPenetration: false,
+            analCreampie: false,
+            oralGiving: false,
+            oralReceiving: false,
+            deepthroat: false,
+            breastFuck: false,
+            nippleSuck: false,
+            nipplePull: false,
+            fingeringReceived: false,
+            handjobGiven: false,
+            orgasmTypesExperienced: new Set(),
+            kinksExperienced: new Set(),
+            bondageExperienced: false,
+            impactExperienced: false,
+            chokingExperienced: false,
+            edgingExperienced: false,
+            squirtingAchieved: false,
+            multipleOrgasmAchieved: false,
+            facialReceived: false,
+            cumSwallowed: false,
+            creampieReceived: false,
+            toyUsed: false,
+            vibratorUsed: false
+        };
+    }

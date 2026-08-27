@@ -7,21 +7,10 @@
 // NonPetite = everything above
 
 import { FemaleBodyType, HeightTag, CupSize, AssSize, BreastSoftness, AssSoftness, StomachType, StomachSoftness } from "./enums";
+import { AgeAppliedMeasurements, applyAgeMod } from "./ageBodyProfile";
+import { PREGNANCY_STAGE_OVERRIDES } from "./bodyTypes";
+import { FemaleMeasurements } from "./physicalCore";
 
-// ─── AGE CATEGORY ───────────────────────────────────────────
-
-export enum AgeBodyCategory {
-    Young = "YOUNG",                    // apparent 18-30
-    RipeningMilf = "RIPENING_MILF",    // apparent 30-35
-    RipeMilf = "RIPE_MILF",            // apparent 35-43
-    MatureMilf = "MATURE_MILF",        // apparent 43-50
-    OldMilf = "OLD_MILF"               // apparent 50+
-}
-
-export enum PetiteCategory {
-    Petite = "PETITE",
-    NonPetite = "NON_PETITE"
-}
 
 // ─── AGE BODY PROFILE ───────────────────────────────────────
 // Defines how body characteristics shift with age category
@@ -576,11 +565,11 @@ export function selectBodyTypeWithAgeBias(
     baseWeights: Record<FemaleBodyType, number>,
     raceBias: Partial<Record<FemaleBodyType, number>>,
     apparentAge: number,
-    heightCm: number
+    heightTag: HeightTag
 ): FemaleBodyType {
     // Determine petite from height before body type is assigned
     // Use a threshold: petite if height <= 162cm
-    const isPetite = heightCm <= 162;
+    const isPetite = isPetiteByHeightTag(heightTag);
     const petiteCategory = isPetite ? PetiteCategory.Petite : PetiteCategory.NonPetite;
     const ageCategory = getAgeBodyCategory(apparentAge);
     const ageMod = AGE_BODY_MODIFIERS[ageCategory][petiteCategory];
@@ -647,4 +636,64 @@ export function selectBodyTypeWithAgeBias(
         if (roll <= 0) return key;
     }
     return filtered[filtered.length - 1][0];
+}
+
+export function isPetiteByHeightTag(heightTag: import("./enums").HeightTag): boolean {
+    return (
+        heightTag === import("./enums").HeightTag.VeryShort ||
+        heightTag === import("./enums").HeightTag.Short
+    );
+    // VeryShort = <150cm female
+    // Short = 150-158cm female
+    // Consistent with HeightTag definition
+}
+
+function clamp(val: number, min: number, max: number): number {
+    return Math.max(min, Math.min(max, val));
+}
+
+function cupSizeToIndex(cup: import("./enums").CupSize): number {
+    return Object.values(import("./enums").CupSize).indexOf(cup);
+}
+
+function cupSizeFromIndex(index: number): import("./enums").CupSize {
+    const cups = Object.values(import("./enums").CupSize);
+    return cups[clamp(index, 0, cups.length - 1)];
+}
+
+export function applyAgeAndPregnancyInOrder(
+    baseMeasurements: FemaleMeasurements,
+    breastSoftness: import("./enums").BreastSoftness,
+    assSoftness: import("./enums").AssSoftness,
+    apparentAge: number,
+    pregnancyStage: PregnancyStage
+): AgeAppliedMeasurements & { finalMeasurements: FemaleMeasurements } {
+    // Step 1: Apply age modifiers to base
+    const ageApplied = applyAgeMod(baseMeasurements, breastSoftness, assSoftness, apparentAge);
+
+    // Step 2: Apply pregnancy on top of age-adjusted measurements
+    if (pregnancyStage === PregnancyStage.NotPregnant) {
+        return { ...ageApplied, finalMeasurements: ageApplied.measurements };
+    }
+
+    const override = PREGNANCY_STAGE_OVERRIDES[pregnancyStage];
+    const ageMeasurements = ageApplied.measurements;
+
+    const effectiveCupIndex = clamp(
+        cupSizeToIndex(ageMeasurements.cupSize) + override.cupSizeAddSteps,
+        0,
+        Object.values(import("./enums").CupSize).length - 1
+    );
+
+    const finalMeasurements: FemaleMeasurements = {
+        ...ageMeasurements,
+        effectiveBustCm: Math.round(ageMeasurements.bustCm + override.bustAddCm),
+        effectiveWaistCm: Math.round(ageMeasurements.waistCm + override.waistAddCm),
+        effectiveHipCm: Math.round(ageMeasurements.hipCm + override.hipAddCm),
+        effectiveCupSize: cupSizeFromIndex(effectiveCupIndex),
+        effectiveStomachType: override.stomachTypeOverride,
+        effectiveStomachSoftness: override.stomachSoftnessOverride
+    };
+
+    return { ...ageApplied, finalMeasurements };
 }

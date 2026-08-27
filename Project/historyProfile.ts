@@ -15,6 +15,7 @@ export interface BackgroundProfile {
     apparentAge: number;                    // visible age — derived from race ratio
     traumaPresent: boolean;
     traumaSeverity: "NONE" | "MILD" | "MODERATE" | "SEVERE";
+    regionOfOrigin: RegionOfOrigin;                 // ADDED
 }
 
 // ─── SEXUAL EXPERIENCE FLAGS ────────────────────────────────
@@ -35,6 +36,7 @@ export interface SexualActFlags {
     breastFuck: boolean;
     nippleSuck: boolean;
     nipplePull: boolean;
+    breastSwing: boolean;
     // Manual
     fingeringReceived: boolean;
     handjobGiven: boolean;
@@ -53,9 +55,12 @@ export interface SexualActFlags {
     facialReceived: boolean;
     cumSwallowed: boolean;
     creampieReceived: boolean;
+    cumOnBody: boolean;
+    cumOnBreast: boolean;
     // Toys
     toyUsed: boolean;
     vibratorUsed: boolean;
+    restraintsApplied: boolean;
 }
 
 // ─── EXPERIENCE HISTORY ─────────────────────────────────────
@@ -95,6 +100,11 @@ export function createEmptyActFlags(): SexualActFlags {
         cumSwallowed: false,
         creampieReceived: false,
         toyUsed: false,
-        vibratorUsed: false
+        vibratorUsed: false,
+        breastSwing: false,
+        cumOnBody: false,
+        cumOnBreast: false,
+        restraintsApplied: false
     };
 }
+
