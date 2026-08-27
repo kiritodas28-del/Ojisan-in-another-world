@@ -65,6 +65,7 @@ import {
     generateFace, generateHair
 } from "./spawnEngine";
 import { updateBondType, updateBrokenFlag } from "./dynamicState";
+import { rollAttractivenessWithBias } from "./attractivenessPatch";
 
 // ─── FULL CHARACTER INTERFACES ──────────────────────────────
 
@@ -766,7 +767,7 @@ export function spawnFemale(config: PopulationConfig): import("./spawnEngine").F
         config.femaleBodyTypeWeights,
         raceProfile.femaleBodyTypeBias,
         background.apparentAge,
-        heightCm
+        heightTag
     );
 
     // 5. History
@@ -780,6 +781,7 @@ export function spawnFemale(config: PopulationConfig): import("./spawnEngine").F
 
     // 8. Attractiveness — now race + body + age aware
     const ageCategory = getAgeBodyCategory(background.apparentAge);
+
     const attractiveness = rollAttractivenessWithBias(
         config.femaleAttractivenessWeights,
         bodyType,

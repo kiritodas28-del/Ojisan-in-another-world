@@ -337,9 +337,7 @@ export function rollAttractivenessWithBias(
     ageCategory: AgeBodyCategory,
     race: Race
 ): FemaleAttractiveness {
-    const { BODY_TYPE_ATTRACTIVENESS_BIAS, AGE_ATTRACTIVENESS_BIAS } = require("./attractivenessPatch");
-    const combined = { ...baseWeights };
-
+    const combined: Partial<Record<FemaleAttractiveness, number>> = { ...baseWeights };
     // Apply body type bias
     const bodyBias = BODY_TYPE_ATTRACTIVENESS_BIAS[bodyType] ?? {};
     for (const [attr, add] of Object.entries(bodyBias) as [FemaleAttractiveness, number][]) {
@@ -352,12 +350,13 @@ export function rollAttractivenessWithBias(
         combined[attr] = (combined[attr] || 0) + add;
     }
 
-    // Apply race bias — ADDED
+    // Apply race bias
     const raceBias = RACE_ATTRACTIVENESS_BIAS[race] ?? {};
     for (const [attr, add] of Object.entries(raceBias) as [FemaleAttractiveness, number][]) {
         combined[attr] = (combined[attr] || 0) + add;
     }
 
+    // Weighted random
     const entries = Object.entries(combined) as [FemaleAttractiveness, number][];
     const filtered = entries.filter(([, w]) => w > 0);
     const total = filtered.reduce((sum, [, w]) => sum + w, 0);
