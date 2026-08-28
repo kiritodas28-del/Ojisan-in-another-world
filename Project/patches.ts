@@ -8,7 +8,7 @@ import {
     ResistanceProfileType, Kink, StomachSoftness,
     BreastSoftness, AssSoftness, CupSize, AssSize,
     MoodValue, BondType, PregnancyStage, SensitivityLevel,
-    FemaleBodyType, HeightTag, SkinTone
+    FemaleBodyType, HeightTag, SkinTone, RegionOfOrigin, CockType, CockTextureType
 } from "./enums";
 import { WetnessTrack, OrgasmProfile, FemaleSexualPhysiology, SensitivityTrack } from "./sexualPhysiology";
 import { SexualPsychology, ResistanceProfile, CorruptionShameTrack } from "./psychologyCore";
@@ -398,7 +398,6 @@ export function tickAfterglow(
         ...state,
         mental: {
             ...state.mental,
-            afterglowFlag: stillActive,
             currentMood: stillActive ? MoodValue.Afterglow : MoodValue.Dazed
         }
     };
@@ -416,8 +415,6 @@ export function setAfterglowPost(
         ...state,
         mental: {
             ...state.mental,
-            afterglowFlag: true,
-            subspaceFlag: false,
             currentMood: MoodValue.Afterglow
         }
     };
@@ -458,14 +455,14 @@ export function tryAcquireKinkFromAct(
 
 
 
-export function deriveCockTypesFromRace(raceFeatures: { cockTextureOptions: import("./enums").CockTextureType[] }): CockType[] {
+export function deriveCockTypesFromRace(raceFeatures: { cockTextureOptions: CockTextureType[] }): CockType[] {
     const { cockTextureOptions } = raceFeatures;
     const types: CockType[] = [CockType.Straight, CockType.Uniform];
-    if (cockTextureOptions.includes(import("./enums").CockTextureType.Knotted)) types.push(CockType.Knotted);
-    if (cockTextureOptions.includes(import("./enums").CockTextureType.Barbed)) types.push(CockType.Barbed);
-    if (cockTextureOptions.includes(import("./enums").CockTextureType.Ridged)) types.push(CockType.Ridged);
-    if (cockTextureOptions.includes(import("./enums").CockTextureType.Flared)) types.push(CockType.Flared);
-    if (cockTextureOptions.includes(import("./enums").CockTextureType.Tapered)) types.push(CockType.Tapered);
+    if (cockTextureOptions.includes(CockTextureType.Knotted)) types.push(CockType.Knotted);
+    if (cockTextureOptions.includes(CockTextureType.Barbed)) types.push(CockType.Barbed);
+    if (cockTextureOptions.includes(CockTextureType.Ridged)) types.push(CockType.Ridged);
+    if (cockTextureOptions.includes(CockTextureType.Flared)) types.push(CockType.Flared);
+    if (cockTextureOptions.includes(CockTextureType.Tapered)) types.push(CockType.Tapered);
     return types;
 }
 
@@ -596,7 +593,7 @@ export function resolveEncounterTurn(
         ...state,
         mental: {
             ...state.mental,
-            subspaceFlag: subspaceTracker.active,
+            subspaceTracker: subspaceTracker,
             currentMood: subspaceTracker.active ? MoodValue.Subspace : state.mental.currentMood
         }
     };

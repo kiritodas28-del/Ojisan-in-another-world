@@ -6,10 +6,13 @@
 // Petite = heightTag VeryShort or Short
 // NonPetite = everything above
 
-import { FemaleBodyType, HeightTag, CupSize, AssSize, BreastSoftness, AssSoftness, StomachType, StomachSoftness } from "./enums";
-import { AgeAppliedMeasurements, applyAgeMod } from "./ageBodyProfile";
+import {
+    FemaleBodyType, HeightTag, CupSize, AssSize, BreastSoftness, AssSoftness, StomachType, StomachSoftness,
+    AgeBodyCategory, PetiteCategory, PregnancyStage
+} from "./enums";
 import { PREGNANCY_STAGE_OVERRIDES } from "./bodyTypes";
 import { FemaleMeasurements } from "./physicalCore";
+import { FEMALE_BODY_TYPES } from "./bodyTypes";
 
 
 // ─── AGE BODY PROFILE ───────────────────────────────────────
@@ -399,9 +402,6 @@ export const AGE_BODY_MODIFIERS: Record<AgeBodyCategory, Record<PetiteCategory, 
 
 // ─── AGE MODIFIER APPLICATION ───────────────────────────────
 
-import { FemaleMeasurements } from "./physicalCore";
-import { FEMALE_BODY_TYPES } from "./bodyTypes";
-
 function clamp(val: number, min: number, max: number): number {
     return Math.max(min, Math.min(max, val));
 }
@@ -638,33 +638,20 @@ export function selectBodyTypeWithAgeBias(
     return filtered[filtered.length - 1][0];
 }
 
-export function isPetiteByHeightTag(heightTag: import("./enums").HeightTag): boolean {
+export function isPetiteByHeightTag(heightTag: HeightTag): boolean {
     return (
-        heightTag === import("./enums").HeightTag.VeryShort ||
-        heightTag === import("./enums").HeightTag.Short
+        heightTag === HeightTag.VeryShort ||
+        heightTag === HeightTag.Short
     );
     // VeryShort = <150cm female
     // Short = 150-158cm female
     // Consistent with HeightTag definition
 }
 
-function clamp(val: number, min: number, max: number): number {
-    return Math.max(min, Math.min(max, val));
-}
-
-function cupSizeToIndex(cup: import("./enums").CupSize): number {
-    return Object.values(import("./enums").CupSize).indexOf(cup);
-}
-
-function cupSizeFromIndex(index: number): import("./enums").CupSize {
-    const cups = Object.values(import("./enums").CupSize);
-    return cups[clamp(index, 0, cups.length - 1)];
-}
-
 export function applyAgeAndPregnancyInOrder(
     baseMeasurements: FemaleMeasurements,
-    breastSoftness: import("./enums").BreastSoftness,
-    assSoftness: import("./enums").AssSoftness,
+    breastSoftness: BreastSoftness,
+    assSoftness: AssSoftness,
     apparentAge: number,
     pregnancyStage: PregnancyStage
 ): AgeAppliedMeasurements & { finalMeasurements: FemaleMeasurements } {
@@ -682,7 +669,7 @@ export function applyAgeAndPregnancyInOrder(
     const effectiveCupIndex = clamp(
         cupSizeToIndex(ageMeasurements.cupSize) + override.cupSizeAddSteps,
         0,
-        Object.values(import("./enums").CupSize).length - 1
+        Object.values(CupSize).length - 1
     );
 
     const finalMeasurements: FemaleMeasurements = {

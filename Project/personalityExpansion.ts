@@ -4,8 +4,10 @@
 
 import {
     DominantTrait, SexualLean, SexualConfidence,
-    BigFiveLevel, EmotionalStability
+    BigFiveLevel, EmotionalStability, PublicPersona, PrivateSelf, HiddenDesireLean, PersonaGap, DesireAwareness,
+    TriggerSensitivity, Race
 } from "./enums";
+import {weightedRandom} from "./spawnEngine";
 
 
 // ─── EXPANDED PERSONALITY CORE ──────────────────────────────

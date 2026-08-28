@@ -3,7 +3,7 @@
 // ============================================================
 
 import {
-    MoodValue, BondType, PregnancyStage, WetnessLevel, OrgasmType
+    MoodValue, BondType, PregnancyStage, WetnessLevel
 } from "./enums";
 import { SexualActFlags } from "./historyProfile";
 import { PleasureTrack, createPleasureTrack } from "./patches";
@@ -67,22 +67,6 @@ export interface CharacterDynamicState {
     mental: MentalState;
     relationship: RelationshipState;
     body: PregnancyBodyState;
-}
-
-// ─── STATE UTILITIES ────────────────────────────────────────
-
-export function updateSubspaceFlag(state: CharacterDynamicState): CharacterDynamicState {
-    const subspace =
-        state.physical.arousalLevel > 90 &&
-        state.physical.painLevel > 60;
-    return {
-        ...state,
-        mental: {
-            ...state.mental,
-            subspaceFlag: subspace,
-            currentMood: subspace ? MoodValue.Subspace : state.mental.currentMood
-        }
-    };
 }
 
 export function updateBrokenFlag(state: CharacterDynamicState): CharacterDynamicState {

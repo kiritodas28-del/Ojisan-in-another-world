@@ -14,7 +14,7 @@ import {
     MuscleTone, MaleAttractiveness, FemaleAttractiveness,
     CockSize, CockGirth, CumVolume, CumConsistency, CumColor,
     BallSize, RefractoryPeriod, CockTextureType,
-    PregnancyStage
+    PregnancyStage, CockType
 } from "./enums";
 
 // ─── HEIGHT ─────────────────────────────────────────────────

@@ -70,7 +70,7 @@ export interface FemaleBodyTypeDefinition {
 // ─── PREGNANCY STAGE OVERRIDE ───────────────────────────────
 
 export interface PregnancyStageOverride {
-    stage: import("./enums").PregnancyStage;
+    stage: PregnancyStage;
     bustAddCm: number;
     waistAddCm: number;
     hipAddCm: number;
@@ -731,9 +731,9 @@ export const FEMALE_BODY_TYPES: Record<FemaleBodyType, FemaleBodyTypeDefinition>
 // PREGNANCY STAGE OVERRIDES
 // ============================================================
 
-export const PREGNANCY_STAGE_OVERRIDES: Record<import("./enums").PregnancyStage, PregnancyStageOverride> = {
-    [import("./enums").PregnancyStage.NotPregnant]: {
-        stage: import("./enums").PregnancyStage.NotPregnant,
+export const PREGNANCY_STAGE_OVERRIDES: Record<PregnancyStage, PregnancyStageOverride> = {
+    [PregnancyStage.NotPregnant]: {
+        stage: PregnancyStage.NotPregnant,
         bustAddCm: 0, waistAddCm: 0, hipAddCm: 0,
         stomachTypeOverride: StomachType.Flat,
         stomachSoftnessOverride: StomachSoftness.Firm,
@@ -741,8 +741,8 @@ export const PREGNANCY_STAGE_OVERRIDES: Record<import("./enums").PregnancyStage,
         breastSoftnessOverride: BreastSoftness.Firm,
         visibleBump: false, bumpSize: "NONE", lactating: false
     },
-    [import("./enums").PregnancyStage.EarlyFirst]: {
-        stage: import("./enums").PregnancyStage.EarlyFirst,
+    [PregnancyStage.EarlyFirst]: {
+        stage: PregnancyStage.EarlyFirst,
         bustAddCm: 2, waistAddCm: 2, hipAddCm: 1,
         stomachTypeOverride: StomachType.Soft,
         stomachSoftnessOverride: StomachSoftness.Soft,
@@ -750,8 +750,8 @@ export const PREGNANCY_STAGE_OVERRIDES: Record<import("./enums").PregnancyStage,
         breastSoftnessOverride: BreastSoftness.Soft,
         visibleBump: false, bumpSize: "NONE", lactating: false
     },
-    [import("./enums").PregnancyStage.LateFirst]: {
-        stage: import("./enums").PregnancyStage.LateFirst,
+    [PregnancyStage.LateFirst]: {
+        stage: PregnancyStage.LateFirst,
         bustAddCm: 4, waistAddCm: 6, hipAddCm: 2,
         stomachTypeOverride: StomachType.Soft,
         stomachSoftnessOverride: StomachSoftness.Soft,
@@ -759,8 +759,8 @@ export const PREGNANCY_STAGE_OVERRIDES: Record<import("./enums").PregnancyStage,
         breastSoftnessOverride: BreastSoftness.Soft,
         visibleBump: true, bumpSize: "SLIGHT", lactating: false
     },
-    [import("./enums").PregnancyStage.EarlySecond]: {
-        stage: import("./enums").PregnancyStage.EarlySecond,
+    [PregnancyStage.EarlySecond]: {
+        stage: PregnancyStage.EarlySecond,
         bustAddCm: 6, waistAddCm: 12, hipAddCm: 4,
         stomachTypeOverride: StomachType.Rounded,
         stomachSoftnessOverride: StomachSoftness.Soft,
@@ -768,8 +768,8 @@ export const PREGNANCY_STAGE_OVERRIDES: Record<import("./enums").PregnancyStage,
         breastSoftnessOverride: BreastSoftness.Soft,
         visibleBump: true, bumpSize: "SMALL", lactating: false
     },
-    [import("./enums").PregnancyStage.LateSecond]: {
-        stage: import("./enums").PregnancyStage.LateSecond,
+    [PregnancyStage.LateSecond]: {
+        stage: PregnancyStage.LateSecond,
         bustAddCm: 8, waistAddCm: 20, hipAddCm: 6,
         stomachTypeOverride: StomachType.Rounded,
         stomachSoftnessOverride: StomachSoftness.VerySoft,
@@ -777,8 +777,8 @@ export const PREGNANCY_STAGE_OVERRIDES: Record<import("./enums").PregnancyStage,
         breastSoftnessOverride: BreastSoftness.VerySoft,
         visibleBump: true, bumpSize: "MODERATE", lactating: false
     },
-    [import("./enums").PregnancyStage.EarlyThird]: {
-        stage: import("./enums").PregnancyStage.EarlyThird,
+    [PregnancyStage.EarlyThird]: {
+        stage: PregnancyStage.EarlyThird,
         bustAddCm: 10, waistAddCm: 28, hipAddCm: 8,
         stomachTypeOverride: StomachType.Plump,
         stomachSoftnessOverride: StomachSoftness.VerySoft,
@@ -786,8 +786,8 @@ export const PREGNANCY_STAGE_OVERRIDES: Record<import("./enums").PregnancyStage,
         breastSoftnessOverride: BreastSoftness.VerySoft,
         visibleBump: true, bumpSize: "LARGE", lactating: true
     },
-    [import("./enums").PregnancyStage.LateThird]: {
-        stage: import("./enums").PregnancyStage.LateThird,
+    [PregnancyStage.LateThird]: {
+        stage: PregnancyStage.LateThird,
         bustAddCm: 12, waistAddCm: 36, hipAddCm: 10,
         stomachTypeOverride: StomachType.Plump,
         stomachSoftnessOverride: StomachSoftness.Doughy,
@@ -795,8 +795,8 @@ export const PREGNANCY_STAGE_OVERRIDES: Record<import("./enums").PregnancyStage,
         breastSoftnessOverride: BreastSoftness.Pillowy,
         visibleBump: true, bumpSize: "VERY_LARGE", lactating: true
     },
-    [import("./enums").PregnancyStage.FullTerm]: {
-        stage: import("./enums").PregnancyStage.FullTerm,
+    [PregnancyStage.FullTerm]: {
+        stage: PregnancyStage.FullTerm,
         bustAddCm: 14, waistAddCm: 44, hipAddCm: 12,
         stomachTypeOverride: StomachType.Plump,
         stomachSoftnessOverride: StomachSoftness.Doughy,

@@ -25,13 +25,10 @@ import {
     TrustBaseline, LoyaltyLevel, JealousyTendency, AffectionStyle,
     RelationshipHistory, Kink, VoicePitch, VoiceTexture,
     SocialClass, Occupation, MoodValue, BondType,
-    PregnancyStage, HeightTag
+    PregnancyStage, HeightTag, CockType, RegionOfOrigin, SkinTone, HairColor
 } from "./enums";
-import { RACE_PROFILES } from "./raceProfiles";
-import { FEMALE_BODY_TYPES } from "./bodyTypes";
-import { getHeightTag } from "./physicalCore";
-import { selectBodyTypeWithAgeBias, getAgeBodyCategory } from "./ageBodyProfile";
-import { createStaminaFromHistory } from "./patches";
+import { selectBodyTypeWithAgeBias, getAgeBodyCategory, applyAgeAndPregnancyInOrder } from "./ageBodyProfile";
+import {createStaminaFromHistory, deriveCockTypesFromRace} from "./patches";
 
 import { RACE_PROFILES, RaceProfile } from "./raceProfiles";
 import { FEMALE_BODY_TYPES, MALE_BODY_TYPES, PREGNANCY_STAGE_OVERRIDES } from "./bodyTypes";
@@ -40,7 +37,7 @@ import {
     SkinProfile, FaceProfile, HairProfile,
     FemaleMeasurements, FemalePhysicalDetail,
     MaleMeasurements, MalePhysicalDetail,
-    RacePhysicalFeatures, getHeightTag
+    RacePhysicalFeatures, getHeightTag, MaleRacePhysicalFeatures, FemaleRacePhysicalFeatures
 } from "./physicalCore";
 import {
     FemaleSexualPhysiology, MaleSexualPhysiology,
@@ -57,15 +54,9 @@ import {
 import {
     CharacterDynamicState, createInitialDynamicState
 } from "./dynamicState";
-import { PREGNANCY_STAGE_OVERRIDES } from "./bodyTypes";
-import {
-    generateFemaleSexualPhysiology, generatePersonality,
-    generateSexualPsychology, generateHistory,
-    generateVoice, generateSocial, generateSkin,
-    generateFace, generateHair
-} from "./spawnEngine";
 import { updateBondType, updateBrokenFlag } from "./dynamicState";
 import { rollAttractivenessWithBias } from "./attractivenessPatch";
+import {generateExpandedPersonality} from "./personalityExpansion";
 
 // ─── FULL CHARACTER INTERFACES ──────────────────────────────
 
@@ -113,7 +104,7 @@ export type Character = FemaleCharacter | MaleCharacter;
 
 // ─── UTILITY FUNCTIONS ──────────────────────────────────────
 
-function weightedRandom<T extends string>(weights: Record<T, number>): T {
+export function weightedRandom<T extends string>(weights: Record<T, number>): T {
     const entries = Object.entries(weights) as [T, number][];
     const filtered = entries.filter(([, w]) => w > 0);
     const total = filtered.reduce((sum, [, w]) => sum + w, 0);
@@ -202,7 +193,7 @@ function generateSkin(config: PopulationConfig, raceProfile: RaceProfile): SkinP
     }
 
     return {
-        tone: weightedRandom(toneWeights as Record<string, number>) as import("./enums").SkinTone,
+        tone: weightedRandom(toneWeights as Record<string, number>) as SkinTone,
         undertone: randomFrom(Object.values(SkinUndertone)),
         texture: randomFrom(Object.values(SkinTexture)),
         condition: randomFrom(Object.values(SkinCondition)),
@@ -247,7 +238,7 @@ function generateHair(config: PopulationConfig, raceProfile: RaceProfile): HairP
     }
 
     return {
-        color: weightedRandom(hairWeights as Record<string, number>) as import("./enums").HairColor,
+        color: weightedRandom(hairWeights as Record<string, number>) as HairColor,
         style: randomFrom(Object.values(HairStyle)),
         pubicStyle: randomFrom(Object.values(PubicHairStyle)),
         armpitStyle: randomFrom(Object.values(ArmpitHairStyle))
@@ -258,15 +249,15 @@ function generateHair(config: PopulationConfig, raceProfile: RaceProfile): HairP
 
 export function generateRaceFeatures(
     raceProfile: import("./raceProfiles").RaceProfile,
-    gender: import("./enums").Gender
+    gender: Gender
 ): RacePhysicalFeatures {
     const f = raceProfile.features;
 
-    if (gender === import("./enums").Gender.Male) {
+    if (gender === Gender.Male) {
         const cockTextureOptions = f.cockTextureOptions;
         const cockTexture = cockTextureOptions.length > 0
             ? randomFrom(cockTextureOptions)
-            : import("./enums").CockTextureType.Smooth;
+            : CockTextureType.Smooth;
         const cockType = deriveCockTypesFromTexture(cockTexture);
         return {
             wings: f.wings,
@@ -288,8 +279,7 @@ export function generateRaceFeatures(
     } as FemaleRacePhysicalFeatures;
 }
 
-function deriveCockTypesFromTexture(texture: import("./enums").CockTextureType): CockType {
-    const { CockTextureType } = require("./enums");
+function deriveCockTypesFromTexture(texture: CockTextureType): CockType {
     switch (texture) {
         case CockTextureType.Knotted: return CockType.Knotted;
         case CockTextureType.Barbed: return CockType.Barbed;
@@ -318,7 +308,7 @@ function generateBackground(
     traumaRate: number,
     race: Race
 ): BackgroundProfile {
-    const extension = RACE_PROFILE_EXTENSIONS[race];
+    const extension = RACE_PROFILES[race];
     const lifespan = raceProfile.lifespan === 0 ? 10000 : raceProfile.lifespan;
     const minAge = extension.minActualAgeAtSpawn;
     const actualAge = Math.round(randomInRange(minAge, Math.min(lifespan, 500)));
@@ -691,10 +681,15 @@ function generateFemalePhysicalDetail(config: PopulationConfig): FemalePhysicalD
 
 // ─── MALE PHYSICAL DETAIL GENERATOR ─────────────────────────
 
+function isFantasyType(cockType: CockType) {
+    if([CockType.Barbed, CockType.Bifurcated, CockType.Knotted, CockType.Tapered].includes(cockType)) {
+        return true;
+    }
+    return false;
+}
+
 function generateMalePhysicalDetail(
-    config: PopulationConfig,
-    raceFeatures: RacePhysicalFeatures
-): MalePhysicalDetail {
+    config: PopulationConfig, raceFeatures: RacePhysicalFeatures, raceProfile: RaceProfile): MalePhysicalDetail {
     return {
         attractiveness: weightedRandom(config.maleAttractivenessWeights),
         cockSize: weightedRandom(config.cockSizeWeights),
@@ -706,7 +701,7 @@ function generateMalePhysicalDetail(
         ballSize: randomFrom(Object.values(BallSize)),
         refractoryPeriod: randomFrom(Object.values(RefractoryPeriod)),
         cockType: randomFrom(raceProfile.features.cockTextureOptions.length > 0
-            ? deriveCockTypesFromRace(raceProfile)
+            ? deriveCockTypesFromRace(raceProfile.features)
             : Object.values(CockType).filter(t => !isFantasyType(t)))
     };
 }
@@ -740,9 +735,7 @@ function applyPregnancyToMeasurements(
 
 // ─── MAIN SPAWN FUNCTIONS ───────────────────────────────────
 
-export function spawnFemale(config: PopulationConfig): import("./spawnEngine").FemaleCharacter {
-    const { Gender, Race, PregnancyStage } = require("./enums");
-
+export function spawnFemale(config: PopulationConfig): FemaleCharacter {
     // 1. Race
     const race = weightedRandom(config.raceWeights);
     const raceProfile = RACE_PROFILES[race];
@@ -813,7 +806,7 @@ export function spawnFemale(config: PopulationConfig): import("./spawnEngine").F
     const sexualPhysiology = generateFemaleSexualPhysiology(config, history);
 
     // 11. Personality — expanded, race-biased
-    const basePersonality = generateBasePersonality(background);
+    const basePersonality = generatePersonality(background);
     const personality = generateExpandedPersonality(basePersonality, background, history, race);
 
     // 12. Sexual psychology
@@ -877,10 +870,10 @@ export function spawnMale(config: PopulationConfig): MaleCharacter {
     const skin = generateSkin(config, raceProfile);
     const face = generateFace(Gender.Male, raceProfile);
     const hair = generateHair(config, raceProfile);
-    const background = generateBackground(config, raceProfile, config.traumaRate);
+    const background = generateBackground(config, raceProfile, config.traumaRate, race);
     const history = generateHistory(config);
     const measurements = generateMaleMeasurements(config, bodyType);
-    const physicalDetail = generateMalePhysicalDetail(config, raceFeatures);
+    const physicalDetail = generateMalePhysicalDetail(config, raceFeatures, raceProfile);
     const personality = generatePersonality(background);
     const sexualPsychology = generateSexualPsychology(config, background, history);
     const voice = generateVoice();
@@ -938,10 +931,10 @@ function generateHeightNormal(mean: number, stdDev: number): number {
 
 function generateFemaleMeasurementsWithHeight(
     config: PopulationConfig,
-    bodyType: import("./enums").FemaleBodyType,
+    bodyType: FemaleBodyType,
     raceProfile: import("./raceProfiles").RaceProfile,
     heightCm: number,
-    heightTag: import("./enums").HeightTag
+    heightTag: HeightTag
 ): FemaleMeasurements {
     const def = FEMALE_BODY_TYPES[bodyType];
     const clampedHeight = clamp(heightCm, def.heightRange.minCm, def.heightRange.maxCm);
@@ -955,12 +948,12 @@ function generateFemaleMeasurementsWithHeight(
     waistCm = clamp(waistCm, clampedHeight * 0.35, clampedHeight * 0.60);
     hipCm = Math.min(hipCm, clampedHeight * 0.80);
 
-    const cups = Object.values(import("./enums").CupSize);
+    const cups = Object.values(CupSize);
     const minCupIndex = cups.indexOf(def.cupSizeRange[0]);
     const maxCupIndex = cups.indexOf(def.cupSizeRange[1]);
     const cupSize = cups[clamp(Math.round(randomInRange(minCupIndex, maxCupIndex)), 0, cups.length - 1)];
 
-    const assSizes = Object.values(import("./enums").AssSize);
+    const assSizes = Object.values(AssSize);
     const minAssIndex = assSizes.indexOf(def.assSizeRange[0]);
     const maxAssIndex = assSizes.indexOf(def.assSizeRange[1]);
     const assSize = assSizes[clamp(Math.round(randomInRange(minAssIndex, maxAssIndex)), 0, assSizes.length - 1)];
@@ -993,12 +986,12 @@ function generateFemaleMeasurementsWithHeight(
 
 function generateFemalePhysicalDetailWithoutAttractiveness() {
     return {
-        breastShape: randomFrom(Object.values(import("./enums").BreastShape)),
-        breastSoftness: randomFrom(Object.values(import("./enums").BreastSoftness)),
-        nippleType: randomFrom(Object.values(import("./enums").NippleType)),
-        nippleColor: randomFrom(Object.values(import("./enums").NippleColor)),
-        assShape: randomFrom(Object.values(import("./enums").AssShape)),
-        assSoftness: randomFrom(Object.values(import("./enums").AssSoftness)),
-        attractiveness: import("./enums").FemaleAttractiveness.Plain   // placeholder — overwritten
+        breastShape: randomFrom(Object.values(BreastShape)),
+        breastSoftness: randomFrom(Object.values(BreastSoftness)),
+        nippleType: randomFrom(Object.values(NippleType)),
+        nippleColor: randomFrom(Object.values(NippleColor)),
+        assShape: randomFrom(Object.values(AssShape)),
+        assSoftness: randomFrom(Object.values(AssSoftness)),
+        attractiveness: FemaleAttractiveness.Plain   // placeholder — overwritten
     };
 }
