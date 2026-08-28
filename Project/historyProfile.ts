@@ -4,7 +4,7 @@
 
 import {
     SocialClass, Occupation, PregnancyHistory,
-    RelationshipHistory, OrgasmType, Kink
+    RelationshipHistory, OrgasmType, Kink, RegionOfOrigin
 } from "./enums";
 
 // ─── BACKGROUND ─────────────────────────────────────────────
