@@ -1,0 +1,507 @@
+# Ojisan in Another World — Deep Engine & Requirements Analysis
+
+## Executive Summary
+
+The [requirements.md](file:///e:/Anitigravity%20Projects/Ojisan-in-another-world/requirements.md) defines **20 engines** and 7 sections of core architecture. The [Project/](file:///e:/Anitigravity%20Projects/Ojisan-in-another-world/Project) directory contains **14 TypeScript files** that implement a deep **NPC Procedural Generation + Intimacy Encounter** system. This is the **NPC Population & Simulation Engine (§5.9)**, the **Procedural Content Generation Engine (§5.20)**, and significant portions of the **Intimacy Engine (§5.2)** and **Pregnancy Engine (§5.15)**.
+
+**Of the 20 engines described in the requirements, only ~3–4 have any actual code. The remaining 16–17 engines exist only as 2–5 line specifications.** Below is a detailed per-engine audit.
+
+---
+
+## Table of Contents
+
+1. [Engine Status Matrix](#1-engine-status-matrix)
+2. [Per-Engine Deep Analysis](#2-per-engine-deep-analysis)
+3. [Cross-Cutting Code Issues in Existing Files](#3-cross-cutting-code-issues-in-existing-files)
+4. [Recommendations for the Requirements Doc](#4-recommendations-for-the-requirements-doc)
+5. [Engine Orchestration Model](#5-engine-orchestration-model)
+
+---
+
+## 1. Engine Status Matrix
+
+| # | Engine | Status | Has Code? | Missing |
+|---|--------|--------|-----------|---------|
+| 5.1 | Combat | ❌ Spec only | No | Entire implementation; initiative system, damage formulas, AI patterns, party wipe logic |
+| 5.2 | Intimacy | 🟡 Partial | Yes (patches.ts, dynamicState.ts) | Scene state machine, position/action system, response selection; has encounter turn/post resolution |
+| 5.3 | Relationship | ❌ Spec only | No | Trust/Love matrix, move-in system, diminishing returns, daily counters |
+| 5.4 | Reputation | ❌ Spec only | No | Region scoring, decay at day-end, bounty system |
+| 5.5 | Quest | ❌ Spec only | No | Objective types, quest progression, cooldown system |
+| 5.6 | Calendar & Time | ❌ Spec only | No | Phase system, fatigue, sleep, day-end processing |
+| 5.7 | Economy & Inventory | ❌ Spec only | No | Gold, items, bag slots, gifting, overflow |
+| 5.8 | Crafting & Equipment | ❌ Spec only | No | Recipes, pending jobs, upgrade system |
+| 5.9 | NPC Population & Simulation | ✅ Implemented | Yes (spawnEngine.ts + supporting files) | Service NPCs, schedules, 3-day refresh cycle logic |
+| 5.10 | Dialogue | ❌ Spec only | No | Dialogue tree traversal, condition evaluation |
+| 5.11 | Skill & Ability | ❌ Spec only | No | Skill trees, point spending, CPW consumption |
+| 5.12 | Status Effect | ❌ Spec only | No | Duration tracking, stacking, expiry |
+| 5.13 | Achievement | ❌ Spec only | No | Condition evaluation, reward granting |
+| 5.14 | World Movement & Pathing | ❌ Spec only | No | Dijkstra, encounter rolls, fast travel |
+| 5.15 | Pregnancy, Lineage & Offspring | 🟡 Partial | Yes (bodyTypes.ts pregnancy stages) | Gestation tracking, birth logic, offspring stat generation, alignment roll |
+| 5.16 | Manor & Passive Gen | ❌ Spec only | No | Construction timer, suites, passive generation |
+| 5.17 | Save/Load & Migration | ❌ Spec only | No | JSON serialization, versioning, autosave |
+| 5.18 | Purification | ❌ Spec only | No | Enemy arousal system, Miasma Reserve, Astraea bonus |
+| 5.19 | Contact & Profile Read Model | ❌ Spec only | No | Contact list assembly, profile view |
+| 5.20 | Procedural Content Gen | ✅ Implemented | Yes (spawnEngine.ts, raceProfiles.ts, etc.) | Enemy level scaling algorithm |
+
+---
+
+## 2. Per-Engine Deep Analysis
+
+---
+
+### 5.1 Combat Engine
+
+**Purpose:** Resolve turn-based combat encounters.
+
+**What the doc says:**
+- Initiative = `agi + d10`, ties broken by `lck`
+- Damage = `weaponPower × (attackerSTR / 10)`, mitigated by `defenderDEF × 0.5`
+- Critical chance from LCK
+- Enemy AI: Aggressive, Defensive, SupportCaster, BossScripted
+- Party wipe → Last Safe Location recovery
+- Purification: enemy arousal 100 → downed, `defeatMethod: "PURIFIED"`
+- Sexual attacks from enemies based on `monsterSex` + `isHumanoidForm`
+- Miasma Reserve doesn't regen mid-fight
+
+**What's missing from the doc:**
+- No critical hit damage multiplier formula defined (is it 1.5x? 2x?)
+- No LCK → crit chance formula (e.g., `critChance = LCK / 200`?)
+- No miss/dodge formula (does AGI affect evasion?)
+- No formula for `enemyArousal` increase per Sex Skill (parallel to damage formula)
+- AI pattern definitions are just named — no state machine, priority list, or decision algorithm
+- How does `BossScripted` AI work? Phase triggers? HP thresholds?
+- No description of "companion downed state" — is it unconscious? 0 HP? Revivable mid-combat?
+- No turn structure defined (player → allies → enemies, or interleaved by initiative?)
+- Combat end conditions unclear beyond party wipe (all enemies downed? flee option?)
+- No mention of speed/stat buffs from skills or status effects applying mid-combat
+
+> [!IMPORTANT]
+> **Recommendation:** Define the full turn structure, crit formula, dodge/evasion formula, arousal-per-sex-skill formula, companion revival mechanic, and the AI decision tree for each pattern.
+
+---
+
+### 5.2 Intimacy Engine
+
+**Purpose:** Resolve intimate encounter scenes.
+
+**What the doc says:**
+- Scene start reasons: CONSENSUAL, FORCE_INTIMACY, FORCE_INTIMACY_SLEEPING
+- Scene ends only via STAMINA_EXHAUSTED or PLAYER_ENDED
+- `activePositionId` + `activeActionId` track state
+- `occupiedPenetrationTargets` prevents simultaneous cavity use
+- TEC checks, satisfaction scoring, kink triggers, sexual response selection
+
+**What actually exists in code:**
+- [patches.ts](file:///e:/Anitigravity%20Projects/Ojisan-in-another-world/Project/patches.ts) has `resolveEncounterTurn()` and `resolvePostEncounter()` — these are the core encounter loop functions
+- Pleasure tracking (Patch 1), wetness sync (Patch 2), vagina type updates (Patch 3), orgasm acquisition (Patch 5), sexual lean shifts (Patch 6), resistance decay (Patch 7), stamina system (Patch 8), subspace (Patch 9), afterglow (Patch 10), kink acquisition (Patch 11)
+- [dynamicState.ts](file:///e:/Anitigravity%20Projects/Ojisan-in-another-world/Project/dynamicState.ts) has `PhysicalState`, `MentalState`, `RelationshipState`, `PregnancyBodyState`, bond type resolution
+
+**What's missing:**
+- No scene state machine — no `activePositionId`, `activeActionId`, or position/action system
+- No `occupiedPenetrationTargets` tracking
+- No positions or actions defined at all (needs a schema for `IntimacyPosition` and `IntimacyAction`)
+- No TEC check implementation (formula is in §4.5 but no code)
+- No satisfaction score calculation (formula is in §4.6 but no code)
+- No sexual response selection system
+- No scene start/end state machine (CONSENSUAL → ... → STAMINA_EXHAUSTED)
+- The turn resolver exists but has no scene wrapper around it
+
+> [!WARNING]
+> The encounter resolution functions (`resolveEncounterTurn`, `resolvePostEncounter`) are NPC-body-state updaters, not a full intimacy engine. They update physiology, psychology, and dynamic state, but there's no scene flow, no position system, no action catalog, and no player-facing interaction model.
+
+**Recommendation:** Create `intimacyEngine.ts` with:
+- `IntimacyScene` state machine (start → running → ended)
+- Position catalog with penetration target constraints
+- Action catalog with TEC check requirements
+- Satisfaction calculator
+- Scene-level state tracking (activePosition, activeAction, occupiedTargets)
+
+---
+
+### 5.3 Relationship Engine
+
+**What the doc says:**
+- Trust/Love range -100 to +100
+- 4-band matrix lookup (Low, Neutral, High, VeryHigh)
+- Gift: flat +10 Trust / +15 Love, consumes item
+- Flirt/Touch: diminishing returns, 3 per NPC per day
+- Move-in: per-character thresholds or flat 60/60
+
+**What exists:** The `BondType` resolution in [dynamicState.ts](file:///e:/Anitigravity%20Projects/Ojisan-in-another-world/Project/dynamicState.ts#L102-L130) tracks encounter-based bonds, but this is the **intimacy bond system**, not the Trust/Love relationship matrix.
+
+**What's completely missing:**
+- No Trust/Love numeric tracking per NPC
+- No 4-band matrix implementation
+- No diminishing returns or daily counter system
+- No move-in eligibility check
+- No gifting mechanics (only a doc mention)
+- No `narrativeOverride` for Sworn Nemesis
+- The doc says bands are Low/Neutral/High/VeryHigh but never defines the thresholds (what value = "High"?)
+
+> [!IMPORTANT]
+> **Recommendation:** Define the band thresholds explicitly (e.g., Low = -100 to -25, Neutral = -25 to 25, High = 25 to 75, VeryHigh = 75 to 100). The 16-cell grid needs a lookup table mapping (TrustBand, LoveBand) → RelationshipStatus.
+
+---
+
+### 5.4 Reputation Engine
+
+**What's missing from the doc:**
+- Renown thresholds not defined — at what score is someone "renowned"?
+- Bounty payoff formula not specified
+- No description of what positive actions grant reputation vs. what negative actions remove it
+- No list of reputation-triggering events
+
+**Recommendation:** Add reputation event table, bounty formula (e.g., `bounty = abs(score) * 2 gold`), and renown tier thresholds.
+
+---
+
+### 5.5 Quest Engine
+
+**What's missing:**
+- No quest data schema defined
+- No objective completion check algorithm
+- How does "companion quest completion increments questStage by 1" interact with multiple companions having quests simultaneously?
+- Repeatable quest cooldown check: how is `lastCompletedAtGameDate` compared against `cooldownHours`? (Calendar system uses phases, not hours)
+- No reward distribution system
+
+> [!WARNING]
+> The doc references `cooldownHours` but the Calendar Engine (§5.6) works in phases (Morning, Afternoon, Evening, Night, Midnight), not hours. These systems are incompatible unless a phase-to-hours conversion is defined.
+
+---
+
+### 5.6 Calendar & Time Engine
+
+**What's missing:**
+- No formula for what advances the phase (15 actions per phase, but what counts as an "action"?)
+- "Direct-advance events" that trigger phase changes are not listed
+- No passive regen formula for HP — only stamina and CPW mentioned (+20% max)
+- Forced collapse at 5+ days — what happens mechanically? Auto-teleport? Combat disadvantage?
+- Fatigue penalties not quantified (what penalties at 2 days? 3 days? 4 days?)
+
+**Recommendation:** Define fatigue penalty table:
+```
+daysSinceLastSleep | Effect
+1                  | None
+2                  | -10% STR/AGI, -5 max stamina
+3                  | -25% STR/AGI, -15 max stamina, -1 TEC
+4                  | -50% all stats, forced random encounter skip
+5+                 | Forced collapse → Last Safe Location, full HP/Stamina restore
+```
+
+---
+
+### 5.7 Economy & Inventory Engine
+
+**What's missing:**
+- No item schema defined
+- Shop discount system not explained (per-shop? reputation-based? skill-based?)
+- How does bag slot expansion via Manor work? (One-time upgrade? Tiered?)
+- No sell price formula (is it `sellValueGold * discount`?)
+
+---
+
+### 5.8 Crafting & Equipment Upgrade Engine
+
+**What's missing:**
+- No recipe schema
+- Upgrade +0 to +3 — what stat bonuses per tier?
+- "Random (Forge) or guided (Alchemy Lab)" — what does guided mean? Player picks the bonus?
+- `upgradeBonuses` stored in item instance — what's the structure?
+- No failure rate for upgrades
+
+---
+
+### 5.9 NPC Population & Simulation Engine
+
+**What exists:** This is the most complete engine. The [spawnEngine.ts](file:///e:/Anitigravity%20Projects/Ojisan-in-another-world/Project/spawnEngine.ts) + all supporting files implement:
+- Full character generation (race, body type, measurements, physiology, psychology, history, personality, voice, social profile)
+- Race-aware weighted random selection
+- Age-body profile system with petite/non-petite categories
+- Pregnancy stage overlays on body measurements
+- Attractiveness bias by body type, age, and race
+- Population configs (STANDARD, FANTASY_HEAVY)
+- Batch spawn function
+
+**What's missing from the implementation:**
+- No NPC name generation (§5.20 mentions name pools but none exist)
+- No `hasBeenIntroduced` flag or individuation system
+- No Contact List cap (200) enforcement
+- No service NPC fixed roster system
+- No child NPC `familiarity` tracking
+- No `NpcScheduleDef` or schedule system
+- No 3-day population refresh cycle logic
+- No location assignment or population range per location
+
+**What's missing from the doc:**
+- The doc says "gender rolled from `genderWeight` on class" but the code uses a flat `genderRatio` parameter (0.5)
+- No definition of `genderWeight` per NPC class
+
+---
+
+### 5.10 Dialogue Engine
+
+**Completely missing.** Need:
+- Dialogue tree data structure (`DialogueNode`, `DialogueChoice`, `DialogueCondition`)
+- Condition evaluator for all 6 condition types
+- Story flag system
+- Per-class generic dialogue tree structure
+
+---
+
+### 5.11 Skill & Ability Engine
+
+**Completely missing.** Need:
+- Skill tree definition schema
+- AP/BP point pool management
+- Prerequisite checking algorithm
+- CPW consumption and active skill resolution
+- Effect key → engine function mapping
+
+---
+
+### 5.12 Status Effect Engine
+
+**Completely missing.** Need:
+- StatusEffect interface with duration, stacks, max stacks
+- Per-turn tick function
+- Effect application/removal hooks
+- Stack refresh logic
+
+---
+
+### 5.13 Achievement Engine
+
+**Completely missing.** The doc is also very sparse (3 lines). Need:
+- Achievement definition schema
+- Trigger condition types and evaluation system
+- Reward granting (AP/BP/titles)
+- List of actual achievements
+
+---
+
+### 5.14 World Movement & Pathing Engine
+
+**Completely missing.** Need:
+- World map graph structure
+- Dijkstra implementation
+- Encounter chance table by DayPhase
+- Fast travel cost formula
+- `isSafe` location flag and Last Safe Location tracking
+- `RegionMonsterProfile` is referenced but not defined
+
+---
+
+### 5.15 Pregnancy, Lineage & Offspring Engine
+
+**Partially implemented.** [bodyTypes.ts](file:///e:/Anitigravity%20Projects/Ojisan-in-another-world/Project/bodyTypes.ts) has `PREGNANCY_STAGE_OVERRIDES` with full body modification data per trimester. [ageBodyProfile.ts](file:///e:/Anitigravity%20Projects/Ojisan-in-another-world/Project/ageBodyProfile.ts) applies pregnancy on top of age modifications.
+
+**What's missing:**
+- No gestation tracking (12 in-game days → but the PregnancyStage enum has 8 stages including 3 trimesters — mismatch with "12 days" which is very short for 8 stages)
+- No day-end birth tick logic
+- No offspring stat generation from parents
+- No alignment roll (34/33/33)
+- No conception check (when does pregnancy start?)
+- No fertility window interaction (the code has `cycleDay` and `fertile` flag but nothing uses them)
+
+> [!WARNING]
+> The doc says gestation is "12 in-game days" but `PregnancyStage` has 8 distinct stages (NotPregnant, EarlyFirst, LateFirst, EarlySecond, LateSecond, EarlyThird, LateThird, FullTerm). With 12 days of gestation, each stage would last only ~1.7 days — that's very rapid. Additionally, §5.15 says "currentWeek >= 12" for birth, which implies weeks not days. **The doc contradicts itself** — is it 12 days or 12 weeks?
+
+---
+
+### 5.16 Manor & Passive Generation Engine
+
+**Completely missing.** Need: Manor tiers, construction timer, suite assignment, passive resource generation per occupant, collection mechanic.
+
+---
+
+### 5.17 Save/Load & Migration Engine
+
+**Completely missing.** Note: The code uses `Set<T>` extensively (for kinks, orgasm types, etc.) which is **not JSON-serializable**. The save/load engine will need custom serializers for Sets.
+
+> [!CAUTION]
+> `Set<T>` is used in: `SexualPsychology.acquiredKinks`, `OrgasmProfile.acquiredTypes`, `SexualActFlags.orgasmTypesExperienced`, `SexualActFlags.kinksExperienced`. JSON.stringify will serialize these as `{}` (empty object), silently losing all data. **This must be addressed before save/load can work.**
+
+---
+
+### 5.18 Purification Engine
+
+**Completely missing.** The doc mentions this interacts with the Combat Engine (§5.1) but neither exists. Need: enemy arousal tracking per combat, Sex Skill effect on enemy arousal, Miasma Reserve system, purification vs. kill reward differentiation.
+
+---
+
+### 5.19 Contact & Profile Read Model Engine
+
+**Completely missing.** Need: Contact list assembly from companions + individuated NPCs, profile view aggregation, `firstIntimacyCompleted` tracking.
+
+---
+
+### 5.20 Procedural Content Generation Engine
+
+**Partially implemented.** The spawn engine handles appearance and body generation. 
+
+**What's missing:**
+- Name generation (doc says "names rolled from pools" but no name pools exist)
+- The doc itself admits: *"Appearance from rules (algorithm missing)"*
+- Enemy level scaling algorithm not defined or implemented
+
+---
+
+## 3. Cross-Cutting Code Issues in Existing Files
+
+### 3.1 Duplicate Imports
+
+[spawnEngine.ts](file:///e:/Anitigravity%20Projects/Ojisan-in-another-world/Project/spawnEngine.ts) has **duplicate imports** on lines 30 and 36:
+```diff
+- import { RACE_PROFILES } from "./raceProfiles";
+  // ... later ...
+- import { RACE_PROFILES, RaceProfile } from "./raceProfiles";
+```
+Also duplicates: `FEMALE_BODY_TYPES`, `getHeightTag`, `PREGNANCY_STAGE_OVERRIDES`. The file also imports from itself (line 66: `import { ... } from "./spawnEngine"`), which is a circular import.
+
+### 3.2 Duplicate Function Definitions
+
+[ageBodyProfile.ts](file:///e:/Anitigravity%20Projects/Ojisan-in-another-world/Project/ageBodyProfile.ts) defines `clamp`, `cupSizeToIndex`, `cupSizeFromIndex` **twice** (lines 405-420 and lines 651-662). Also has duplicate `FemaleMeasurements` imports (line 12 and line 402).
+
+### 3.3 Syntax Error in dynamicState.ts
+
+[dynamicState.ts](file:///e:/Anitigravity%20Projects/Ojisan-in-another-world/Project/dynamicState.ts#L132-L180) has a double `return {` on lines 133-134:
+```typescript
+export function createInitialDynamicState(): CharacterDynamicState {
+    return {    // ← outer return
+        return { // ← inner return — SYNTAX ERROR
+```
+This function won't compile.
+
+### 3.4 Missing Type: `CockType`
+
+[physicalCore.ts](file:///e:/Anitigravity%20Projects/Ojisan-in-another-world/Project/physicalCore.ts#L133) references `CockType` in `MalePhysicalDetail.cockType` but doesn't import it. `CockType` is defined in [enums.ts](file:///e:/Anitigravity%20Projects/Ojisan-in-another-world/Project/enums.ts#L983) but not in the import block.
+
+### 3.5 Missing Types in personalityExpansion.ts
+
+[personalityExpansion.ts](file:///e:/Anitigravity%20Projects/Ojisan-in-another-world/Project/personalityExpansion.ts#L42) uses `Race`, `PublicPersona`, `PrivateSelf`, `HiddenDesireLean`, `PersonaGap`, `DesireAwareness`, `TriggerSensitivity`, and `weightedRandom` without importing them. The enums are in `./enums` but the import block on line 5-8 doesn't include them. `weightedRandom` is defined in `spawnEngine.ts` but not exported.
+
+### 3.6 `Set<T>` Usage is Not JSON-Safe
+
+As noted above, multiple interfaces use `Set<T>` which breaks JSON serialization. This needs either:
+- Custom Zod transformers (Set ↔ Array)
+- Or replacing Sets with arrays everywhere
+
+### 3.7 `require()` Mixed with ES Imports
+
+[spawnEngine.ts](file:///e:/Anitigravity%20Projects/Ojisan-in-another-world/Project/spawnEngine.ts#L292) uses `const { CockTextureType } = require("./enums")` inside a function, while the file uses ES `import` everywhere else. This is inconsistent and will break in strict ESM environments.
+
+### 3.8 Missing `RACE_PROFILE_EXTENSIONS` and `RegionOfOrigin` Import
+
+[spawnEngine.ts](file:///e:/Anitigravity%20Projects/Ojisan-in-another-world/Project/spawnEngine.ts#L321) references `RACE_PROFILE_EXTENSIONS` which doesn't exist in any file. It also references `RegionOfOrigin` on line 330 without importing it as a type for the local variable.
+
+### 3.9 Inconsistent `generateBackground` Signatures
+
+On line 880, `spawnMale` calls `generateBackground(config, raceProfile, config.traumaRate)` with 3 args, but the function signature on line 316 takes 4 args (config, raceProfile, traumaRate, **race**).
+
+### 3.10 `raceProfile` Used in Wrong Scope
+
+[spawnEngine.ts](file:///e:/Anitigravity%20Projects/Ojisan-in-another-world/Project/spawnEngine.ts#L708-L710) `generateMalePhysicalDetail` references `raceProfile` on line 708, but `raceProfile` is not a parameter of that function — it's only available in the calling scope.
+
+---
+
+## 4. Recommendations for the Requirements Doc
+
+### 4.1 Sections That Need Formulas
+
+| Section | Missing Formula |
+|---------|----------------|
+| §5.1 Combat | Crit chance from LCK, dodge from AGI, arousal-per-Sex-Skill |
+| §5.1 Combat | AI decision algorithm for each of 4 patterns |
+| §5.4 Reputation | Bounty payoff formula, renown tier thresholds |
+| §5.5 Quest | Cooldown calculation (phases vs hours mismatch) |
+| §5.6 Calendar | Fatigue penalty table, action counting rules |
+| §5.7 Economy | Shop discount calculation, sell price formula |
+| §5.8 Crafting | Upgrade stat bonus per tier, failure rate |
+| §5.14 Pathing | Encounter chance table by DayPhase, fast travel cost formula |
+| §5.15 Pregnancy | Gestation duration (days vs weeks — contradicts), conception probability |
+
+### 4.2 Sections That Need Data Schemas
+
+| Section | Missing Schema |
+|---------|---------------|
+| §4.1 | `CharacterVitals` interface (HP, Arousal, Stamina, CPW with actual types) |
+| §4.2 | Stat progression formula + role multiplier table |
+| §5.1 | `CombatEncounter`, `CombatTurn`, `EnemyAIPattern` |
+| §5.2 | `IntimacyPosition`, `IntimacyAction`, `IntimacyScene` |
+| §5.5 | `QuestDef`, `ObjectiveDef`, `QuestReward` |
+| §5.7 | `ItemDef`, `ShopInventory`, `PlayerInventory` |
+| §5.10 | `DialogueNode`, `DialogueChoice`, `DialogueCondition` |
+| §5.11 | `SkillDef`, `SkillTree`, `SkillEffect` |
+| §5.12 | `StatusEffectDef`, `ActiveStatusEffect` |
+| §5.14 | `WorldNode`, `WorldEdge`, `RegionMonsterProfile` |
+| §5.16 | `ManorTier`, `SuiteDef`, `ManorState` |
+
+### 4.3 Doc Structure Issues
+
+1. **§2 Repository Structure** says *"suggest something"* — this needs to be filled in
+2. **§6 Save/Load** and **§7 Calendar System** are redundant with §5.17 and §5.6 — they just say "as described above" — merge or remove
+3. **§4.2 Combat Stat Progression** references "§4.2 of earlier requirements" — this external reference should be inlined
+4. **§4.6 Satisfaction Score** formula has `clamp(...)` with no bounds specified
+
+---
+
+## 5. Engine Orchestration Model
+
+The doc says *"Each engine is a pure module"* and *"The server remains the sole authority"* but never describes **how the engines interact or what calls them**. This is critical.
+
+### Proposed Orchestration Architecture
+
+```mermaid
+graph TD
+    CLIENT["Client (React + Zustand)"] -->|"Sends Intent"| SERVER["Server (tRPC)"]
+    SERVER -->|"Dispatches to"| DISPATCHER["Engine Dispatcher"]
+    
+    DISPATCHER --> COMBAT["Combat Engine"]
+    DISPATCHER --> INTIMACY["Intimacy Engine"]
+    DISPATCHER --> DIALOGUE["Dialogue Engine"]
+    DISPATCHER --> MOVEMENT["Movement Engine"]
+    DISPATCHER --> ECONOMY["Economy Engine"]
+    DISPATCHER --> QUEST["Quest Engine"]
+    
+    COMBAT -->|"on defeat"| REPUTATION["Reputation Engine"]
+    COMBAT -->|"on purification"| PURIFICATION["Purification Engine"]
+    INTIMACY -->|"on scene end"| RELATIONSHIP["Relationship Engine"]
+    INTIMACY -->|"on conception"| PREGNANCY["Pregnancy Engine"]
+    MOVEMENT -->|"on encounter"| COMBAT
+    
+    CALENDAR["Calendar Engine"] -->|"day-end tick"| REPUTATION
+    CALENDAR -->|"day-end tick"| PREGNANCY
+    CALENDAR -->|"day-end tick"| MANOR["Manor Engine"]
+    CALENDAR -->|"day-end tick"| NPC_POP["NPC Population Engine"]
+    CALENDAR -->|"phase advance"| STATUS["Status Effect Engine"]
+    
+    SAVE["Save/Load Engine"] -.->|"serializes"| GAME_STATE["GameState"]
+    GAME_STATE -.->|"read by all"| DISPATCHER
+```
+
+### Missing from the doc:
+
+1. **No `GameState` root interface** — What is the shape of the total game state that all engines read/write?
+2. **No intent catalog** — What intents can the client send? (MOVE, TALK, FIGHT, USE_ITEM, etc.)
+3. **No engine execution order** — When multiple engines need to run in sequence (e.g., movement → encounter → combat), what's the pipeline?
+4. **No event system** — How does one engine signal another? (combat end → reputation update → quest objective check)
+5. **No day-end tick orchestration** — The doc mentions multiple things happening at day-end (reputation decay, births, population refresh, crafting jobs, construction timers) but doesn't define the execution order
+
+> [!IMPORTANT]
+> **Recommendation:** Add a **§5.0 Engine Orchestration** section that defines:
+> - The `GameState` root interface
+> - The intent → engine routing table
+> - The day-end tick sequence
+> - The event bus or callback system for inter-engine communication
+
+---
+
+## Summary of Immediate Next Steps
+
+1. **Fix the 10 code bugs** identified in Section 3 (syntax errors, duplicate imports, circular imports, missing types)
+2. **Resolve the pregnancy duration contradiction** (12 days vs 12 weeks) in the doc
+3. **Define the `GameState` root interface** — this is the backbone everything else connects to
+4. **Fill in §2 Repository Structure** — the doc literally says "suggest something"
+5. **Add formulas** for all the entries in §4.1 above
+6. **Define data schemas** for the entries in §4.2 above
+7. **Build the engine dispatcher** before implementing individual engines, so every engine plugs into a consistent architecture

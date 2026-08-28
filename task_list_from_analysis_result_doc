@@ -1,0 +1,41 @@
+# Ojisan — Execution Task List
+
+## Phase 1: Fix Code Bugs (Existing Files)
+
+- [ ] **1.1** Fix `createInitialDynamicState()` double-return syntax error in `dynamicState.ts`
+- [ ] **1.2** Fix duplicate imports in `spawnEngine.ts` (RACE_PROFILES, FEMALE_BODY_TYPES, getHeightTag, PREGNANCY_STAGE_OVERRIDES, circular self-import)
+- [ ] **1.3** Fix duplicate function definitions in `ageBodyProfile.ts` (clamp, cupSizeToIndex, cupSizeFromIndex, duplicate FemaleMeasurements import)
+- [ ] **1.4** Add missing `CockType` import to `physicalCore.ts`
+- [ ] **1.5** Add missing imports to `personalityExpansion.ts` (Race, PublicPersona, PrivateSelf, HiddenDesireLean, PersonaGap, DesireAwareness, TriggerSensitivity, weightedRandom)
+- [ ] **1.6** Fix `require()` mixed with ES imports in `spawnEngine.ts` (deriveCockTypesFromTexture)
+- [ ] **1.7** Fix missing `RACE_PROFILE_EXTENSIONS` reference in `spawnEngine.ts`
+- [ ] **1.8** Fix `generateBackground` signature mismatch (3 args vs 4 args) in `spawnEngine.ts`
+- [ ] **1.9** Fix `raceProfile` used out of scope in `generateMalePhysicalDetail` in `spawnEngine.ts`
+- [ ] **1.10** Fix `createEmptyRelationshipActFlags` being local but `createEmptyActFlagsV2` called instead in `dynamicState.ts`
+
+## Phase 2: Requirements Doc Fixes
+
+- [ ] **2.1** Resolve pregnancy duration contradiction (12 days vs 12 weeks)
+- [ ] **2.2** Fill in §2 Repository Structure
+- [ ] **2.3** Fix §4.6 Satisfaction clamp bounds
+- [ ] **2.4** Inline §4.2 reference to "earlier requirements"
+- [ ] **2.5** Remove/merge redundant §6 and §7 sections
+- [ ] **2.6** Fix cooldownHours vs phases mismatch in §5.5
+
+## Phase 3: Add Missing Formulas to Requirements
+
+- [ ] **3.1** Combat: crit chance, dodge, arousal-per-Sex-Skill formulas
+- [ ] **3.2** Combat: AI decision algorithm outline for each pattern
+- [ ] **3.3** Reputation: bounty formula, renown tiers
+- [ ] **3.4** Calendar: fatigue penalty table
+- [ ] **3.5** Economy: shop discount, sell price formulas
+- [ ] **3.6** Crafting: upgrade bonus per tier
+- [ ] **3.7** Pathing: encounter chance table, fast travel cost
+- [ ] **3.8** Pregnancy: conception probability, gestation stages-to-time mapping
+
+## Phase 4: Add Missing Schemas / Engine Orchestration
+
+- [ ] **4.1** Define `GameState` root interface
+- [ ] **4.2** Add §5.0 Engine Orchestration section
+- [ ] **4.3** Define intent catalog
+- [ ] **4.4** Define day-end tick sequence
