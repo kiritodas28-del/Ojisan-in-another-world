@@ -122,7 +122,7 @@ The game is designed for adult audiences and features consensual and non-consens
 - Gender and appearance generated from class rules.
 - First conversation individuates NPC: assigns name, adds to contact list (cap 400).
 - Service NPCs (vendors, innkeepers, quest boards, etc.) are fixed and always present.
-- Child NPCs have simplified interaction and schedules.
+- Some protected NPCs have simplified interaction and schedules.
 - NPCs follow daily schedules (e.g., home, work, tavern).
 
 ### 4.11 Dialogue System
@@ -217,7 +217,7 @@ The game is designed for adult audiences and features consensual and non-consens
 6. Generic NPC introduction occurs only once.
 7. Penetration conflict prevents simultaneous same-cavity actions.
 8. Quest log displays active, available, and completed quests accurately.
-9. Intimacy eligibility checks reject protected/child NPCs.
+9. Intimacy eligibility checks reject protected NPCs.
 10. Loot vs strip-and-loot produce different results.
 11. Sleeping NPC non-con gating works as intended.
 12. Satisfaction formula and penalties (stamina exhaustion) are correctly applied.
