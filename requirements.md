@@ -1,343 +1,229 @@
-```markdown
-# Ojisan in Another World — Implementation Requirements/Design Document
+# Ojisan in Another World — Product Requirements Document (PRD)
+
+**Version:** 1.0  
+**Date:** 2026-08-28  
+**Status:** Draft for review
 
 ---
 
-## 1. Platform & Architecture
+## 1. Overview
 
-- **Framework:** Next.js (App Router) + TypeScript
-- **API:** tRPC for end-to-end type safety
-- **Persistence:** Flat JSON files on disk, Zod-validated
-- **State authority:** Server is sole source of truth. Client sends intents, receives new state + rendered narrative.
-- **Frontend:** React + TailwindCSS + Zustand (UI-only state)
+**Ojisan in Another World** is a turn-based erotic RPG that blends tactical combat, relationship building, intimate encounters, and kingdom management. The player controls Kenji Mori, a middle-aged man transported to a fantasy world, as he explores, fights corruption, forms bonds with companions(special named preset NPCs) and NPCs, and ultimately purifies the land.
+
+The game is designed for adult audiences and features consensual and non-consensual sexual content (togglable), deep character progression, and a branching narrative influenced by player choices.
 
 ---
 
-## 2. Repository Structure
+## 2. Platform & High-Level Architecture
 
-```
-suggest some thing
-```
-
----
-
-## 3. Content Format
-
-All static content is authored as TypeScript filesThis provides compile-time validation. Save files remain JSON, validated with Zod.
+- **Platform:** Web (desktop and mobile responsive)
+- **Frontend:** React-based SPA with modern UI/UX
+- **Backend:** Server-authoritative game logic exposed via type-safe APIs
+- **Persistence:** Local save files stored on disk, with automatic backup and versioning
+- **Architecture principles:** Client sends player intents; server processes them and returns updated game state and narrative. All game rules are deterministic and testable.
 
 ---
 
-## 4. Core Data Architecture
+## 3. Core Gameplay Loop
 
-### 4.1 Unified Character State
-
-All actors should share a common parent interface:
-
-- `CharacterVitals` holds current HP, Arousal, Stamina, optional Crest Power.
-- `CombatAttributes` holds permanent STR, AGI, WIS, DEF, LCK.
-- `EroticAttributes` holds permanent SEN, TEC, VIR (player only).
-
-Player, companions, NPCs, and enemies extend this base.
-
-### 4.2 Combat Stat Progression
-
-`CombatAttributes` scale with Level using role multipliers. Player uses fixed vector. Formula defined in §4.2 of earlier requirements.
-
-### 4.3 Trust/Love Matrix
-
-Both Trust and Love use four bands: Low, Neutral, High, VeryHigh. 16-cell grid, direct lookup. `SwornNemesis` only via narrative override.
-
-### 4.4 Reputation Scale
-
-Single signed `reputationScore` per region: -800 to +800. Renown/Infamy derived.
-
-### 4.5 TEC Checks
-
-Success chance = clamp(0.4 + TEC/125, 0.1, 0.95). Only for technique-sensitive actions.
-
-### 4.6 Satisfaction Score
-
-```
-arousalComponent = 40 × (partnerFinalArousal / 100)
-techComponent    = 30 × (tecChecksPassed / max(1, tecChecksAttempted))
-kinkBonus        = kinkTriggered ? 15 : 0
-sincereBonus     = sincereDialogueUsed ? 15 : 0
-satisfaction     = clamp(...)
-
-If sceneEndReason === "STAMINA_EXHAUSTED" && partnerFinalArousal < 100:
-  satisfaction = min(satisfaction, 40)
-```
+1. **Explore** the world via a node-based map, moving between locations and triggering encounters.
+2. **Combat** turn-based battles against monsters and humanoid enemies; win through damage or purification.
+3. **Interact** with NPCs and companions(special named preset NPCs) through dialogue, gifts, flirting, touch, and intimate scenes.
+4. **Progress** through main story acts/chapters and side quests; improve Kenji’s skills and equipment.
+5. **Manage** time and resources: day/night cycle, fatigue, manor upgrades, passive generation.
+6. **Grow** relationships with companions(special named preset NPCs) and generic NPCs; unlock new scenes, move-in options, and offspring.
 
 ---
 
-## 5. Engines
+## 4. Feature Catalog
+
+### 4.1 Character Progression
+
+- Kenji and all companions(special named preset NPCs) have combat attributes (STR, AGI, WIS, DEF, LCK) and erotic attributes (Sensitivity, Technique, Virility for player only).
+- Leveling increases combat stats according to class/role multipliers.
+- Player can invest points into two skill trees: **Battle** (combat) and **Ardor** (intimacy).
+- Passive skills are always active; active skills consume Crest Power (CPW).
+
+### 4.2 Combat System
+
+- Turn-based encounters with initiative determined by agility and luck.
+- Enemies have AI patterns: aggressive, defensive, support caster, and boss scripted.
+- Damage calculation uses weapon power, attacker strength, and defender defense.
+- Critical hits based on luck.
+- companions(special named preset NPCs) can be downed; party wipe leads to recovery at last safe location.
+- **Purification**: alternative victory by raising enemy arousal to 100.
+- Enemy sexual attacks (if enabled) target based on monster sex and form.
+- Miasma Reserve limits enemy special attacks; it does not regenerate mid-fight.
+- Defeat outcomes for humanoid enemies include loot, strip-and-loot, interrogation, and more.
 
-Each engine is a pure module in `packages/game-engine`. The server remains the sole authority for state changes. Clients send intents, and the relevant engine resolves the intent against the current `GameState`.
+### 4.3 Intimacy System
+
+- Full intimate encounter scenes with turn-by-turn interaction.
+- Scene start types: consensual, forced, or forced on sleeping target.
+- Multiple positions and actions; simultaneous actions allowed with body-part conflict checks.
+- Technique checks influence success of sensitive actions.
+- **Partner state simulation**: resistance, mental state, and mood evolve during scenes based on actions and relationship context.
+- **Satisfaction score** after each scene affects relationship gains and partner reactions.
+- **Kink progression**: repeated actions can trigger partner kinks, adding bonuses.
+- **Dynamic narrative responses**: generated from context (action, position, arousal, climax, mood, forced flag) using a large fragment repository.
+
+### 4.4 Relationships & Trust/Love
+
+- Trust, attachment, submission and other mental, physical, body and relationship states.
+- Relationship status determined by a 4-band matrix (Low, Neutral, High, VeryHigh).
+- Gift giving, flirting, touching, and dialogue choices modify Trust/Love.
+- Flirt and Touch have daily diminishing returns (max 3 per character per day).
+- Move-in eligibility: companions(special named preset NPCs) require specific Trust/Love/quest stage; generic NPCs require flat 60/60.
+- Special narrative overrides (e.g., Sworn Nemesis) possible.
 
-### 5.1 Combat Engine
+### 4.5 Reputation System
 
-**Purpose:** Resolve turn-based combat encounters.
+- Each region has a reputation score from -800 (infamous) to +800 (renowned).
+- Negative reputation decays toward zero daily; positive reputation does not decay.
+- Bounty payoffs computed from current score at Bounty Offices.
 
-**Mechanics:**
-- Initiative: `agi + d10`, ties by `lck`
-- Turn order computed once per encounter
-- Damage formula: base damage = weaponPower × (attackerSTR / 10), mitigated by defenderDEF × 0.5, critical chance based on LCK
-- Enemy AI patterns: Aggressive, Defensive, SupportCaster, BossScripted
-- Companion downed state; party wipe triggers Last Safe Location recovery
-- Purification: enemy `arousal` reaching 100 sets `downed`, `defeatMethod: "PURIFIED"`
-- Sexual attacks from enemies follow targeting rules based on `monsterSex` and `isHumanoidForm`
-- Miasma Reserve is enemy-only, does not regenerate mid-fight
+### 4.6 Quests & Story
 
+- Main quest organized into Acts and Chapters with cutscenes.
+- Side quests: companion(special named preset NPCs) quests , repeatable board quests.
+- Objectives types: kill, collect, talk, interact, escort, travel.
+- companion(special named preset NPCs) quest completion advances their personal stage and grants Trust/Love bonuses.
+- Repeatable quests have cooldowns.
+- Cutscene system for story moments with player choices that affect flags and relationships.
 
+### 4.7 Time & Day Cycle
 
-### 5.2 Intimacy Engine
+- Five phases: Morning, Afternoon, Evening, Night, Midnight.
+- Player actions consume phase time; after 15 actions, phase advances.
+- Day-end processing at Midnight: reputation decay, pregnancy progression, NPC refresh, crafting/construction resolution, date increment.
+- Sleep only at Night/Midnight in safe locations; restores HP/Stamina/CPW and resets fatigue.
+- Fatigue penalties increase with days without sleep; forced collapse after 5 days.
+- Passive stamina/CPW recovery on phase advance (except before sleep).
 
-**Purpose:** Resolve intimate encounter scenes.
+### 4.8 Economy & Inventory
 
-**Mechanics:**
-- Scene start reasons: `CONSENSUAL`, `FORCE_INTIMACY`, `FORCE_INTIMACY_SLEEPING`
-- Scene ends only via `STAMINA_EXHAUSTED` or `PLAYER_ENDED`
-- `activePositionId` and `activeActionId` track current state
-- `occupiedPenetrationTargets` prevents simultaneous actions targeting the same cavity (vagina, anus, mouth)
-- TEC checks on technique-sensitive actions
-- Satisfaction per §4.6
-- Kink progression and triggers
-- Sexual response selection based on `actionCategory`, `positionId`, `arousalState`, `ledBy`
+- Gold as primary currency; items can be bought, sold, gifted, looted.
+- Inventory slots limited (20 base, expandable via manor).
+- Stackable items with max stack sizes.
+- Quest items do not occupy inventory slots.
+- Overflow handling: manual pickup rejected; combat loot auto-converted to gold.
 
+### 4.9 Crafting & Equipment Upgrades
 
+- Crafting unlocks with Artisan's Insight skill and Manor tier 2+.
+- Combine raw materials to create composite items.
+- Timed crafting jobs resolved at day-end.
+- Equipment can be upgraded from +0 to +3.
+- Random upgrades at Forge; guided upgrades at Alchemy Lab (tier 4+).
 
-### 5.3 Relationship Engine
+### 4.10 NPC Population & Simulation
 
-**Purpose:** Manage Trust/Love values, relationship status matrix, and move-in eligibility.
+- Procedural NPCs spawn per location, refreshed every 3 days.
+- Gender and appearance generated from class rules.
+- First conversation individuates NPC: assigns name, adds to contact list (cap 400).
+- Service NPCs (vendors, innkeepers, quest boards, etc.) are fixed and always present.
+- Child NPCs have simplified interaction and schedules.
+- NPCs follow daily schedules (e.g., home, work, tavern).
 
-**Mechanics:**
-- Trust and Love range -100 to 100
-- Relationship status via 4-band matrix (Low, Neutral, High, VeryHigh)
-- `narrativeOverride` for scripted states like Sworn Nemesis
-- Gift: flat +10 Trust / +15 Love, consumes item
-- Flirt/Touch have diminishing returns; daily usage counters on actor (3 per NPC per day)
-- Move-in requirements: companions have per-character thresholds; generic NPCs use flat 60/60
+### 4.11 Dialogue System
 
+- Branching dialogue trees with conditions (Trust, Love, quest stage, story flags, first talk).
+- Generic NPCs share class-level dialogue with introduction node.
+- Dialogue choices can set story flags and affect relationships.
+- Sexual responses generated dynamically from repository fragments.
 
+### 4.12 Skills & Abilities
 
-### 5.4 Reputation Engine
+- Two skill trees: Battle (combat) and Ardor (intimacy).
+- Nodes require prerequisites and points (BP/AP).
+- Active skills cost Crest Power (CPW).
+- Passive skills always active once purchased.
+- Skill effects include damage boosts, heals, status effects, and special intimacy enhancements.
 
-**Purpose:** Manage regional reputation score and decay.
+### 4.13 Status Effects
 
-**Mechanics:**
-- Single signed score per region (-800 to +800)
-- Decay at day-end: negative moves toward zero by min(15, abs(score))
-- Bounty payoff computed live from score at `BountyOffice`
-- Positive Renown does not decay
+- Temporary combat and sexual status effects (buffs/debuffs).
+- Duration ticks down per turn.
+- Stacking refreshes duration and increases stacks up to max.
 
+### 4.14 Achievements
 
+- Unlockable achievements with bronze/silver/gold/platinum tiers.
+- Trigger conditions evaluated after key actions.
+- Grant AP/BP and titles.
 
-### 5.5 Quest Engine
+### 4.15 World Map & Travel
 
-**Purpose:** Manage quest progression, objectives, and rewards.
+- Node-based map with 81 locations connected by 92 edges.
+- Standard travel uses shortest path; each segment rolls encounter chance based on time of day.
+- Fast travel available to discovered locations, cost based on region crossings.
+- Last safe location updated when entering safe zones.
 
-**Mechanics:**
-- Objectives are structured: Kill, Collect, Talk, Interact, Escort, Travel
-- Companion quest completion increments `questStage` by 1
-- Main quest uses Act/Chapter spine
-- Repeatable quests have cooldowns based on `cooldownHours` and `lastCompletedAtGameDate`
+### 4.16 Pregnancy & Offspring
 
+- Pregnancy lasts 12 in-game days.
+- Birth happens at day-end when currentWeek >= 12.
+- Offspring stats snapshot from parents' combat attributes at birth.
+- Offspring alignment randomly assigned (heroic/troubled/criminal).
+- Offspring may become interactable NPCs in future updates.
 
+### 4.17 Manor & Base Building
 
-### 5.6 Calendar & Time Engine
+- Manor has 4 tiers, each unlocking new features (storage, suites, crafting, guided upgrades).
+- Construction timers decrement at day-end.
+- Suites can be assigned to moved-in companions/NPCs.
+- Occupants generate passive resources (items or gold) at intervals, collected manually.
 
-**Purpose:** Manage day phases, sleep, fatigue, and day-end processing.
+### 4.18 Save/Load & Autosave
 
-**Mechanics:**
-- Five phases: Morning, Afternoon, Evening, Night, Midnight
-- Actions increment `actionsTakenThisPhase`; at 15 or direct-advance events, phase changes
-- Midnight end triggers day-end: reputation decay, births, population refresh, date increment
-- Sleep only at Night/Midnight in residence/inn; skips to Morning, resets fatigue, restores full HP/Stamina/CPW
-- Fatigue system: penalties based on `daysSinceLastSleep`; forced collapse at 5+ days
-- Passive regen on non-Sleep phase advance: +20% max stamina/CPW
+- Manual save slots with versioned JSON files.
+- Autosave occurs every night at Midnight.
+- New Game+ requires explicit confirmation.
+- Save files validate against current schema; migration functions for older versions.
 
+### 4.19 Contact List & Profiles
 
+- Contact list combines companions(special named preset NPCs) and individuated NPCs (max 200).
+- Profile view shows name, portrait, race, appearance, Trust/Love, relationship status, stats, kink progress, and current location.
+- Virginity, pregnancy, and lactation status displayed.
+- Contact list sorted by companion(special named preset NPCs) quest stage and relationship magnitude.
 
-### 5.7 Economy & Inventory Engine
+### 4.20 Procedural Content Generation
 
-**Purpose:** Manage gold, items, inventory, gifting, and shop transactions.
-
-**Mechanics:**
-- Buy/sell using `sellValueGold` and shop discount
-- Bag slots max 20 base, expandable via Manor
-- Stacking rules based on `stackable` and `maxStack`
-- Quest items excluded from bag limit
-- Overflow handling for manual pickup (reject) vs combat loot (auto-convert to gold)
-- Gifting consumes item and applies flat Trust/Love bonus
-
-
-
-### 5.8 Crafting & Equipment Upgrade Engine
-
-**Purpose:** Create new items from recipes; upgrade equipment.
-
-**Mechanics:**
-- Requires Artisan's Insight skill and Manor tier 2+
-- Crafting consumes Raw materials, produces Composite items
-- Craft time >0 creates pending job in `ManorState.pendingCraftingJobs`, resolved at day-end
-- Equipment upgrades +0 to +3, random (Forge) or guided (Alchemy Lab, tier 4+)
-- Upgrades stored in item instance `upgradeBonuses`
-
-
-
-### 5.9 NPC Population & Simulation Engine
-
-**Purpose:** Spawn and manage procedural NPCs, service NPCs, and child NPCs.
-
-**Mechanics:**
-- Standard interactable NPCs spawned per location population range, refreshed every 3 game-days
-- Gender rolled from `genderWeight` on class
-- Individuation: first Talk sets `hasBeenIntroduced`, assigns name, adds to Contact List if under cap 200
-- Service NPCs are fixed roster, not randomized
-- Child NPCs have only `familiarity`
-- Schedules per class via `NpcScheduleDef`
-
-
-
-### 5.10 Dialogue Engine
-
-**Purpose:** Traverse dialogue trees, evaluate conditions, and select responses.
-
-**Mechanics:**
-- Conditions: TRUST_AT_LEAST, LOVE_AT_LEAST, QUEST_STAGE_AT_LEAST, STORY_FLAG_SET, STORY_FLAG_UNSET, FIRST_TALK
-- Generic NPCs share class-level trees; introduction node used once
-- Sets story flags and advances dialogue
-
-
-
-### 5.11 Skill & Ability Engine
-
-**Purpose:** Manage skill trees, point spending, and effect resolution.
-
-**Mechanics:**
-- Two trees: Ardor (AP) and Battle (BP)
-- Purchase checks prerequisites and point balance
-- Active skills use CPW; passives always active
-- Effect keys mapped to engine functions
-
-
-
-### 5.12 Status Effect Engine
-
-**Purpose:** Apply, track, and expire status effects.
-
-**Mechanics:**
-- Duration ticks down per turn
-- Stacking refreshes duration, increments stacks up to max
-- Fatigue not stored as status; separate system
-
-
-
-### 5.13 Achievement Engine
-
-**Purpose:** Evaluate achievement conditions and grant rewards.
-
-**Mechanics:**
-- Trigger conditions as string keys, evaluated post-action
-- Grants AP/BP and titles
-
-
-
-### 5.14 World Movement & Pathing Engine
-
-**Purpose:** Handle map traversal, fast travel, and encounter rolls.
-
-**Schema interactions:**
-- `RegionMonsterProfile`
-
-**Mechanics:**
-- Shortest path via Dijkstra
-- Each travel segment rolls encounter chance based on DayPhase
-- Fast travel cost based on region crossings
-- Last safe location updates only on `isSafe` locations
-
-
-
-### 5.15 Pregnancy, Lineage & Offspring Engine
-
-**Purpose:** Track pregnancies, generate offspring.
-
-**Mechanics:**
-- Gestation 12 in-game days
-- Birth at day-end tick for `currentWeek >= 12`
-- Offspring stats snapshot from parents' current `CombatAttributes`
-- Alignment roll flat 34/33/33 heroic/troubled/criminal
-
-
-
-### 5.16 Manor & Passive Generation Engine
-
-**Purpose:** Manage Manor tiers, construction, suites, and passive resource generation.
-
-**Mechanics:**
-- Construction timer decrements at day-end
-- Suites assigned to moved-in occupants
-- Passive generation per occupant, capped, collected at Manor
-
-
-
-### 5.17 Save/Load & Migration Engine
-
-**Purpose:** Persist and restore game state.
-
-**Mechanics:**
-- Atomic JSON writes
-- Versioned schema, migration functions
-- Autosave nightly separate file
-
-
-
-### 5.18 Purification Engine
-
-**Purpose:** Alternate defeat path through arousal.
-
-**Mechanics:**
-- Enemy arousal raised by player Sex Skills
-- Sexual attacks target player/companion based on `monsterSex`
-- Miasma Reserve limits enemy sexual attacks
-- Purified enemy counts as defeated, grants small Astraea Approval bonus
-
-
-
-### 5.19 Contact & Profile Read Model Engine
-
-**Purpose:** Assemble contact list and profile views.
-
-**Mechanics:**
-- Contact List from companions and individuated NPCs
-- Profile assembles all fields on demand
-- `firstIntimacyCompleted` present on both companions and NPCs
-
-
-
-### 5.20 Procedural Content Generation Engine
-
-**Purpose:** Generate NPC appearances, names, and enemy scaling.
-
-**Mechanics:**
-- Names rolled from pools
-- Gender from weights
-- Appearance from rules (algorithm missing)
-- Enemy level scaling by region
-
-
+- NPC names generated from gendered pools.
+- NPC appearance generated from class-specific rules (body shape, hair, skin, measurements).
+- Enemy stats scale by region and monster type.
 
 ---
 
-## 6. Save/Load
+## 5. Non-Functional Requirements
 
-Versioned JSON files. New Game+ requires explicit confirmation. Autosave nightly separate file.
+- **Performance:** UI interactions must respond within 100 ms; server processing within 500 ms for typical actions.
+- **Scalability:** Save files up to 10 MB should load in under 2 seconds.
+- **Accessibility:** Colorblind-friendly UI, adjustable text size.
+- **Localization:** English only at launch; architecture supports multiple languages.
+- **Adult Content:** All explicit content must be behind toggles; default state is opt-in.
+- **Save Integrity:** Atomic writes prevent corruption; autosave is separate from manual saves.
 
 ---
 
-## 7. Calendar System
+## 6. Acceptance Criteria (High-Level)
 
-Five phases. Sleep action as described. Fatigue and recovery as described.
+1. All core features listed above are playable and stable.
+2. Combat, intimacy, relationships, and time systems interact without deadlocks.
+3. NPC population refreshes correctly and schedules are respected.
+4. Contact list never exceeds 200 entries.
+5. Daily flirt/touch counters reset at day-end.
+6. Generic NPC introduction occurs only once.
+7. Penetration conflict prevents simultaneous same-cavity actions.
+8. Quest log displays active, available, and completed quests accurately.
+9. Intimacy eligibility checks reject protected/child NPCs.
+10. Loot vs strip-and-loot produce different results.
+11. Sleeping NPC non-con gating works as intended.
+12. Satisfaction formula and penalties (stamina exhaustion) are correctly applied.
+13. Save/load roundtrip preserves all state without loss.
+14. Achievement conditions evaluate correctly post-action.
 
+---
 
-```
+This PRD supersedes previous design documents and serves as the authoritative feature scope for implementation.

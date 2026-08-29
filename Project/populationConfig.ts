@@ -94,9 +94,9 @@ export const POPULATION_CONFIGS = {
             [FemaleBodyType.PetiteCurvy]: 3,
             [FemaleBodyType.Willowy]: 3,
             [FemaleBodyType.Athletic]: 4,
-            [FemaleBodyType.SlimStraight]: 5,
+            [FemaleBodyType.SlimStraight]: 4,
             [FemaleBodyType.SlimCurvy]: 5,
-            [FemaleBodyType.BananaShape]: 4,
+            [FemaleBodyType.BananaShape]: 3,
             [FemaleBodyType.PearShape]: 5,
             [FemaleBodyType.SpoonShape]: 3,
             [FemaleBodyType.HourglassSlim]: 5,
@@ -104,7 +104,7 @@ export const POPULATION_CONFIGS = {
             [FemaleBodyType.HourglassFullBust]: 2,
             [FemaleBodyType.TopHeavy]: 3,
             [FemaleBodyType.BottomHeavy]: 3,
-            [FemaleBodyType.FullFigured]: 4,
+            [FemaleBodyType.FullFigured]: 2,
             [FemaleBodyType.Voluptuous]: 3,
             [FemaleBodyType.Zaftig]: 2,
             [FemaleBodyType.Rubenesque]: 1,
@@ -131,7 +131,7 @@ export const POPULATION_CONFIGS = {
             [FemaleAttractiveness.Exotic]: 2,
             [FemaleAttractiveness.Stunning]: 2,
             [FemaleAttractiveness.Breathtaking]: 1,
-            [FemaleAttractiveness.Transcendent]: 0
+            [FemaleAttractiveness.Transcendent]: 1
         },
         cockSizeWeights: {
             [CockSize.Small]: 3,
