@@ -1,41 +1,190 @@
 # Ojisan — Execution Task List
 
+**Task list version:** 1.1 (updated 2026-08-29)
+**Tracks:** requirements_analysis_results v1.1
+
+---
+
 ## Phase 1: Fix Code Bugs (Existing Files)
 
-- [ ] **1.1** Fix `createInitialDynamicState()` double-return syntax error in `dynamicState.ts`
-- [ ] **1.2** Fix duplicate imports in `spawnEngine.ts` (RACE_PROFILES, FEMALE_BODY_TYPES, getHeightTag, PREGNANCY_STAGE_OVERRIDES, circular self-import)
-- [ ] **1.3** Fix duplicate function definitions in `ageBodyProfile.ts` (clamp, cupSizeToIndex, cupSizeFromIndex, duplicate FemaleMeasurements import)
-- [ ] **1.4** Add missing `CockType` import to `physicalCore.ts`
-- [ ] **1.5** Add missing imports to `personalityExpansion.ts` (Race, PublicPersona, PrivateSelf, HiddenDesireLean, PersonaGap, DesireAwareness, TriggerSensitivity, weightedRandom)
-- [ ] **1.6** Fix `require()` mixed with ES imports in `spawnEngine.ts` (deriveCockTypesFromTexture)
-- [ ] **1.7** Fix missing `RACE_PROFILE_EXTENSIONS` reference in `spawnEngine.ts`
-- [ ] **1.8** Fix `generateBackground` signature mismatch (3 args vs 4 args) in `spawnEngine.ts`
-- [ ] **1.9** Fix `raceProfile` used out of scope in `generateMalePhysicalDetail` in `spawnEngine.ts`
-- [ ] **1.10** Fix `createEmptyRelationshipActFlags` being local but `createEmptyActFlagsV2` called instead in `dynamicState.ts`
+> All bugs from the initial analysis (v1.0) have been resolved in the current codebase.
+> See §3.1 of the analysis doc for the full resolved list.
+
+- [x] **1.1** Fix `createInitialDynamicState()` double-return syntax error in `dynamicState.ts`
+- [x] **1.2** Fix duplicate imports in `spawnEngine.ts` (RACE_PROFILES, FEMALE_BODY_TYPES, getHeightTag, PREGNANCY_STAGE_OVERRIDES, circular self-import)
+- [x] **1.3** Fix duplicate function definitions in `ageBodyProfile.ts` (clamp, cupSizeToIndex, cupSizeFromIndex, duplicate FemaleMeasurements import)
+- [x] **1.4** Add missing `CockType` import to `physicalCore.ts`
+- [x] **1.5** Add missing imports to `personalityExpansion.ts` (Race, PublicPersona, PrivateSelf, HiddenDesireLean, PersonaGap, DesireAwareness, TriggerSensitivity, weightedRandom)
+- [x] **1.6** Fix `require()` mixed with ES imports — moved `deriveCockTypesFromRace` to `patches.ts`
+- [x] **1.7** Fix missing `RACE_PROFILE_EXTENSIONS` reference — now uses `RACE_PROFILES[race]` directly
+- [x] **1.8** Fix `generateBackground` signature mismatch (3 args vs 4 args)
+- [x] **1.9** Fix `raceProfile` used out of scope in `generateMalePhysicalDetail`
+- [x] **1.10** Fix `createEmptyRelationshipActFlags` / `createEmptyActFlagsV2` mismatch — defined locally in `dynamicState.ts`
+
+### Remaining code tasks
+
+- [ ] **1.11** Fix `Set<T>` JSON serialization — add custom replacer/reviver or replace all `Set<T>` with `T[]` in: `SexualPsychology.acquiredKinks`, `OrgasmProfile.acquiredTypes`, `SexualActFlags.orgasmTypesExperienced`, `SexualActFlags.kinksExperienced`
+- [ ] **1.12** Remove dead `greet()` function from `index.ts`
+- [ ] **1.13** Add `.gitignore` for `node_modules/`, compiled JS/d.ts output, `output.json`, IDE files
+
+---
 
 ## Phase 2: Requirements Doc Fixes
 
-- [ ] **2.1** Resolve pregnancy duration contradiction (12 days vs 12 weeks)
-- [ ] **2.2** Fill in §2 Repository Structure
-- [ ] **2.3** Fix §4.6 Satisfaction clamp bounds
-- [ ] **2.4** Inline §4.2 reference to "earlier requirements"
-- [ ] **2.5** Remove/merge redundant §6 and §7 sections
-- [ ] **2.6** Fix cooldownHours vs phases mismatch in §5.5
+> The PRD has been updated to v1.1. All items below are now resolved in the doc.
 
-## Phase 3: Add Missing Formulas to Requirements
+- [x] **2.1** Resolve pregnancy duration contradiction — clarified as **12 in-game weeks**; stage-to-week mapping defined
+- [x] **2.2** Fill in §2 Repository Structure — proposed structure + Engine Orchestration added
+- [x] **2.3** Fix §4.3 Satisfaction score formula — full formula specified including clamp bounds
+- [x] **2.4** Inline §4.2 reference to "earlier requirements" — stat progression formula inlined
+- [x] **2.5** Remove/merge redundant sections — legacy §6/§7 removed; content merged into §4.7 and §2.2
+- [x] **2.6** Fix cooldownHours vs phases mismatch — quests now use `cooldownDays` (in-game days)
+- [x] **2.7** Add missing combat formulas — crit, dodge, flee, purification arousal gain all specified
+- [x] **2.8** Add AI pattern decision descriptions — Aggressive, Defensive, SupportCaster, BossScripted defined
+- [x] **2.9** Add Reputation tier labels and event table
+- [x] **2.10** Add fatigue penalty table
+- [x] **2.11** Add Economy ItemDef schema and sell price formula
+- [x] **2.12** Add Crafting upgrade bonus per tier and failure rates
+- [x] **2.13** Add World map encounter chance table and fast travel cost formula
+- [x] **2.14** Add Relationship band thresholds
+- [x] **2.15** Add Manor tier feature unlock table
+- [x] **2.16** Add enemy/monster character definition (§4.2.1) — enemies treated as characters with combat overlay
+- [x] **2.17** Add `GameState` root interface sketch and intent→engine routing table (§2.2)
+- [x] **2.18** Define `DialogueNode`, `DialogueChoice`, `DialogueCondition` schemas
+- [x] **2.19** Define `SkillDef` and `SkillEffect` schemas
+- [x] **2.20** Define `StatusEffectDef` and `ActiveStatusEffect` schemas
+- [x] **2.21** Define `QuestDef`, `ObjectiveDef`, `QuestReward` schemas
+- [x] **2.22** Define `WorldNode` schema
+- [x] **2.23** Define enemy stat scaling algorithm (§4.20)
+- [x] **2.24** Define conception check formula and gestation stage-to-week mapping (§4.16)
+- [x] **2.25** Define `NpcScheduleDef` schema (§4.10)
+- [x] **2.26** Define `IntimacyScene` state sketch (§4.3)
+- [x] **2.27** Define `CharacterVitals` interface (§4.1)
+- [ ] **2.28** Define full Achievement schema and list of actual in-game achievements (PRD §4.14 still sparse)
 
-- [ ] **3.1** Combat: crit chance, dodge, arousal-per-Sex-Skill formulas
-- [ ] **3.2** Combat: AI decision algorithm outline for each pattern
-- [ ] **3.3** Reputation: bounty formula, renown tiers
-- [ ] **3.4** Calendar: fatigue penalty table
-- [ ] **3.5** Economy: shop discount, sell price formulas
-- [ ] **3.6** Crafting: upgrade bonus per tier
-- [ ] **3.7** Pathing: encounter chance table, fast travel cost
-- [ ] **3.8** Pregnancy: conception probability, gestation stages-to-time mapping
+---
 
-## Phase 4: Add Missing Schemas / Engine Orchestration
+## Phase 3: Foundation — GameState & Engine Dispatcher
 
-- [ ] **4.1** Define `GameState` root interface
-- [ ] **4.2** Add §5.0 Engine Orchestration section
-- [ ] **4.3** Define intent catalog
-- [ ] **4.4** Define day-end tick sequence
+> Must be completed before any individual engine is built, so all engines are type-checked against a shared state contract.
+
+- [ ] **3.1** Define full `GameState` TypeScript interface in `src/state/gameState.ts`
+- [ ] **3.2** Define `PlayerState` interface (combat stats, erotic stats, skill points, vitals, inventory, fatigue)
+- [ ] **3.3** Define `WorldState` interface (currentLocation, discoveredNodes, lastSafeLocation, time of day)
+- [ ] **3.4** Define `CalendarState` interface (day, phase, actionCount, phaseActionLimit)
+- [ ] **3.5** Define engine dispatcher in `src/engines/dispatcher.ts` — intent → engine routing
+- [ ] **3.6** Define event bus / pipeline contract for inter-engine side effects
+- [ ] **3.7** Stub out all engine module files with typed signatures (no implementation yet)
+
+---
+
+## Phase 4: NPC Population Engine — Fill Gaps
+
+> Spawn engine core is complete; these fill the missing simulation layer.
+
+- [ ] **4.1** Create gendered name pools per race (static data file)
+- [ ] **4.2** Implement `hasBeenIntroduced` flag and individuation flow (assign name, add to contacts)
+- [ ] **4.3** Implement Contact List cap enforcement (max 400, configurable)
+- [ ] **4.4** Implement service NPC fixed roster (vendor, innkeeper, quest board definitions)
+- [ ] **4.5** Implement `NpcScheduleDef` and schedule-based location lookup
+- [ ] **4.6** Implement 3-day population refresh cycle (tied to Calendar day-end tick)
+- [ ] **4.7** Implement per-location population range and NPC class assignment
+- [ ] **4.8** Replace flat `genderRatio` parameter with per-class `genderWeight` definition
+
+---
+
+## Phase 5: Enemy & Monster Spawn Engine
+
+> Reuses the existing NPC spawn engine; adds combat overlay layer.
+
+- [ ] **5.1** Define `EnemyCharacter` interface extending `Character` with enemy-specific fields (`aiPattern`, `miasmaReserve`, `manaReserve`, `lootTable`, `purificationReward`, `defeatOutcomeOptions`, `isHumanoidForm`, `monsterSex`)
+- [ ] **5.2** Define `MonsterTypeDef` static data (Beast, Undead, Elemental, Demon, Miasma-Corrupted) with base stats
+- [ ] **5.3** Implement `spawnEnemy(monsterType, regionTier)` — wraps spawn engine for humanoids; generates fixed physical profile for beast types
+- [ ] **5.4** Implement enemy stat scaling algorithm: `baseStat × regionTierMultiplier`
+- [ ] **5.5** Define `LootTable` schema and loot resolution function
+- [ ] **5.6** Define `DefeatOutcome` schema and outcome selection (kill / strip-and-loot / interrogate / etc.)
+- [ ] **5.7** Create static boss profile data files (hand-crafted, not procedural)
+- [ ] **5.8** Define `RegionMonsterProfile` — which monster types and level ranges appear in each region
+
+---
+
+## Phase 6: Intimacy Engine — Scene Layer
+
+> The per-turn resolver in patches.ts is complete; this adds the scene wrapper.
+
+- [ ] **6.1** Define `IntimacyPosition` schema (id, name, penetrationTargetsUsed, allowedActionIds, requiredClothingState)
+- [ ] **6.2** Define `IntimacyAction` schema (id, name, tecRequirement, stimulationIntensity, penetrationTarget, bodyPartTargeted)
+- [ ] **6.3** Create position and action catalog in static data files
+- [ ] **6.4** Implement `IntimacyScene` state machine (RUNNING / STAMINA_EXHAUSTED / PLAYER_ENDED)
+- [ ] **6.5** Implement `occupiedPenetrationTargets` conflict check
+- [ ] **6.6** Implement TEC check: `playerTEC >= actionTECRequirement + d10`
+- [ ] **6.7** Implement satisfaction score calculator
+- [ ] **6.8** Stub sexual response fragment repository structure
+- [ ] **6.9** Wire scene-level orchestration to existing `resolveEncounterTurn` / `resolvePostEncounter`
+
+---
+
+## Phase 7: Combat Engine
+
+- [ ] **7.1** Define `CombatState`, `CombatTurn`, `CombatAction`, `CombatResult` interfaces
+- [ ] **7.2** Implement initiative sort (`AGI + d10`, LCK tiebreak)
+- [ ] **7.3** Implement damage formula, crit, and dodge
+- [ ] **7.4** Implement AI strategy objects for Aggressive, Defensive, SupportCaster, BossScripted
+- [ ] **7.5** Implement Miasma/Mana Reserve tracking and consumption
+- [ ] **7.6** Implement purification arousal gain formula
+- [ ] **7.7** Implement flee attempt
+- [ ] **7.8** Implement party wipe → last safe location recovery
+- [ ] **7.9** Implement defeat outcome selection (kill / purify / strip-loot / interrogate)
+- [ ] **7.10** Wire combat end to Reputation and Quest engines via event pipeline
+
+---
+
+## Phase 8: Calendar & Time Engine
+
+- [ ] **8.1** Implement phase advance (15 actions → next phase)
+- [ ] **8.2** Implement action counter with defined "countable action" list
+- [ ] **8.3** Implement direct-advance events (SLEEP, cutscene triggers)
+- [ ] **8.4** Implement fatigue tracking and penalty application (per penalty table)
+- [ ] **8.5** Implement sleep mechanic (HP/Stamina/CPW restore, fatigue reset)
+- [ ] **8.6** Implement passive Stamina/CPW recovery on phase advance
+- [ ] **8.7** Implement full day-end tick sequence (8 steps, in order per §2.2)
+
+---
+
+## Phase 9: Relationship Engine
+
+- [ ] **9.1** Add Trust and Love numeric fields per NPC to `ContactRecord`
+- [ ] **9.2** Implement 16-cell (Trust × Love) band matrix lookup → `RelationshipStatus`
+- [ ] **9.3** Implement daily flirt/touch diminishing returns counter (max 3/day, reset at day-end)
+- [ ] **9.4** Implement gift mechanic (+10 Trust, +15 Love, consumes item)
+- [ ] **9.5** Implement move-in eligibility check (Trust ≥ 60, Love ≥ 60, or per-NPC override)
+- [ ] **9.6** Wire post-intimacy satisfaction score → Trust/Love delta
+
+---
+
+## Phase 10: Remaining Engines (later phases)
+
+- [ ] **10.1** Reputation Engine — region score, decay, bounty, event triggers
+- [ ] **10.2** Quest Engine — QuestDef loader, objective tracker, reward granting, cooldown logic
+- [ ] **10.3** Economy & Inventory Engine — ItemDef catalog, buy/sell, gifting, overflow
+- [ ] **10.4** Crafting & Equipment Engine — recipe loader, job queue, upgrade resolution
+- [ ] **10.5** Dialogue Engine — tree traversal, condition evaluator, flag system
+- [ ] **10.6** Skills & Abilities Engine — tree structure, point pools, CPW, prereq check
+- [ ] **10.7** Status Effects Engine — tick, stack, expiry
+- [ ] **10.8** World Map & Travel Engine — graph, Dijkstra, encounter rolls, fast travel
+- [ ] **10.9** Pregnancy & Offspring Engine — week tracker, conception check, birth logic, offspring gen
+- [ ] **10.10** Manor & Passive Gen Engine — tier table, construction timer, suite assignment, passive gen
+- [ ] **10.11** Achievement Engine — schema, condition evaluator, reward granting, achievement list
+- [ ] **10.12** Contact & Profile Engine — list assembly, profile view aggregation
+- [ ] **10.13** Save/Load Engine — JSON serialization with Set↔Array conversion, versioning, migration
+
+---
+
+## Infrastructure
+
+- [x] **I.1** Add `.gitignore` (node_modules, compiled output, IDE files, save files)
+- [ ] **I.2** Set up tRPC server scaffold
+- [ ] **I.3** Set up React client scaffold with Zustand state
+- [ ] **I.4** Configure build pipeline (tsconfig paths, output dirs)
+- [ ] **I.5** Add basic unit test harness (Jest or Vitest)
+- [ ] **I.6** Write unit tests for spawn engine (verify no TypeScript errors, spot-check output shape)
