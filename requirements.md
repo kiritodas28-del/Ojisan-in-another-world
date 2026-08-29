@@ -8,7 +8,7 @@
 
 ## 1. Overview
 
-**Ojisan in Another World** is a turn-based erotic RPG that blends tactical combat, relationship building, intimate encounters, and kingdom management. The player controls Kenji Mori, a middle-aged man transported to a fantasy world, as he explores, fights corruption, forms bonds with companions(special named preset NPCs) and NPCs, and ultimately purifies the land.
+**Ojisan in Another World** is a turn-based erotic RPG that blends tactical combat, relationship building, intimate encounters, and kingdom management. The player controls Player Mori, a middle-aged man transported to a fantasy world, as he explores, fights corruption, forms bonds with companions(special named preset NPCs) and NPCs, and ultimately purifies the land.
 
 The game is designed for adult audiences and features consensual and non-consensual sexual content (togglable), deep character progression, and a branching narrative influenced by player choices.
 
@@ -28,21 +28,32 @@ The game is designed for adult audiences and features consensual and non-consens
 
 1. **Explore** the world via a node-based map, moving between locations and triggering encounters.
 2. **Combat** turn-based battles against monsters and humanoid enemies; win through damage or purification.
-3. **Interact** with NPCs and companions(special named preset NPCs) through dialogue, gifts, flirting, touch, and intimate scenes.
-4. **Progress** through main story acts/chapters and side quests; improve Kenji’s skills and equipment.
+3. **Interact** with NPCs and companions (special named preset NPCs) through dialogue, gifts, flirting, touch, and intimate scenes.
+4. **Progress** through main story acts/chapters and side quests; improve Player’s skills and equipment.
 5. **Manage** time and resources: day/night cycle, fatigue, manor upgrades, passive generation.
-6. **Grow** relationships with companions(special named preset NPCs) and generic NPCs; unlock new scenes, move-in options, and offspring.
+6. **Grow** relationships with companions and generic NPCs; unlock new scenes, move-in options, and offspring.
 
 ---
 
 ## 4. Feature Catalog
 
-### 4.1 Character Progression
+### 4.1 Character Progression & Detailed Character Definition
 
-- Kenji and all companions(special named preset NPCs) have combat attributes (STR, AGI, WIS, DEF, LCK) and erotic attributes (Sensitivity, Technique, Virility for player only).
+- Player and all companions have combat attributes (STR, AGI, WIS, DEF, LCK) and erotic attributes (Sensitivity, Technique, Virility for player only).
 - Leveling increases combat stats according to class/role multipliers.
 - Player can invest points into two skill trees: **Battle** (combat) and **Ardor** (intimacy).
 - Passive skills are always active; active skills consume Crest Power (CPW).
+- **Character data** is richly detailed, including:
+  - **Race & Features**: e.g., human, fox girl, with wings, tail, ears, horns, special features.
+  - **Appearance**: skin tone/undertone/condition, face shape/eyes/nose/lips/jaw, hair color/style/pubic/armpit, and body measurements (height, bust, waist, hip, cup size, body type).
+  - **Physical Detail**: breast shape/softness, nipple type/color, ass shape/softness, attractiveness.
+  - **Sexual Physiology**: vaginal type/elasticity, wetness tracking, clit size, labia type, sensitivity map per body part (nipple, breast, vagina, clit, cervix, womb, ass, lips, tongue, skin, ears), orgasm profile (types, ease, post-sensitivity, squirt/multiple capacity, count), arousal/lubrication speed, fertility, cycle day, pregnancy/lactation history.
+  - **Personality**: Big Five traits, dominant/secondary traits, humor style, emotional stability, trust baseline, loyalty, jealousy, affection style, public/private persona, hidden desires, suppression strength and crack threshold.
+  - **Sexual Psychology**: sexual confidence, lean, acquired kinks, kink acquisition rate, resistance profile (type, current/baseline resistance, corruption shift threshold, next profile, trauma modifier), corruption/shame, vocal/eye contact/dirty talk tendencies, relationship history.
+  - **Voice**: pitch, texture, dirty talk tendency.
+  - **Social**: trust baseline, loyalty, jealousy, affection style (some duplication with personality, to be unified in schema).
+  - **Background**: social class, occupation, actual/apparent age, trauma presence/severity, region of origin.
+  - **History**: prior partner count, total encounter count, acts experienced, pregnancy/lactation history, relationship history.
 
 ### 4.2 Combat System
 
@@ -50,10 +61,10 @@ The game is designed for adult audiences and features consensual and non-consens
 - Enemies have AI patterns: aggressive, defensive, support caster, and boss scripted.
 - Damage calculation uses weapon power, attacker strength, and defender defense.
 - Critical hits based on luck.
-- companions(special named preset NPCs) can be downed; party wipe leads to recovery at last safe location.
+- Companions can be downed(similar to player); party wipe leads to recovery at last safe location.
 - **Purification**: alternative victory by raising enemy arousal to 100.
 - Enemy sexual attacks (if enabled) target based on monster sex and form.
-- Miasma Reserve limits enemy special attacks; it does not regenerate mid-fight.
+- Miasma(monster specific)/Mana(all non monster characters(npc/companion/player)) Reserve limits enemy/npc/companion/player special attacks. Regenerates with each attack.  
 - Defeat outcomes for humanoid enemies include loot, strip-and-loot, interrogation, and more.
 
 ### 4.3 Intimacy System
@@ -63,31 +74,34 @@ The game is designed for adult audiences and features consensual and non-consens
 - Multiple positions and actions; simultaneous actions allowed with body-part conflict checks.
 - Technique checks influence success of sensitive actions.
 - **Partner state simulation**: resistance, mental state, and mood evolve during scenes based on actions and relationship context.
+  - Resistance profile (fight, freeze, comply, etc.), current resistance, baseline resistance, corruption shift threshold, next profile, trauma modifier.
+  - Mental state tracks mood, corruption, shame, broken flag, subspace tracker, afterglow tracker, suppression state, trust with player, attachment, submission to player.
 - **Satisfaction score** after each scene affects relationship gains and partner reactions.
-- **Kink progression**: repeated actions can trigger partner kinks, adding bonuses.
-- **Dynamic narrative responses**: generated from context (action, position, arousal, climax, mood, forced flag) using a large fragment repository.
+- **Kink acquisition**: as per each kink's condition.
+- **Kink progression**: repeated actions can trigger partner kinks, adding bonuses; acquired kinks tracked per character.
+- **Dynamic narrative responses**: generated from context (TBD granularity of the fragment repository) using a large fragment repository.
+- **Physical response tracking**: wetness, pleasure, pain, arousal level, stamina, lactating, clothing state(only to allow/disallow certain actions -eg: penetration cannot happen without vagina exposure), restraint state.
 
 ### 4.4 Relationships & Trust/Love
 
-- Trust, attachment, submission and other mental, physical, body and relationship states.
-- Relationship status determined by a 4-band matrix (Low, Neutral, High, VeryHigh).
-- Gift giving, flirting, touching, and dialogue choices modify Trust/Love.
+- Relationships are modeled by multiple dimensions: Trust, Attachment, Submission, Love (if reintroduced), plus mental state fields (corruption, shame, broken flag).
+- Gift giving, flirting, touching, and dialogue choices modify these relationship metrics.
 - Flirt and Touch have daily diminishing returns (max 3 per character per day).
-- Move-in eligibility: companions(special named preset NPCs) require specific Trust/Love/quest stage; generic NPCs require flat 60/60.
-- Special narrative overrides (e.g., Sworn Nemesis) possible.
+- Move-in eligibility: characters require specific stats requirements.
+- Bonding system: bond type and strength track deep relationship milestones.
 
 ### 4.5 Reputation System
 
 - Each region has a reputation score from -800 (infamous) to +800 (renowned).
-- Negative reputation decays toward zero daily; positive reputation does not decay.
+- Negative reputation decays toward zero, daily some amount of reputation decay; positive reputation does not decay.
 - Bounty payoffs computed from current score at Bounty Offices.
 
 ### 4.6 Quests & Story
 
-- Main quest organized into Acts and Chapters with cutscenes.
-- Side quests: companion(special named preset NPCs) quests , repeatable board quests.
+- Main quest organized into Acts and Chapters with post-quest and pre-quest cutscenes.
+- Side quests: companion quests, repeatable board quests.
 - Objectives types: kill, collect, talk, interact, escort, travel.
-- companion(special named preset NPCs) quest completion advances their personal stage and grants Trust/Love bonuses.
+- Companion quest completion advances their personal stage and unlocks certain(which interaction option : TBD) interaction options.
 - Repeatable quests have cooldowns.
 - Cutscene system for story moments with player choices that affect flags and relationships.
 
@@ -127,7 +141,7 @@ The game is designed for adult audiences and features consensual and non-consens
 
 ### 4.11 Dialogue System
 
-- Branching dialogue trees with conditions (Trust, Love, quest stage, story flags, first talk).
+- Branching dialogue trees with conditions - for main quest and acts.
 - Generic NPCs share class-level dialogue with introduction node.
 - Dialogue choices can set story flags and affect relationships.
 - Sexual responses generated dynamically from repository fragments.
@@ -139,6 +153,7 @@ The game is designed for adult audiences and features consensual and non-consens
 - Active skills cost Crest Power (CPW).
 - Passive skills always active once purchased.
 - Skill effects include damage boosts, heals, status effects, and special intimacy enhancements.
+- Special battle skills consume mana.
 
 ### 4.13 Status Effects
 
@@ -164,12 +179,13 @@ The game is designed for adult audiences and features consensual and non-consens
 - Pregnancy lasts 12 in-game days.
 - Birth happens at day-end when currentWeek >= 12.
 - Offspring stats snapshot from parents' combat attributes at birth.
-- Offspring alignment randomly assigned (heroic/troubled/criminal).
+- Offspring alignment randomly assigned (normal/troubled/criminal).
 - Offspring may become interactable NPCs in future updates.
+- Parentage tracked via parent names (mother/father).
 
 ### 4.17 Manor & Base Building
 
-- Manor has 4 tiers, each unlocking new features (storage, suites, crafting, guided upgrades).
+- Manor has 6 tiers, each unlocking new features (storage, suites, crafting, guided upgrades).
 - Construction timers decrement at day-end.
 - Suites can be assigned to moved-in companions/NPCs.
 - Occupants generate passive resources (items or gold) at intervals, collected manually.
@@ -183,10 +199,10 @@ The game is designed for adult audiences and features consensual and non-consens
 
 ### 4.19 Contact List & Profiles
 
-- Contact list combines companions(special named preset NPCs) and individuated NPCs (max 200).
+- Contact list combines companions and individuated NPCs (max 400).
 - Profile view shows name, portrait, race, appearance, Trust/Love, relationship status, stats, kink progress, and current location.
 - Virginity, pregnancy, and lactation status displayed.
-- Contact list sorted by companion(special named preset NPCs) quest stage and relationship magnitude.
+- Contact list sorted by companion quest stage and relationship magnitude.
 
 ### 4.20 Procedural Content Generation
 
@@ -212,7 +228,7 @@ The game is designed for adult audiences and features consensual and non-consens
 1. All core features listed above are playable and stable.
 2. Combat, intimacy, relationships, and time systems interact without deadlocks.
 3. NPC population refreshes correctly and schedules are respected.
-4. Contact list never exceeds 200 entries.
+4. Contact list never exceeds 400 entries, and it should be configurable.
 5. Daily flirt/touch counters reset at day-end.
 6. Generic NPC introduction occurs only once.
 7. Penetration conflict prevents simultaneous same-cavity actions.

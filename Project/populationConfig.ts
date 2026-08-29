@@ -238,7 +238,28 @@ export const POPULATION_CONFIGS = {
         defaultFertilityRating: FertilityRating.Moderate,
         defaultBaselineWetness: WetnessLevel.Damp,
         traumaRate: 0.1,
-        virginRate: 0.2
+        virginRate: 0.2,
+        regionWeights: {
+            [RegionOfOrigin.Heartlands]: 8,
+            [RegionOfOrigin.VerdantReach]: 5,
+            [RegionOfOrigin.StonebackRange]: 4,
+            [RegionOfOrigin.Ashfen]: 3,
+            [RegionOfOrigin.SunkenCoast]: 5,
+            [RegionOfOrigin.AbyssalRealm]: 1,
+            [RegionOfOrigin.CelestialSpire]: 0,
+            [RegionOfOrigin.DeepForest]: 3,
+            [RegionOfOrigin.VolcanicWastes]: 2,
+            [RegionOfOrigin.FrozenNorth]: 2,
+            [RegionOfOrigin.DesertBadlands]: 2,
+            [RegionOfOrigin.CoastalIslands]: 3
+        },
+        ageCategoryWeights: {
+            [AgeBodyCategory.Young]: 8,
+            [AgeBodyCategory.RipeningMilf]: 5,
+            [AgeBodyCategory.RipeMilf]: 4,
+            [AgeBodyCategory.MatureMilf]: 3,
+            [AgeBodyCategory.OldMilf]: 1
+        }
     } as PopulationConfig,
 
     FANTASY_HEAVY: {
