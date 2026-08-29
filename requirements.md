@@ -8,7 +8,7 @@
 
 ## 1. Overview
 
-**Ojisan in Another World** is a turn-based erotic RPG that blends tactical combat, relationship building, intimate encounters, and kingdom management. The player controls Player Mori, a middle-aged man transported to a fantasy world, as he explores, fights corruption, forms bonds with companions(special named preset NPCs) and NPCs, and ultimately purifies the land.
+**Ojisan in Another World** is a turn-based erotic RPG that blends tactical combat, relationship building, intimate encounters, and kingdom management. The player controls Player, a character in a fantasy world, as he explores, fights miasma, forms bonds with companions(special named preset NPCs) and NPCs, and ultimately purifies the land.
 
 The game is designed for adult audiences and features consensual and non-consensual sexual content (togglable), deep character progression, and a branching narrative influenced by player choices.
 
