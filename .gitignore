@@ -1,0 +1,44 @@
+# ── Node / npm ───────────────────────────────────────────────
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json
+yarn.lock
+
+# ── TypeScript build output ──────────────────────────────────
+dist/
+build/
+out/
+*.js
+*.js.map
+*.d.ts
+*.tsbuildinfo
+tsconfig.tsbuildinfo
+
+# ── Runtime / debug output ──────────────────────────────────
+output.json
+*.log
+
+# ── OS junk ─────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ── IDE / editor ─────────────────────────────────────────────
+.idea/
+.vscode/
+*.iml
+*.suo
+*.user
+*.swp
+*~
+
+# ── Env / secrets ────────────────────────────────────────────
+.env
+.env.*
+!.env.example
+
+# ── Save files (game runtime data, not source) ───────────────
+saves/
+*.save.json
