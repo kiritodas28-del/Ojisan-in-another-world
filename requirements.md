@@ -1,7 +1,7 @@
 # Ojisan in Another World — Product Requirements Document (PRD)
 
-**Version:** 1.1
-**Date:** 2026-08-29
+**Version:** 1.4
+**Date:** 2026-08-30
 **Status:** Draft for review
 
 ---
@@ -17,24 +17,93 @@ The game is designed for adult audiences and features consensual and non-consens
 ## 2. Platform & High-Level Architecture
 
 - **Platform:** Web (desktop and mobile responsive)
-- **Frontend:** React-based SPA with modern UI/UX
+- **Frontend:** React 18 SPA — Tailwind CSS (styling), Zustand (client state), React Router v6 (view routing), tRPC client (server communication). No component library; fully custom dark-fantasy aesthetic.
 - **Backend:** Server-authoritative game logic exposed via type-safe APIs (tRPC)
 - **Persistence:** Local save files stored on disk, with automatic backup and versioning
-- **Architecture principles:** Client sends player intents; server processes them and returns updated game state and narrative. All game rules are deterministic and testable.
+- **Architecture principles:** Client sends player intents; server processes them and returns updated game state and narrative. All game rules are deterministic and testable. The client is a **dumb renderer** — it displays what the server returns and sends intents back. No game logic lives in the client.
 
-### 2.1 Repository Structure (Proposed)
+### 2.1 Repository Structure
 
 ```
 /
-├── Project/              # Core TypeScript engine (character spawn, physiology, psychology)
 ├── src/
-│   ├── engines/          # One file per engine (combat, intimacy, calendar, etc.)
-│   ├── data/             # Static game data (items, quests, world graph, skill trees)
-│   ├── api/              # tRPC router definitions
-│   └── client/           # React frontend
-├── saves/                # Runtime save files (gitignored)
+│   ├── spawn-engine/                  # Character generation module
+│   │   ├── types/
+│   │   │   └── enums.ts               # All enum definitions
+│   │   ├── character/                 # Character data interfaces
+│   │   │   ├── bodyTypes.ts
+│   │   │   ├── dynamicState.ts
+│   │   │   ├── historyProfile.ts
+│   │   │   ├── physicalCore.ts
+│   │   │   ├── psychologyCore.ts
+│   │   │   ├── raceProfiles.ts
+│   │   │   └── sexualPhysiology.ts
+│   │   ├── generator/                 # Generation algorithms
+│   │   │   ├── ageBodyProfile.ts
+│   │   │   ├── attractiveness.ts
+│   │   │   └── personality.ts
+│   │   ├── encounter/
+│   │   │   └── patches.ts             # Per-turn intimacy state resolvers
+│   │   ├── config/
+│   │   │   └── populationConfig.ts
+│   │   └── spawnEngine.ts             # Public spawn API
+│   ├── state/
+│   │   └── gameState.ts               # Root GameState + unified Character interfaces
+│   ├── engines/                       # One file per game engine
+│   │   ├── dispatcher.ts
+│   │   ├── combatEngine.ts
+│   │   ├── enemySpawnEngine.ts
+│   │   ├── intimacyEngine.ts
+│   │   ├── calendarEngine.ts
+│   │   ├── relationshipEngine.ts
+│   │   ├── reputationEngine.ts
+│   │   ├── questEngine.ts
+│   │   ├── economyEngine.ts
+│   │   ├── craftingEngine.ts
+│   │   ├── dialogueEngine.ts
+│   │   ├── skillEngine.ts
+│   │   ├── statusEffectEngine.ts
+│   │   ├── worldEngine.ts
+│   │   ├── pregnancyEngine.ts
+│   │   ├── manorEngine.ts
+│   │   ├── achievementEngine.ts
+│   │   └── saveEngine.ts
+│   ├── data/                          # Static game data catalogs
+│   │   ├── items.ts
+│   │   ├── quests.ts
+│   │   ├── skills.ts
+│   │   ├── worldGraph.ts
+│   │   ├── monsters.ts
+│   │   ├── namePool.ts
+│   │   └── intimacyCatalog.ts
+│   ├── api/
+│   │   └── router.ts                  # tRPC router
+│   ├── client/
+│   │   ├── views/                     # One folder per major game screen
+│   │   │   ├── hud/                   # Persistent overlay (vitals, phase, party, gold)
+│   │   │   ├── overworld/             # Map, location panel, NPC list, action buttons
+│   │   │   ├── combat/                # Initiative order, action bar, combat log
+│   │   │   ├── intimacy/              # Scene state, action picker, partner panel
+│   │   │   ├── dialogue/              # Dialogue tree, choice buttons
+│   │   │   └── menus/                 # Tabbed menu shell
+│   │   │       ├── inventory/
+│   │   │       ├── skills/
+│   │   │       ├── quests/
+│   │   │       ├── contacts/
+│   │   │       └── manor/
+│   │   ├── components/                # Reusable primitives (Button, Panel, StatBar, Portrait, etc.)
+│   │   ├── hooks/                     # useGameState, useIntent, usePlayer, useCombat, useParty, etc.
+│   │   ├── store/                     # Zustand store — holds live GameState snapshot
+│   │   ├── mock/                      # mockGameState.ts — realistic sample data for UI dev without backend
+│   │   └── App.tsx                    # Shell + React Router routes
+│   ├── index.ts                       # Server entry point
+│   └── tsconfig.json
+├── saves/                             # Runtime save files (gitignored; .gitkeep tracks folder)
+├── package.json
+├── testSpawn.ts                       # Dev smoke-test for the spawn engine
 ├── requirements.md
-└── requirements_analysis_results
+├── requirements_analysis.md
+└── task_list.md
 ```
 
 ### 2.2 Engine Orchestration
@@ -70,7 +139,8 @@ All engines are pure modules. The server is the sole authority. The client sends
 **`GameState` root interface (TypeScript sketch):**
 ```typescript
 interface GameState {
-  player:        PlayerState;        // stats, skills, CPW, fatigue, inventory
+  player:        PlayerState;        // player-specific state (skills, inventory, fatigue, XP)
+  party:         PartyState;         // active companions and their vitals
   world:         WorldState;         // current location, discovered nodes, lastSafeLocation
   calendar:      CalendarState;      // day, phase, actionCount, phaseActionLimit
   contacts:      ContactRecord[];    // companions + individuated NPCs (max 400, configurable)
@@ -129,6 +199,137 @@ interface CharacterVitals {
 **Stat progression formula:**
 - `newStatValue = baseStat + (level - 1) × roleMultiplier × baseStat × 0.1`
 - Role multipliers (STR example): Warrior 1.5, Mage 0.7, Rogue 1.0, Healer 0.6
+
+#### 4.1.1 Unified Character Interface
+
+Every entity in the game — player, companion, generic NPC, humanoid enemy, and monster — is a `Character`. All engines (combat, intimacy, dialogue, relationship, pregnancy, etc.) operate on `Character` and its subtypes. This eliminates type mismatches between systems and means the spawn engine, player creation, and enemy spawn engine all produce the same base structure.
+
+**Hierarchy:**
+
+```
+Character (base — every entity)
+  ├── HumanoidCharacter (player, NPC, companion, humanoid enemy)
+  │     Full physical/psychological/physiological profile from spawn engine.
+  │     ├── PlayerCharacter   extends HumanoidCharacter
+  │     │     Adds: level, XP, skill trees (BP/AP), inventory, CPW pool, fatigue.
+  │     │     The player is spawned by the same spawn engine as NPCs;
+  │     │     their base Character data is set at character creation.
+  │     ├── NpcCharacter      extends HumanoidCharacter
+  │     │     Adds: npcId, hasBeenIntroduced, scheduleId, isProtected, isService.
+  │     └── EnemyHumanoidCharacter  extends HumanoidCharacter
+  │           Adds: aiPattern, manaReserve, lootTable, defeatOutcomeOptions.
+  └── MonsterCharacter  (non-humanoid enemies)
+        Shares combat stat fields with HumanoidCharacter but has a simplified
+        or absent physical/physiological profile.
+        Adds: monsterType, miasmaReserve, sexualAttackEligible, aiPattern,
+              lootTable, purificationReward, defeatOutcomeOptions.
+```
+
+**`Character` base interface (TypeScript sketch):**
+```typescript
+interface Character {
+  id:       string;
+  name:     string;
+  // Combat attributes — shared by every entity in any engine
+  vitals:   CharacterVitals;   // HP, Stamina, CPW, arousal, fatigue
+  str:      number;
+  agi:      number;
+  wis:      number;
+  def:      number;
+  lck:      number;
+  activeStatusEffects: ActiveStatusEffect[];
+  characterType: 'PLAYER' | 'NPC' | 'ENEMY_HUMANOID' | 'MONSTER';
+}
+
+// HumanoidCharacter adds the full spawn-engine profile
+interface HumanoidCharacter extends Character {
+  gender:           Gender;
+  race:             Race;
+  raceFeatures:     RacePhysicalFeatures;
+  bodyType:         FemaleBodyType | MaleBodyType;
+  skin:             SkinProfile;
+  face:             FaceProfile;
+  hair:             HairProfile;
+  measurements:     FemaleMeasurements | MaleMeasurements;
+  physicalDetail:   FemalePhysicalDetail | MalePhysicalDetail;
+  sexualPhysiology: FemaleSexualPhysiology | MaleSexualPhysiology;
+  personality:      PersonalityCore & ExpandedPersonality;
+  sexualPsychology: SexualPsychology;
+  voice:            VoiceProfile;
+  social:           SocialProfile;
+  background:       BackgroundProfile;
+  history:          ExperienceHistory;
+  dynamicState:     CharacterDynamicState;
+}
+
+// PlayerCharacter adds player-exclusive progression state
+interface PlayerCharacter extends HumanoidCharacter {
+  characterType: 'PLAYER';
+  level:           number;
+  xp:              number;
+  sensitivity:     number;   // erotic stat (player only)
+  technique:       number;
+  virility:        number;
+  battlePoints:    number;   // total earned BP
+  ardorPoints:     number;   // total earned AP
+  unspentBP:       number;
+  unspentAP:       number;
+  unlockedSkillIds: string[];
+  gold:            number;
+  inventorySlots:  number;
+  inventory:       InventorySlot[];
+}
+
+// NpcCharacter adds NPC simulation state
+interface NpcCharacter extends HumanoidCharacter {
+  characterType:    'NPC';
+  npcId:            string;
+  hasBeenIntroduced: boolean;
+  scheduleId?:      string;
+  isProtected:      boolean;
+  isService:        boolean;
+  trust:            number;  // -100 to +100 (relationship engine)
+  love:             number;  // -100 to +100
+  flirtCountToday:  number;  // resets at day-end
+  touchCountToday:  number;
+}
+```
+
+**Key rules:**
+- The spawn engine (`src/spawn-engine/spawnEngine.ts`) produces `HumanoidCharacter` for all humanoid spawns — NPCs, companions, humanoid enemies, and the player's base character data at creation.
+- `PlayerCharacter` wraps that base data and adds progression fields. It is **not** a separate entity type — it IS a `HumanoidCharacter` with extra fields.
+- All combat engine functions accept `Character[]` (the full combatant array), not separate player/enemy arrays. Combat does not need to know whether a combatant is a player, NPC, or enemy — it reads `vitals`, `str`, `agi`, `def`, `lck`, `aiPattern` (where present), and `activeStatusEffects`.
+- The intimacy engine works with `HumanoidCharacter` on both sides (player and partner). The partner's `dynamicState`, `sexualPhysiology`, and `sexualPsychology` are updated in place.
+- `ContactRecord` in `GameState` stores a reference to the full `NpcCharacter` (not a summary), allowing any engine to access the complete profile.
+
+#### 4.1.2 Party System
+
+The player can have up to **3 active companions** in their party at any time (configurable maximum). Each companion is a full `NpcCharacter` drawn from the contact list.
+
+- **`PartyState`:** tracks the active party members and their current combat/overworld vitals.
+- Companion HP/Stamina/CPW carry over between encounters within the same day; only Sleep fully restores them.
+- Passive Stamina/CPW recovery (+20% of max) on phase advance applies to **all party members**, not just the player.
+- If a companion is downed in combat (HP → 0) they are incapacitated for the rest of that encounter. They revive with 1 HP after combat ends (unless the party wipes).
+- Companion fatigue accumulates identically to the player's — sleeping in a safe location restores all party members.
+- **`CompanionCombatState`** is the companion's live combat snapshot — derived from their `NpcCharacter` base stats plus any active status effects, equipment, and level-scaled values.
+
+```typescript
+interface PartyState {
+  companions: PartyMember[];    // max 3 active companions
+  maxSize:    number;           // default 3; may expand via story events
+}
+
+interface PartyMember {
+  npcId:               string;          // reference into contacts[]
+  vitals:              CharacterVitals; // live vitals (synced to NpcCharacter.vitals)
+  activeStatusEffects: ActiveStatusEffect[];
+  isDown:              boolean;         // downed this encounter
+  equippedWeaponId?:   string;
+  equippedArmorId?:    string;
+}
+```
+
+**Companion stat derivation:** companions do not have their own separate stat blocks. Their STR/AGI/WIS/DEF/LCK are derived from their `HumanoidCharacter` base (background, occupation, race) and a companion level that tracks their personal progression alongside the player. This is resolved by the character progression engine at load time and cached in `PartyMember`.
 
 ### 4.2 Combat System
 
@@ -469,6 +670,107 @@ interface WorldNode {
   - Monster type bases defined in static `MonsterTypeDef` data.
   - Humanoid enemies spawned via the NPC spawn engine, then overlaid with enemy-specific combat stats scaled to region tier.
 
+### 4.21 Frontend Architecture & UI Views
+
+#### 4.21.1 Tech Stack
+
+| Concern | Choice | Reason |
+|---------|--------|---------|
+| UI framework | React 18 | Component model; hooks; concurrent features |
+| Styling | Tailwind CSS | Utility-first; no runtime cost; easy dark-fantasy theming via CSS variables |
+| Client state | Zustand | Minimal boilerplate; holds the live `GameState` snapshot from the server |
+| Routing | React Router v6 | Named routes per game screen; no page reloads |
+| Server comms | tRPC client | End-to-end type safety matching the backend router |
+| Component library | None | Full custom — off-the-shelf kits fight the dark-fantasy aesthetic |
+
+#### 4.21.2 Client Architecture Principles
+
+- **Dumb renderer:** the client holds no game logic. It displays the `GameState` snapshot returned by the server after each intent and sends the next intent back.
+- **Zustand store** holds the single live `GameState`. All views subscribe to the slice they need; no prop-drilling.
+- **Hooks abstract server comms:** views never call tRPC directly. They call hooks (`useIntent`, `useCombat`, etc.) which dispatch intents and update the store.
+- **Mock-first development:** `src/client/mock/mockGameState.ts` provides a fully populated realistic `GameState` so every view renders and is interactive without a running backend. Views are wired to mock state first, then switched to live tRPC calls.
+- **View isolation:** each view folder is self-contained — its own component file(s), local styles if any, and an `index.ts` barrel. Views receive their data slice as props or from the store; they never reach into other views.
+
+#### 4.21.3 Game Views
+
+The UI is a single-page app. The **HUD** is always visible as a persistent overlay. One **active view** occupies the main area and changes based on game context.
+
+**HUD (persistent overlay — always visible)**
+- Player vitals bar: HP, Stamina, CPW as coloured progress bars with current/max numbers.
+- Party strip: up to 3 companion portraits with their HP bar; greyed out when downed.
+- Phase indicator: current day phase (Morning/Afternoon/Evening/Night/Midnight) with phase action count (e.g. 7/15).
+- Gold counter.
+- Fatigue indicator (icon-based; 5 tiers).
+- Menu button (opens tabbed menu overlay).
+
+**Overworld view**
+- Location name and region.
+- Connected location list (available moves) as clickable buttons with encounter chance shown.
+- NPC list for current location: name, relationship status icon, available interaction buttons (Talk, Flirt, Touch, Gift, Intimacy).
+- Phase advance / Sleep button.
+- Context log: last 5 narrative lines from the server.
+
+**Combat view**
+- Initiative order strip (portraits in turn order; active combatant highlighted).
+- Combatant panels: HP/Stamina bars, status effect icons, name, downed state.
+- Action bar: player's available actions for their turn (Attack, Skills, Purify, Flee, Defend, Use Item).
+- Combat log: scrollable turn-by-turn narrative.
+- Purification progress bar (visible when at least one purification action has been used).
+
+**Intimacy view**
+- Partner panel: portrait, name, arousal bar, wetness indicator, mental state indicator, resistance bar.
+- Scene narrative panel: latest response text from the fragment repository.
+- Position picker: grid of available positions.
+- Action picker: list of available actions for the current position.
+- Scene status bar: player stamina, turn count, scene start type.
+- End scene button.
+
+**Dialogue view**
+- Speaker portrait and name.
+- Dialogue text panel.
+- Choice buttons (up to 6; greyed out when conditions are not met, hidden when locked by flags).
+- Trust/Love delta preview on hover over a choice.
+
+**Menus (tabbed overlay)**
+- **Inventory:** item grid with quantity, equip/use/drop actions, gold display.
+- **Skills:** Battle and Ardor tree side by side; nodes show cost, prerequisites, unlock state.
+- **Quests:** active/available/completed tabs; objective progress per active quest.
+- **Contacts:** list with portrait, name, race, relationship status, trust/love meters; click for full profile.
+- **Manor:** tier display, construction timer, suite roster, passive resource queue.
+
+#### 4.21.4 Reusable Component Primitives
+
+All views are built from a shared component library in `src/client/components/`. Required primitives:
+
+| Component | Purpose |
+|-----------|----------|
+| `StatBar` | Coloured progress bar with current/max label; used for HP, Stamina, CPW, arousal, resistance |
+| `Portrait` | Character image placeholder with name tag and status overlay |
+| `Panel` | Dark-bordered content container; base for all major UI regions |
+| `Button` | Themed action button with disabled/hover states |
+| `ActionButton` | Button variant for combat/intimacy actions; shows cost and availability |
+| `StatusIcon` | Small icon for active status effects with stack count and remaining turns |
+| `PhaseIndicator` | Five-segment bar showing current phase and action count within phase |
+| `NarrativeLog` | Scrollable text panel for combat/scene/overworld narrative lines |
+| `ChoiceButton` | Dialogue choice button with condition-lock styling and delta preview |
+| `RelationshipMeter` | Dual Trust/Love bar with band threshold markers |
+
+#### 4.21.5 Hooks
+
+All server interaction goes through hooks in `src/client/hooks/`. No view imports tRPC directly.
+
+| Hook | Responsibility |
+|------|----------------|
+| `useGameState()` | Returns the full live `GameState` from the Zustand store |
+| `usePlayer()` | Returns `gameState.player`; subscribes to player slice only |
+| `useParty()` | Returns `gameState.party`; subscribes to party slice |
+| `useCalendar()` | Returns `gameState.calendar`; phase, day, action count |
+| `useIntent()` | Sends a `PlayerIntent` to the tRPC router; updates the store with the returned `GameState` |
+| `useCombat()` | Wraps `useIntent` for combat-specific intents; exposes current `CombatState` |
+| `useIntimacy()` | Wraps `useIntent` for intimacy intents; exposes current `IntimacyScene` |
+| `useDialogue()` | Holds current dialogue node; provides `choose(choiceId)` |
+| `useContacts()` | Returns `gameState.contacts`; provides lookup by npcId |
+
 ---
 
 ## 5. Non-Functional Requirements
@@ -502,6 +804,17 @@ interface WorldNode {
 16. Pregnancy conception uses fertility window and conceptionChance correctly.
 17. Fatigue penalties apply correctly per days-without-sleep tier.
 18. Reputation decay applies only to negative scores, daily.
+19. Party companion vitals persist between encounters within the same day and are fully restored on sleep.
+20. Downed companions revive at 1 HP after combat ends (unless full party wipe).
+21. Phase-advance passive recovery applies to all party members, not just the player.
+22. `PlayerCharacter` satisfies the `HumanoidCharacter` interface and can be passed to any engine that accepts one.
+23. All combat engine combatant slots accept any `Character` subtype without engine-level type casts.
+24. HUD vitals bars update immediately on every `GameState` change without full re-render of the active view.
+25. All views render correctly from `mockGameState` without a running backend.
+26. No game logic executes in any client component or hook — all business logic lives in `src/engines/`.
+27. Switching between views (overworld → combat → intimacy) does not lose HUD state or Zustand store contents.
+28. All action buttons are disabled with a visible reason when the action is unavailable (insufficient CPW, wrong phase, etc.).
+29. The menu overlay can be opened and closed from any active view without disrupting the underlying view state.
 
 ---
 
