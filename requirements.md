@@ -695,48 +695,143 @@ interface WorldNode {
 
 The UI is a single-page app. The **HUD** is always visible as a persistent overlay. One **active view** occupies the main area and changes based on game context.
 
-**HUD (persistent overlay — always visible)**
-- Player vitals bar: HP, Stamina, CPW as coloured progress bars with current/max numbers.
-- Party strip: up to 3 companion portraits with their HP bar; greyed out when downed.
-- Phase indicator: current day phase (Morning/Afternoon/Evening/Night/Midnight) with phase action count (e.g. 7/15).
-- Gold counter.
-- Fatigue indicator (icon-based; 5 tiers).
-- Menu button (opens tabbed menu overlay).
+------------------------------
+## Title Screen view
 
-**Overworld view**
-- Location name and region.
-- Connected location list (available moves) as clickable buttons with encounter chance shown.
-- NPC list for current location: name, relationship status icon, available interaction buttons (Talk, Flirt, Touch, Gift, Intimacy).
-- Phase advance / Sleep button.
-- Context log: last 5 narrative lines from the server.
+* Game Name Header: Prominent stylized typography featuring a dark-fantasy text gradient (bg-clip-text text-transparent bg-gradient-to-b from-stone-200 to-stone-500).
+* Menu Options Stack: Vertical column of interactive navigation anchors:
+* New Game (triggers character creation view)
+  * Continue (greyed out if no server-side save token exists; shows level/location preview on hover)
+  * New Game+ (hidden until a game-cleared flag is verified by the server)
+  * Content Settings (toggles adult filters, content warnings, and narrative trigger blocks)
+  * Settings (manages audio, keybindings, text-scroll speed, and resolution scales)
+  * About (opens modal overlay containing credits, licensing, patch notes, and engine version)
+* Atmospheric Vignette Layer: Full-viewport subtle CSS animation overlay rendering low-opacity drifting smoke, dust motes, or a slow blood-red pulsation loop.
 
-**Combat view**
-- Initiative order strip (portraits in turn order; active combatant highlighted).
-- Combatant panels: HP/Stamina bars, status effect icons, name, downed state.
-- Action bar: player's available actions for their turn (Attack, Skills, Purify, Flee, Defend, Use Item).
-- Combat log: scrollable turn-by-turn narrative.
-- Purification progress bar (visible when at least one purification action has been used).
+------------------------------
+## HUD (persistent overlay — always visible)
 
-**Intimacy view**
-- Partner panel: portrait, name, arousal bar, wetness indicator, mental state indicator, resistance bar.
-- Scene narrative panel: latest response text from the fragment repository.
-- Position picker: grid of available positions.
-- Action picker: list of available actions for the current position.
-- Scene status bar: player stamina, turn count, scene start type.
-- End scene button.
+* Player vitals bar: HP, Stamina, CPW as coloured progress bars with current/max numbers.
+* Party strip: up to 3 companion portraits with their HP bar; greyed out when downed.
+* Phase indicator: current day phase (Morning/Afternoon/Evening/Night/Midnight) with phase action count (e.g. 7/15). Dynamic structural border color glows based on active location safety tier (Gold for Fully Safe, Iron for Humanoid Only, Crimson Pulse for Unsafe).
+* Gold counter.
+* Fatigue indicator: icon-based; 5 tiers.
+* Menu button: opens tabbed menu overlay.
 
-**Dialogue view**
-- Speaker portrait and name.
-- Dialogue text panel.
-- Choice buttons (up to 6; greyed out when conditions are not met, hidden when locked by flags).
-- Trust/Love delta preview on hover over a choice.
+------------------------------
+## Unified Spatial Exploration view (Merged Overworld & Manor)
 
-**Menus (tabbed overlay)**
-- **Inventory:** item grid with quantity, equip/use/drop actions, gold display.
-- **Skills:** Battle and Ardor tree side by side; nodes show cost, prerequisites, unlock state.
-- **Quests:** active/available/completed tabs; objective progress per active quest.
-- **Contacts:** list with portrait, name, race, relationship status, trust/love meters; click for full profile.
-- **Manor:** tier display, construction timer, suite roster, passive resource queue.
+* Location & Safety Header: Displays current location name, region name, and an explicit Safety Tier indicator token (Secure Sanctuary / Fortified Boundary / Perilous Wilds).
+* The 30×30 Grid Canvas: Perfectly square layout matrix processing 900 tile components:
+* Static Colliders: series of tiles acting as walls, chasms, or structural obstacles that block movement. Door tiles are kept empty to act as clear entry/exit points.
+  * Overlapping Occupant Badges: Tiles containing multiple entities (companions, neutral NPCs, or monsters stacked on a single coordinate) render a stacked layer counter button (e.g., +3 or target indicators) prioritizing the player avatar on top.
+* Dynamic Presence Panel (The Inspector Lens): Vertical sidebar changing context instantly based on the tile your player stands on or hovers over:
+* Entity Stack Accordion: lists all stacked companions/NPCs (reveals social row: Talk, Flirt, Touch, Gift, Intimacy) or monsters (reveals Engage Combat / Purify options).
+  * Manor Workspace & Structural Anchor: sits below the entity rows if standing on a base node, revealing room upgrade paths, construction project triggers, or production bench queues.
+* Phase Advance / Sleep Button: Changes mechanically based on safety tier: functions as an absolute safe rest multiplier inside the Manor, a guarded time-step in Humanoid Only zones, and a high-risk camp warning button in Unsafe zones.
+* Context log: last 5 narrative lines or environmental discovery feedback pushed directly from the server.
+
+------------------------------
+## Combat view
+
+* Initiative order strip: portraits in turn order; active combatant highlighted.
+* Combatant panels: HP/Stamina bars, status effect icons, name, downed state.
+* Action bar: player's available actions for their turn (Attack, Skills, Purify, Flee, Defend, Use Item).
+* Combat log: scrollable turn-by-turn narrative.
+* Purification progress bar: visible when at least one purification action has been used.
+
+------------------------------
+## Intimacy view
+
+* Partner panel: portrait, name, arousal bar, wetness indicator, mental state indicator, resistance bar.
+* Scene narrative panel: latest response text from the fragment repository.
+* Position picker: grid of available positions.
+* Action picker: list of available actions for the current position.
+* Scene status bar: player stamina, turn count, scene start type.
+* End scene button.
+
+------------------------------
+## Dialogue view
+
+* Speaker portrait and name.
+* Dialogue text panel.
+* Choice buttons: up to 6; greyed out when conditions are not met, hidden when locked by flags.
+* Trust/Love delta preview: shown on hover over a choice.
+
+------------------------------
+## Menus (tabbed overlay)
+
+* Inventory: item grid with quantity, equip/use/drop actions, gold display. Restricted or simplified when accessed from Unsafe grid regions.
+* Skills: Battle and Ardor tree side by side; nodes show cost, prerequisites, unlock state.
+* Quests: active/available/completed tabs; objective progress per active quest.
+* Contacts: list with portrait, name, race, relationship status, trust/love meters; click for full profile.
+* Manor: tier display, construction timer, suite roster, passive resource queue (Greyed out/Locked when player is exploring an Unsafe tier location grid).
+
+------------------------------
+## Character Creation view
+
+* Identity Block: character name text input prompt and character portrait selector.
+* Origin/Class Toggle Matrix: interactive grid of class cards displaying core starting skills and passive traits when highlighted.
+* Attribute Allocation Grid: counter grid for assigning starting points to base statistics (e.g., Strength, Agility, Willpower) with reactive [ + ] and [ - ] buttons.
+* Origin Lore Panel: contextual background text updating dynamically based on the selected class or origin choices.
+* Finalise Character Button: triggers the client-validated tRPC mutation to register the profile data and boot into the introduction sequence.
+
+------------------------------
+## Defeat / Game Over view
+
+* Grim Announcement Text: striking fullscreen notification (e.g., "YOUR SOUL SPLINTERS") indicating party failure or narrative execution.
+* Loss Manifest Panel: detailed breakdown of currency lost, items broken, or permanent stat scars/fatigue penalties incurred during death.
+* Re-anchoring Command Menu: server-authoritative resolution options:
+* Awake at Manor (respawns player at the base with penalties applied)
+  * Load Last Autorecord (fetches the most recent checkpoint state from the server)
+  * Return to Title Screen
+
+------------------------------
+## Exploration Encounter view
+
+* Event Header: context-driven headline banner (e.g., "An Ambush in the Dark", "A Collapsed Pathway"). Triggered directly when a random tile check rolls a trap, surprise environmental block, or script execution flag on Unsafe / Humanoid Only grids.
+* Dynamic Event Log: narrative block delivered from the server explaining an environmental trap, road block, or non-combat emergency threat.
+* Stat-Check Interactive Actions: a layout of choice buttons mapped to character attributes (e.g., [Agility Test] Dodge the collapsing masonry), displaying success rate percentages.
+* Resolution Window: secondary descriptive text displaying the structural fallout of the choice made (damage sustained, items found, or fatigue applied).
+* Acknowledge Button: [Proceed] button to close out the event frame and return control to the active 30×30 grid canvas.
+
+------------------------------
+## Equipment Management view (Added / Refined)
+
+* Active Character Profile Header: Embedded entirely in the upper section of the Middle Canvas region; displays the active character's name, class, level, and derived stats (ATK, DEF, CRIT, EVA) without touching or altering the left HUD.
+* Equipment Slot Matrix: A 6-block layout grid nested in the center of the Middle Canvas tracking active item equipment slots: Weapon, Off-hand, Head, Chest, Hands, and Legs. Upgraded pieces display their explicit tier modifier (e.g., Iron Shortsword +2).
+* Valid Storage Cargo Grid: Sits below the paper-doll slots in the Middle Canvas; dynamically populates with a scrollable list of unequipped inventory items matching the currently focused equipment slot category.
+* Action bar: Replaced with contextual item modifiers ([Equip Selected], [Unequip Slot], [Forge Upgrade], [Laboratory Mutation], [Discard Loot]).
+* Back button: Pinned to Row 3, Column 7 of the hotbar panel; clicking it immediately closes out the interface and reverts from the equipment view directly back to the active interaction view of the Unified Spatial Exploration screen.
+
+------------------------------
+## Skill Trees view (Added)
+
+* Available Upgrade Currency Pools: Displays current unspent point trackers (Battle Points [BP] and Ardor Points [AP]) dynamically within the local interface canvas rows.
+* Side-by-Side Node Matrix: The main Middle Canvas splits cleanly into dual-pane graphic progression sheets: the Battle Tree map and the Ardor Tree map. Unlocked nodes glow with gold frames, while locked node steps map dependencies via structural connector lines.
+* Node Specification Panel: Active tooltips map highlighted node states to the top portion of the Right Panel, detailing functional gameplay variables, prerequisites, CPW costs, and Active/Passive skill definitions.
+* Action bar: Interactive development triggers ([Spend Point], [Reset Battle Tree], [Reset Ardor Tree], [Toggle Battle View], [Toggle Ardor View], [Return to Map]).
+
+------------------------------
+## Contacts & Detailed Profiles view (Added)
+
+* Sorted Contacts Directory: Displays a robust index list of up to 400 individuated character records inside the Middle Canvas. Rows show portrait tokens, name, race, companion quest milestone stages, and active world location data, sorting automatically by relationship magnitude.
+* Deep Metrics Scroller: Dynamically projects deep character data sub-tabs onto the top of the Right Panel upon row click:
+* Tab 1 (Social/Bio): Trust/Love scores, 16-cell relationship matrix labels, occupation, origin, and parentage names (Mother/Father).
+  * Tab 2 (Physical & Physiology): Body measurements (height, bust, cup size) alongside critical tracking parameters (Virginity status, Pregnancy stage progress tracking, Lactation history).
+  * Tab 3 (Psychology): Core personality traits, acquired kinks list, and current psychological resistance profiles (Fight, Freeze, Comply).
+* Action bar: Roster and suite management shortcuts ([Inspect Details], [Assign to Active Party], [Move Into Manor Suite], [Dismiss From Pool], [Page Up], [Page Down], [Close Menu]).
+
+------------------------------
+## Achievements view (Added)
+
+* Milestone Trophy Grid: A scrollable grid matrix within the Middle Canvas grouping unlockable achievements by tier ranks (Bronze, Silver, Gold, Platinum). Completed blocks illuminate with custom borders and print your unlocked Title tokens.
+* Reward Yield Box: Populates the top section of the Right Panel to display the server-validated execution logic requirements for the selected achievement alongside its currency or title payouts (e.g., +5 AP Reward, Title: Miasma Purifier).
+* Action bar: Matrix filters and sorting triggers ([Filter: Show All], [Filter: Unlocked], [Filter: Locked], [Sort: Tier Ranks], [Close System Menu]).
+
+------------------------------
+## Profile view (player/contact) 
+- pending design (currenty thinking of displaying the profile(scrollable) in the middle region and back button to go back to the previous view)
 
 #### 4.21.4 Reusable Component Primitives
 
