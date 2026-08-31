@@ -40,5 +40,6 @@ desktop.ini
 !.env.example
 
 # ── Save files (game runtime data, not source) ───────────────
-saves/
+saves/*
+!saves/.gitkeep
 *.save.json
