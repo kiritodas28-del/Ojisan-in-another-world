@@ -1,13 +1,15 @@
 # Ojisan in Another World — Deep Engine & Requirements Analysis
 
-**Analysis version:** 1.2 (updated 2026-08-30)
-**PRD version:** 1.2
+**Analysis version:** 1.3 (updated 2026-09-01)
+**PRD version:** 1.4
 
 ## Executive Summary
 
-The [requirements.md](./requirements.md) (v1.2) defines **20 engines** and 7 sections of core architecture. The [spawn-engine/](./spawn-engine/) directory contains **15 TypeScript files** that implement a deep **NPC Procedural Generation + Intimacy Encounter** system. This covers the **NPC Population & Simulation Engine (§4.10)**, the **Procedural Content Generation Engine (§4.20)**, and significant portions of the **Intimacy Engine (§4.3)** and **Pregnancy Engine (§4.16)**.
+The [requirements.md](./requirements.md) (v1.4) defines **20 engines**, 7 sections of core architecture, and **10 distinct UI views**. The [spawn-engine/](./spawn-engine/) directory contains **15 TypeScript files** that implement a deep **NPC Procedural Generation + Intimacy Encounter** system. This covers the **NPC Population & Simulation Engine (§4.10)**, the **Procedural Content Generation Engine (§4.20)**, and significant portions of the **Intimacy Engine (§4.3)** and **Pregnancy Engine (§4.16)**.
 
 **Of the 20 engines described in the requirements, only ~3–4 have any actual code. The remaining 16–17 engines exist only as specifications.** Below is a detailed per-engine audit.
+
+**Frontend status:** UI stub files exist locally for the Phase UI tasks. However, the PRD §4.21.3 view list was substantially expanded in v1.4 (10 views, up from 6), and the Overworld view was redesigned as a 30×30 tile-grid spatial canvas with a merged Manor context panel. The current `OverworldView.tsx` and `ManorTab.tsx` stubs are superseded by this new design. Several new views were added with no stubs yet. See §5 below for the full frontend delta.
 
 > **Code quality note:** The existing code has been substantially patched since the initial audit. Most of the originally reported bugs (§3) have been resolved. Outstanding issues are called out inline.
 
@@ -30,7 +32,8 @@ The [requirements.md](./requirements.md) (v1.2) defines **20 engines** and 7 sec
 | 4.2 | Combat | ❌ Spec only | No | Full implementation; initiative, damage, AI, flee |
 | 4.2.1 | Enemy/Monster Spawn | ❌ Spec only | No | Enemy character schema, monster type definitions, scaling algorithm |
 | 4.3 | Intimacy | 🟡 Partial | Yes (spawn-engine/patches.ts, spawn-engine/dynamicState.ts) | Scene state machine, position/action catalog, TEC check, satisfaction calc |
-| 4.4 | Relationship | ❌ Spec only | No | Trust/Love matrix, 16-cell grid, move-in check, diminishing returns |
+| 4.4 | Relationship (Player-NPC) | ❌ Spec only | No | Trust/Love matrix, 16-cell grid, move-in check, diminishing returns, playerBondType setter |
+| 4.4a | NPC-NPC Social System | ✅ Implemented | Yes (npcSocialEngine.ts) | Wiring to calendarEngine step 9; mockGameState update |
 | 4.5 | Reputation | ❌ Spec only | No | Region scoring, decay, bounty formula, event table |
 | 4.6 | Quest | ❌ Spec only | No | QuestDef schema, objective completion, quest log |
 | 4.7 | Calendar & Time | ❌ Spec only | No | Phase system, fatigue table, day-end tick sequence |
@@ -141,25 +144,48 @@ The [requirements.md](./requirements.md) (v1.2) defines **20 engines** and 7 sec
 
 ---
 
-### 4.4 Relationship Engine
+### 4.4 Relationship Engine (Player-NPC)
 
 **Status: ❌ Spec only**
 
 **What the PRD specifies:**
-- Trust and Love each -100 to +100
+- Trust and Love each -100 to +100 (player-facing scalars on `NpcCharacter`)
 - Band thresholds: Low (-100 to -25), Neutral (-25 to 25), High (25 to 75), VeryHigh (75 to 100)
 - 16-cell (Trust × Love) matrix → `RelationshipStatus` label + available interactions
 - Gift: +10 Trust / +15 Love; Flirt/Touch: diminishing returns, max 3/day
 - Move-in: Trust ≥ 60 AND Love ≥ 60 (or per-character override)
+- `playerBondType?` on `NpcCharacter` records the bond with the player; Devoted/Owned/Broken/Corrupted/Submissive are player-exclusive (enforced by npcSocialEngine)
 
-**What exists:** Bond type resolution in `spawn-engine/dynamicState.ts` tracks encounter-based bonds — this is the *intimacy bond system*, not the Trust/Love relationship matrix. They are separate systems.
+**What exists:** Bond type resolution in `spawn-engine/dynamicState.ts` tracks encounter-based bonds — this is the *intimacy bond system*, not the Trust/Love relationship matrix. They are separate systems. Trust/Love fields and `playerBondType` are defined on `NpcCharacter` in `gameState.ts`.
 
 **What's missing from code:**
-- No Trust/Love numeric fields per NPC
-- No 16-cell matrix lookup
-- No diminishing returns counter
-- No move-in eligibility check
-- No gifting mechanic
+- No 16-cell matrix lookup implementation
+- No diminishing returns counter logic
+- No move-in eligibility check implementation
+- No gifting mechanic implementation
+- No `relationshipEngine` setter for `playerBondType` when a player-exclusive bond is established
+
+---
+
+### 4.4a NPC-NPC Social System
+
+**Status: ✅ Implemented**
+
+**What exists (`src/engines/npcSocialEngine.ts`):**
+- Three-part subset selection (personalityScore + relationshipPull + locationBonus; threshold 25)
+- Weighted candidate scoring with stranger-gate (open+extraverted NPCs can cold-connect)
+- Four interaction types: Talk, Flirt, Intimate, Conflict — selected by priority chain per pair
+- Full delta resolvers for all four types; intimate tick is 4 loops × 5 random actions (flat stat update)
+- Bond evolution ladder: Stranger → Acquaintance → Familiar → Friend → CloseFriend → Crush → Attachment → Dependent → Love → Devoted; branching to Obsession, HateLove, PureHate, Submissive, Transactional
+- `PLAYER_EXCLUSIVE_BONDS` gate in `evolveBond()` — checks `npc.playerBondType`; blocks NPC from evolving into the same exclusive type with another NPC
+- Bond cap enforcement per BondType (collision → downgrade weakest to Acquaintance)
+- 30-day decay + 20-slot cap enforcement in `runDecayAndCapEnforcement()`
+- Immutable write-back via `applyInteractionLog()`
+- `runNpcSocialTick()` is the day-end entry point
+
+**What's still pending:**
+- `calendarEngine.runDayEndTick()` step 9 is a comment stub — needs actual call to `runNpcSocialTick()`
+- `mockGameState.ts` NPC entries need `npcRelationships: []`, `playerBondType: undefined`, `npcInteractionLog: []` added
 
 ---
 
@@ -422,3 +448,117 @@ graph TD
     SAVE["Save/Load Engine"] -.->|"serialize/deserialize"| GAME_STATE["GameState"]
     GAME_STATE -.->|"read by all"| DISPATCHER
 ```
+
+---
+
+## 5. Frontend View Delta (PRD v1.4 changes)
+
+The PRD §4.21.3 was significantly expanded. The view count grew from 6 to 10, and one existing view (Overworld) was completely redesigned. This section tracks the delta between what stub files exist and what is now required.
+
+### 5.1 View Status Matrix
+
+| View | PRD section | Stub file exists? | Action required |
+|------|-------------|-------------------|-----------------|
+| Title Screen | §4.21.3 | ❌ No | New stub needed |
+| HUD (persistent overlay) | §4.21.3 | ✅ `HudShell.tsx` | Update: add fatigue indicator, dynamic safety-tier border color glow |
+| Unified Spatial Exploration (30×30 grid) | §4.21.3 | ⚠️ `OverworldView.tsx` (superseded) | Redesign: replace list-based layout with tile grid canvas + Inspector Lens sidebar; `ManorTab.tsx` merges into this view's Inspector Lens |
+| Combat | §4.21.3 | ✅ `CombatView.tsx` | No change |
+| Intimacy | §4.21.3 | ✅ `IntimacyView.tsx` | No change |
+| Dialogue | §4.21.3 | ✅ `DialogueView.tsx` | No change |
+| Menus overlay | §4.21.3 | ✅ `MenuShell.tsx` | Inventory, Skills, Quests retain as tabs; Contacts and Manor panels become standalone views (see below); Manor tab grays out in Unsafe zones |
+| Exploration Encounter | §4.21.3 | ❌ No | New stub needed |
+| Equipment Management | §4.21.3 | ❌ No | New stub needed |
+| Skill Trees | §4.21.3 | ⚠️ `SkillsTab.tsx` (in menu) | Now a standalone full view, not a menu tab; the existing tab stub may be repurposed or replaced |
+| Contacts & Detailed Profiles | §4.21.3 | ⚠️ `ContactsTab.tsx` (in menu) | Now a standalone full view with 3-tab deep scroller and action bar; the existing menu tab stub may be repurposed or replaced |
+| Achievements | §4.21.3 | ❌ No | New stub needed |
+| Defeat / Game Over | §4.21.3 | ❌ No | New stub needed |
+| Character Creation | §4.21.3 | ❌ No | New stub needed |
+| Profile (player/contact) | §4.21.3 | ❌ No | Pending design; stub needed when design is settled |
+
+### 5.2 Unified Spatial Exploration — Architecture Notes
+
+This is the most architecturally significant change. The PRD replaces the list-based Overworld view with a **30×30 tile grid canvas** that acts as the combined exploration and manor interface.
+
+**Tile model:**
+- 900 tile components in a square grid.
+- **Static colliders:** Wall tiles defined as a series of adjacent disabled/filled tiles. Doors are empty tiles (player simply walks through).
+- **Location shape:** Locations can be non-rectangular — tiles at the edges of the square are disabled/hidden to give the location its shape.
+- **Occupant stacking:** A single tile can hold multiple entities simultaneously. Party companions overlap the player’s tile; other NPCs and monsters can also stack on any tile. The tile renders the player avatar on top and a stacked-entity counter badge (e.g. "+3") when multiple entities share it.
+- **Layers:** Conceptually three layers per tile — floor/terrain, static objects (walls, obstacles), and occupants (player/NPC/monster sprites or badges).
+
+**Inspector Lens sidebar (right panel):**
+- Context changes based on the tile the player is standing on or hovering.
+- Shows entity stack accordion (social actions for NPCs, combat/purify for monsters).
+- Shows Manor workspace if player is on a base/manor node (replaces the old `ManorTab`).
+- Phase advance / Sleep button with safety-tier-aware behavior.
+- Context log: last 5 narrative lines.
+
+**Safety tier visual indicators:**
+- HUD border color: Gold = Fully Safe, Iron/grey = Humanoid Only, Crimson Pulse = Unsafe.
+- Inspector sleep button: absolute rest (Safe), guarded time-step (Humanoid Only), high-risk camp warning (Unsafe).
+- Menu Inventory and Manor tabs: restricted/grayed in Unsafe zones.
+
+**Key implication for existing stubs:**
+- `OverworldView.tsx` is superseded and should be replaced, not extended.
+- `ManorTab.tsx` loses its tab slot in the menu; its content moves into the Inspector Lens sidebar.
+- The 30×30 tile grid is a significant new data model: `TileMap` (static terrain + colliders), `TileOccupants` (runtime entity positions). Both must be defined in `GameState` or returned by the server alongside `GameState`.
+
+### 5.3 New Reusable Components Required
+
+The new views introduce component needs not covered by the existing primitives:
+
+| Component | Required by | Purpose |
+|-----------|-------------|----------|
+| `TileGrid` | Spatial Exploration | 30×30 canvas; renders terrain, colliders, and occupant badges |
+| `TileCell` | `TileGrid` | Single tile: terrain variant + occupant layer + interactable state |
+| `InspectorLens` | Spatial Exploration | Right sidebar; context-switched on tile focus |
+| `SafetyTierBadge` | HUD, Spatial Exploration | Visual tier token (Secure/Fortified/Perilous) |
+| `FatigueIndicator` | HUD | 5-tier icon row |
+| `OccupantBadge` | `TileCell` | Stacked entity counter with priority rendering (player on top) |
+| `SkillTreePane` | Skill Trees view | Single skill tree map with node connectors and glow states |
+| `NodeTooltip` | `SkillTreePane` | Hover tooltip: CPW cost, prereqs, active/passive, effect list |
+| `AchievementTile` | Achievements view | Trophy tile with tier border, title token, locked/unlocked state |
+| `CharacterCreationCard` | Character Creation | Class/origin card with skill preview |
+| `StatAllocator` | Character Creation | Attribute row with +/− buttons and remaining-points counter |
+
+### 5.4 TileMap State Model
+
+The 30×30 grid requires new state that doesn’t fit cleanly in the existing `GameState` interfaces. Proposed additions:
+
+```typescript
+// New fields to add to WorldState (or returned alongside GameState by server)
+interface TileMap {
+  locationId:  string;              // which location this map represents
+  tiles:       TileCell[][];        // [row][col], 30×30
+  spawnPoints: Record<string, TileCoord>; // entity id → starting tile
+}
+
+interface TileCell {
+  coord:        TileCoord;          // { row, col }
+  terrain:      TileTerrainType;    // FLOOR | WALL | CHASM | DOOR | EMPTY_EDGE
+  isPassable:   boolean;            // false for walls, chasms, edge-disabled tiles
+  objectId?:    string;             // static interactive object on this tile
+}
+
+interface TileCoord { row: number; col: number; }
+type TileTerrainType = 'FLOOR' | 'WALL' | 'CHASM' | 'DOOR' | 'EMPTY_EDGE';
+
+// Runtime occupant positions (separate from TileMap, changes every move intent)
+type OccupantPositions = Record<string, TileCoord>; // entity id → current coord
+```
+
+Location tile map definitions (terrain layout, walls, doors, disabled edges) live in static data in `src/data/worldGraph.ts` or a dedicated `src/data/tileMaps.ts`.
+
+### 5.5 Menu Tab Roster Changes
+
+With Skills and Contacts becoming standalone views, the menu tab bar changes:
+
+| Old tabs | New tabs |
+|----------|----------|
+| Inventory | Inventory |
+| Skills | Quests |
+| Quests | (Skills is now a full view, accessed via hotbar or HUD button) |
+| Contacts | (Contacts is now a full view, accessed via Contacts button) |
+| Manor | (Manor context merges into Inspector Lens) |
+
+This means `MenuShell.tsx` shrinks to 2 tabs (Inventory + Quests), and the Skills/Contacts/Manor entries move out. The `SkillsTab.tsx`, `ContactsTab.tsx`, and `ManorTab.tsx` stubs are either promoted to standalone view files or removed.

@@ -46,6 +46,7 @@ const mockBandit: AnyCharacter = {
 
 export const mockCombatState: CombatState = {
   encounterId:     'enc-001',
+  regionId:        'region-forest-001',
   initiativeOrder: ['player-001', 'enemy-wolf-1', 'npc-elara', 'enemy-bandit-1'],
   currentTurnIndex: 0, // player's turn
   combatants: {
@@ -56,6 +57,14 @@ export const mockCombatState: CombatState = {
   },
   roundNumber:          2,
   status:               'RUNNING',
+  miasmaLevel:          24,
   purificationProgress: 15,
   bossPhaseScripts:     {},
+  killedEnemies:        [],
+  log:                  [
+    { round: 1, actorId: 'player-001',    message: 'Player strikes the wolf for 18 damage.' },
+    { round: 1, actorId: 'enemy-wolf-1',  message: 'Forest Wolf bites the player for 11 damage.' },
+    { round: 1, actorId: 'npc-elara',     message: 'Elara slashes the bandit for 15 damage.' },
+    { round: 1, actorId: 'enemy-bandit-1',message: 'Forest Bandit failed to flee!' },
+  ],
 };

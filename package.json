@@ -17,5 +17,11 @@
   "bugs": {
     "url": "https://github.com/kiritodas28-del/Ojisan-in-another-world/issues"
   },
-  "homepage": "https://github.com/kiritodas28-del/Ojisan-in-another-world#readme"
+  "homepage": "https://github.com/kiritodas28-del/Ojisan-in-another-world#readme",
+  "dependencies": {
+    "uuid": "^14.0.2"
+  },
+  "devDependencies": {
+    "@types/uuid": "^10.0.0"
+  }
 }

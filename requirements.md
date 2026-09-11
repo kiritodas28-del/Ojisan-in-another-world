@@ -1,7 +1,7 @@
 # Ojisan in Another World — Product Requirements Document (PRD)
 
-**Version:** 1.4
-**Date:** 2026-08-30
+**Version:** 1.6
+**Date:** 2026-09-08
 **Status:** Draft for review
 
 ---
@@ -135,6 +135,7 @@ All engines are pure modules. The server is the sole authority. The client sends
 6. Manor passive generation
 7. Daily counter resets (flirt/touch limits, repeatable quest cooldowns)
 8. Date increment
+9. NPC-NPC social tick (subset selection, interaction resolution, bond evolution, decay enforcement, slot cap trimming)
 
 **`GameState` root interface (TypeScript sketch):**
 ```typescript
@@ -288,10 +289,18 @@ interface NpcCharacter extends HumanoidCharacter {
   scheduleId?:      string;
   isProtected:      boolean;
   isService:        boolean;
-  trust:            number;  // -100 to +100 (relationship engine)
+  trust:            number;  // -100 to +100 (relationship engine, player-facing)
   love:             number;  // -100 to +100
   flirtCountToday:  number;  // resets at day-end
   touchCountToday:  number;
+  playerBondType?:  BondType;    // bond held with the player; Devoted/Owned/Broken/Corrupted/Submissive are player-exclusive
+  npcRelationships: NpcRelationship[]; // NPC-NPC social graph, max 20 entries
+  companionLevel:   number;
+  companionXP:      number;
+  // Intimacy faint/life-force state (cleared at day-end by calendarEngine)
+  intimacyBlockedForDay?: boolean;  // set when scene ends with NPC still fainted; prevents re-engagement that day
+  intimacyLifeForce?:     number;   // 0-100; bleeds when stamina costs are redirected post-faint; recovers to 100 at day-end
+  isDeceased?:            boolean;  // tombstone set by dispatcher on NPC_DIED_IN_INTIMACY; NPC is removed from contacts[]
 }
 ```
 
@@ -363,43 +372,322 @@ Enemies and monsters are characters in the same sense as NPCs — they use the s
 
 ### 4.3 Intimacy System
 
-- Full intimate encounter scenes with turn-by-turn interaction.
-- Scene start types: CONSENSUAL, FORCE_INTIMACY, FORCE_INTIMACY_SLEEPING.
-- Scene ends via STAMINA_EXHAUSTED or PLAYER_ENDED.
-- `activePositionId` + `activeActionId` track scene state.
-- `occupiedPenetrationTargets` prevents simultaneous same-cavity use.
-- Multiple positions and actions; simultaneous actions allowed with body-part conflict checks.
-- Technique check: `tecCheck = playerTEC ≥ actionTECRequirement + d10`; failure halves action effectiveness.
-- **Partner state simulation**: resistance, mental state, and mood evolve during scenes based on actions and relationship context.
-  - Resistance profile (fight, freeze, comply, etc.), current resistance, baseline resistance, corruption shift threshold, next profile, trauma modifier.
-  - Mental state tracks mood, corruption, shame, broken flag, subspace tracker, afterglow tracker, suppression state, trust with player, attachment, submission to player.
-- **Satisfaction score** after each scene: `satisfaction = (pleasurePeak × 0.4 + orgasmCount × 15 + kinkTriggered × 10 - painExcess × 5)`, clamped 0–100. Affects relationship gains and partner reactions.
-- **Kink acquisition**: as per each kink's condition and `kinkAcquisitionRate`.
-- **Kink progression**: repeated actions trigger partner kinks, adding bonuses; acquired kinks tracked per character.
-- **Dynamic narrative responses**: generated from context using a large fragment repository.
-- **Physical response tracking**: wetness, pleasure, pain, arousal level, stamina, lactating, clothing state, restraint state.
+#### 4.3.1 Overview
 
-**`IntimacyScene` state (TypeScript sketch):**
+Full intimate encounter scenes with turn-by-turn interaction. The intimacy engine is fully server-authoritative; the client sends action intents and renders the returned scene state.
+
+- **Scene start types:** CONSENSUAL, FORCE_INTIMACY, FORCE_INTIMACY_SLEEPING, POST_DEFEAT
+- **Scene end conditions:** STAMINA_EXHAUSTED (player stamina hits 0), PLAYER_ENDED, ORGASM_LIMIT_REACHED (3 partner orgasms), PARTNER_DECEASED (partner life force reaches 0 — terminal; see §4.3.11)
+- **Single source of truth:** all character physiology/psychology types are imported from spawn-engine; no duplicate definitions exist in the intimacy engine
+
+#### 4.3.2 Positions and Actions
+
+- **27 positions** across categories: standard penetrative (Missionary, Cowgirl, ReverseCowgirl, Doggy, Spooning, StandingBehind, Lotus, Lap, StandingMissionary, Ballerina, Flatiron, MatingPress, LyingFullNelson, StandingFullNelson, Piledriver), female-led (FemaleLeadVaginal, FemaleLeadAnal), oral/manual (FaceOral, KneelingOral, Fingering, HandOnBreasts), paizuri (BoobjobPosition), species-gated (LamiaCoil requires `SERPENT_TAIL` feature)
+- **55 actions** covering: penetrative (thrust variants, G-spot, cervix, womb, anal), oral (lick, suck, blowjob, deep throat, face fuck, french kiss), ear (lick, bite), manual (finger, rub, stroke, pinch, pull nipples, squeeze ass), affection (kiss, neck bite, whisper, caress), impact (ass spank, breast spank, paddle spank, slap), aggressive (force hold, hair pull), choke sequence (grab_neck -> choke -> release_neck), bondage (rope bind/release, orgasm denial), toys (vaginal/anal/clit/nipple vibrators, anal beads, milker -- all in attach/active/remove pattern), paizuri (boobjob), strip (partner/self), species (lamia constrict)
+- **Position gates:** `requiredClothingState`, `minTrust`, `minLove`, `requiredPartnerFeature`, `transitionCost` (stamina cost to switch positions mid-scene)
+- **Action gates:** `tecRequirement`, `requiredItems` (non-consumable tools stay in inventory; consumables decremented on use), `requiresNeckGrab` (choke sequence)
+- Clothing state ladder: FULLY_CLOTHED -> TOPLESS -> BOTTOMLESS -> FULLY_UNDRESSED; clothing condition TORN on non-consensual strip
+
+#### 4.3.3 Core Mechanics
+
+**Technique check:** `playerTEC + roll(1,10) >= actionTECRequirement`
+- Pass: full `stimulationIntensity`
+- Fail: `stimulationIntensity x effectivenessOnFail` (default 0.5)
+
+**Final stimulation formula (all multipliers stacked):**
+```
+stim = baseIntensity
+     x tecEfficiency
+     x overstimPenalty        // -20%/repeat beyond 2nd consecutive same action
+     x kinkMult               // +20% per acquired Kink enum match
+     x arousalMult            // 0.6 at arousal 0 -> 1.4 at arousal 100
+     x momentumMult           // x1.15 at momentum>=7; x0.90 at momentum<=2
+     x zoneSensitivityMult    // per-zone FemaleSensitivityProfile lookup
+     x postOrgasmMult         // NORMAL:1.0 / HEIGHTENED:1.4 / OVERWHELMED:0.3
+     x subspaceMult           // x1.4 when SubspaceTracker.active
+     x jitter                 // +-10% random variance
+     x resistanceMult         // arousal gain reduced by resistance + shame friction
+     x consumableMult
+```
+
+**Pain resolution:**
+- `effectivePain = rawPain x painPersonalityMult x (1 - elasticityReduction) x wetnessMult x subspaceMult x consumableMult`
+- `painPersonalityMult`: Masochistic SexualLean -> -0.6 (pain converts to arousal); pain-averse profiles amplify pain; scales with `currentResistance`
+- Shame amplifies pain for resistant profiles; high elasticity reduces it; subspace reduces it by 70%
+- Post-orgasm OVERWHELMED state: +8 pain to `painExcess` per turn until state clears
+
+**Kink system:**
+- Action `kinkTagsTriggered` must use `Kink` enum values (not string literals)
+- `kinksTriggered` counter only increments on matches against partner's `acquiredKinks: Kink[]`
+- Each matching kink adds +20% to the stimulation multiplier chain
+
+**Satisfaction score:**
+```
+satisfaction = (pleasurePeak x 0.4) + (orgasmCount x 15) + (kinksTriggered x 10) - (painExcess x 5)
+Clamped [0, 100]
+```
+
+#### 4.3.4 Fluid and Physiological Persistence
+
+All fluid storages and arousal persist between scenes unless in-game rest occurs:
+
+| Field | Character | Notes |
+|---|---|---|
+| `cumStorage` / `cumStorageMax` | PlayerCharacter | Fills via penetrative actions; expelled at male orgasm |
+| `squirtStorage` / `squirtStorageMax` | NpcCharacter.sexualPhysiology | Fills via G-spot/cervix/womb actions; expelled at squirt |
+| `squirtProbability` | NpcCharacter.sexualPhysiology | Builds per turn; resets to 0 after squirt fires |
+| `milkStorage` / `milkStorageMax` | NpcCharacter.sexualPhysiology | Fills via breast/nipple/milker actions; max derived from cup size |
+| `arousalCurrent` | Both | Persists; scene starts at last arousal level |
+
+**Milk storage max by cup size:** AA/A/B = 60; C/D = 100; DD/E = 140; F+ = 180
+
+**Squirt fires when:** `squirtCapacity === true` (OrgasmProfile) AND `squirtStorage > 0` AND `squirtProbability >= 0.55` (diuretic lowers threshold to 0.40)
+
+**Wetness** is derived each turn from `WetnessTrack` via `calculateCurrentWetness()` from patches.ts; not a raw scalar. Wetness level reduces penetrative pain (Dry: no reduction -> Flooding: 75% reduction).
+
+#### 4.3.5 Orgasm System
+
+**Female orgasm:**
+- Type determined by `OrgasmProfile.dominantType` (Clitoral/Vaginal/Anal/Combined from `OrgasmType` enum)
+- `OrgasmType.Multiple` (body-shaking) fires only when `OrgasmProfile.multipleCapacity === true` AND at least one prior orgasm this scene, OR when orgasm was previously denied via orgasm_denial
+- After orgasm, `postSensitivity` (PostOrgasmSensitivity enum) applies: NORMAL (no change), HEIGHTENED (x1.4 stimulation), OVERWHELMED (x0.3 stimulation + pain spike)
+- Orgasm chance: `(action.orgasmChance x tecEfficiency x OrgasmEase multiplier) + dominantType zone bonus`
+- OrgasmEase multipliers: VeryEasy x1.7, Easy x1.3, Moderate x1.0, Difficult x0.6, VeryDifficult x0.35
+
+**Male orgasm:**
+- Player triggers via `resolvePlayerOrgasm(scene, destination: 'INSIDE' | 'OUTSIDE')`
+- `cumExpelled` = current `cumStorage` at time of orgasm; storage resets to 0
+- INSIDE: partner arousal spike; pregnancy check flagged if no condom
+- OUTSIDE: no pregnancy check; `cumOnBody` act flag set
+
+**Orgasm denial:**
+- Available when partner arousal >= 85
+- Resets arousal to 70; +0.20 squirt probability; +2 kink tokens
+- Next orgasm forced to `OrgasmType.Multiple` regardless of `multipleCapacity`
+
+#### 4.3.6 Resistance System
+
+Resistance is a two-layer system: **profile type** (authored per character) + **current resistance** (derived contextually at scene start).
+
+**Profile types** (`ResistanceProfileType` enum):
+- `Enjoy`: arousal gains at 120% in non-consensual scenes; pain converts to arousal
+- `Comply`: neutral arousal gain; minimal resistance
+- `Freeze`: 50% arousal gain; pain amplified by shame
+- `Fight`: 30% arousal gain; maximum pain amplification; highest physical resistance
+
+**Current resistance** is derived fresh at every `startScene()` call via `deriveCurrentResistance()`. It represents the *strength* of resistance in this moment, not the character of it. Rules applied additively to `baselineResistance`, clamped [0, 100]:
+
+| Rule | Modifier | Rationale |
+|---|---|---|
+| High love (>=70) + high trust (>=60) + experience (>=5 encounters) | -40 | Deep mutual bond; she wants this |
+| High love + high trust + zero experience | -10 | Loves him but nervous and inexperienced |
+| Growing love/trust (40-70) + some corruption (>=20) | -25 | Bond forming; corruption dissolving friction |
+| Growing love/trust + no corruption | -15 | Bond forming; some natural friction remains |
+| Low love (<20) + high corruption (>=70) + high submission (>=70) | -55 | Fully broken and submissive |
+| Low love + high corruption + high attachment (>=60) | -50 | Dependent without love |
+| Submission >= 60 (any conditions) | -20 | Direct submission reducer |
+| Submission 40-60 | -10 | Partial submission |
+| High shame (>=70) + low love (<30) + low corruption (<30) | +20 | Genuinely resistant; no bond, no corruption to dissolve it |
+| Low trust (<20) + low love (<20) + virgin with player | +30 | Stranger + no prior experience = maximum resistance |
+| Low trust + low love + experienced | +10 | Transactional friction |
+| FORCE_INTIMACY + low trust (<40) | +25 | Being forced by someone she doesn't trust |
+| FORCE_INTIMACY + high trust (>=60) | -10 | Forced by someone trusted -- conflicted, lower fight |
+| POST_DEFEAT + corruption >= 30 | -20 | Defeat + corruption = compliance |
+| >= 20 encounters + high love (>=40) | -15 | Comfort and intimacy through familiarity |
+| >= 20 encounters + low love | -5 | Familiarity alone reduces friction slightly |
+| Hidden desire aligned with scene type | -10 | Secret want matches what's happening |
+| Trauma modifier (from ResistanceProfile) | -20 to +30 | Authored per character |
+
+**Mid-scene resistance decay:** `currentResistance` scales the effective resistance multiplier -- at 0 resistance, even a FIGHT profile behaves closer to COMPLY. As arousal builds and acts accumulate, the engine applies the decay via the resistance arousal multiplier formula, creating a natural "breaking down" arc.
+
+**Shame mechanics:**
+- Shame friction: `(shame - corruption) / 100 x 0.3` subtracted from arousal gain multiplier
+- When shame > corruption, arousal from pleasure is partially suppressed even in COMPLY profiles (body-betrayal arc)
+- High shame amplifies pain perception for FIGHT/FREEZE profiles
+- Post-scene mood reflects shame state: high satisfaction + high shame -> `MoodValue.AshamedButNeedy`
+
+#### 4.3.7 Partner State Simulation
+
+All partner state trackers are sourced from the spawn engine and updated via patches.ts:
+
+- **PleasureTrack** -- parallel to arousal; `updatePleasure()` called each turn; feeds `pleasurePeak` for satisfaction formula
+- **WetnessTrack** -- `calculateCurrentWetness()` each turn; drives lubrication and penetrative pain reduction
+- **SubspaceTracker** -- `updateSubspaceTracker()` each turn; when active: pain x0.3, pleasure x1.4
+- **AfterglowTracker** -- `triggerAfterglow()` on orgasm; `tickAfterglow()` between orgasms; `AfterglowTracker.active` drives post-scene mood and love/trust delta multiplier
+- **FemaleSensitivityProfile** -- per-zone `SensitivityTrack` lookup for each `bodyPartTargeted`; `tryIncreaseSensitivity()` called post-scene on stimulated zones
+
+#### 4.3.8 Consumable Items
+
+| Item | Effect | Duration |
+|---|---|---|
+| `condom` | Blocks pregnancy check; no other arousal change | Scene-scoped |
+| `aphrodisiac_gel` | +30% all arousal gains | 5 turns |
+| `lubricant` | -50% penetrative pain; +15% squirt storage gain | 4 turns |
+| `diuretic` | +40% squirt storage fill rate; squirt threshold 0.40 (down from 0.55) | 3 turns |
+| `paddle` | Required item for paddle_spank (non-consumable tool) | -- |
+| `rope` | Required for rope_bondage_bind/release (non-consumable tool) | -- |
+| `vaginal_vibrator` / `anal_vibrator` / `clit_vibrator` / `nipple_vibrator` / `anal_beads` / `milker` | Required for respective toy actions (non-consumable tools) | -- |
+
+#### 4.3.9 Scene Progression Features
+
+- **Momentum system** [0-10]: builds on high-pleasure turns (+1.0 at stim>=15); drops on TEC fail (-1.5); at >=7: +15% all arousal; at <=2: -10% all arousal
+- **Overstimulation**: same action 3+ consecutive turns triggers -20%/repeat stimulation penalty; forces variety
+- **Position transition cost**: switching positions costs `transitionCost` player stamina (default 5; incompatible jumps cost 8)
+- **Choke sequence**: `grab_neck` (sets `neckGrabActive`) -> `choke` (requires `neckGrabActive`; high TEC) -> `release_neck` (clears flag; oxygen-return spike)
+- **Clothing damage**: TORN condition applied to partner clothing on non-consensual strip actions
+- **Afterglow**: satisfaction >=60 triggers afterglow; love/trust deltas multiplied x1.3; partner enters `MoodValue.Afterglow` for one in-game phase
+
+#### 4.3.10 Post-Scene Experience Updates
+
+**Player gains per scene:**
+- Technique: +0.5 base; +0.5 at satisfaction >=70; x0.5 diminishing returns on repeat partner
+- Virility: +0.3 if player orgasmed this scene
+- Sensitivity: +0.2 if player sustained arousal >=50 for >3 turns
+- XP: 20 base + 10 per partner orgasm + 15 at satisfaction >=80
+- Ardor Points: +1 at satisfaction >=60; +1 additional at satisfaction >=80
+
+**Partner updates per scene (via `resolvePostEncounter()` from patches.ts):**
+- Trust/love deltas from satisfaction tier + force penalties
+- Per-zone sensitivity increases on stimulated zones (`tryIncreaseSensitivity()`)
+- Wetness baseline update
+- Orgasm type acquisition (acquires new `OrgasmType` after sufficient encounters)
+- Kink acquisition (kink acquisition rate applied per triggered kink)
+- Sexual lean drift
+- `SexualActFlags` updated with all acts performed
+- Corruption delta from `CorruptionShameTrack.corruptionRatePerEncounter x encounterIntensity x sceneMultiplier`
+- Mood set to MoodValue enum value based on satisfaction + shame + force status
+
+**`IntimacyScene` state (TypeScript sketch -- full interface):**
 ```typescript
 interface IntimacyScene {
-  startType:                 "CONSENSUAL" | "FORCE_INTIMACY" | "FORCE_INTIMACY_SLEEPING";
-  activePositionId:          string | null;
-  activeActionId:            string | null;
-  occupiedPenetrationTargets: ("VAGINA" | "ANAL" | "ORAL")[];
-  turnCount:                 number;
-  status:                    "RUNNING" | "STAMINA_EXHAUSTED" | "PLAYER_ENDED";
+  sceneId:                    string;
+  startType:                  SceneStartType;
+  partnerNpcId:               string;
+  activePositionId:           string | null;
+  activeActionId:             string | null;
+  occupiedPenetrationTargets: ('VAGINA' | 'ANAL' | 'ORAL')[];
+  turnCount:                  number;
+  status:                     'RUNNING' | 'STAMINA_EXHAUSTED' | 'PLAYER_ENDED'
+                            | 'ORGASM_LIMIT_REACHED' | 'PARTNER_DECEASED';
+  clothingState:              ClothingState;    // partner
+  selfClothingState:          ClothingState;    // player
+  clothingCondition:          'INTACT' | 'TORN';
+  // Satisfaction inputs
+  pleasurePeak:   number;
+  orgasmCount:    number;
+  kinksTriggered: number;   // Kink enum match count only
+  painExcess:     number;
+  // Vitals
+  partnerStaminaCurrent: number; partnerStaminaMax: number;
+  partnerArousal:        number; partnerPainTolerance: number;
+  playerStaminaCurrent:  number; playerStaminaMax:     number;
+  playerArousal:         number; playerOrgasmCount:    number;
+  // Fluid storages (persist between scenes)
+  cumStorage: number; cumStorageMax: number;
+  squirtStorage: number; squirtStorageMax: number; squirtProbability: number;
+  milkStorage: number; milkStorageMax: number; milkStorageDelta: number;
+  // Derived physiology state
+  currentWetness:              WetnessLevel;          // from WetnessTrack each turn
+  pleasureTrack:               PleasureTrack;         // from patches.ts
+  sensitivityModifier:         number;                // additive from sensitivityDelta actions
+  postOrgasmSensitivityState:  PostOrgasmSensitivity;
+  // Trackers (from patches.ts)
+  subspaceTracker:  SubspaceTracker;
+  afterglowTracker: AfterglowTracker;
+  // Scene progression
+  momentumScore:          number;   // 0-10
+  lastActionId:           string | null;
+  consecutiveRepeatCount: number;
+  femaleOrgasmLog:        FemaleOrgasmEvent[];
+  neckGrabActive:         boolean;  // choke sequence state
+  orgasmDeniedThisScene:  boolean;
+  activeConsumables:      ActiveConsumable[];
+  actsThisScene:          Partial<SexualActFlags>;
+  loveDeltaAccum:         number;
+  trustDeltaAccum:        number;
+  // Faint / life-force / death system (see §4.3.11)
+  partnerHasFainted:       boolean;                  // latches true when stamina hits 0; never resets mid-scene
+  faintedAtTurn:           number | null;            // turn on which faint occurred; drives diminishing-return scalar
+  partnerLifeForce:        number;                   // 0-100; stamina costs bleed here after fainting; 0 = PARTNER_DECEASED
+  partnerEngagementStatus: PartnerEngagementStatus; // derived each turn: Neutral|Resisting|Hesitant|Aroused|Horny|Fainted
 }
 ```
+
+#### 4.3.11 Faint, Life Force, and Death Consequences
+
+When a partner's stamina reaches 0, she **faints** — she does not immediately die and the scene does not end. The player may continue the encounter; however, the rules change significantly from this point.
+
+**Faint mechanics:**
+- `partnerHasFainted` latches to `true` on the turn stamina hits 0; never resets within a scene.
+- `partnerEngagementStatus` becomes `Fainted` — derived each turn; UI should reflect this state clearly.
+- The scene continues but all further actions drain `partnerLifeForce` (0–100, starts at 100 or the NPC's persisted value) instead of stamina.
+
+**Post-faint stimulation (diminishing returns):**
+- All stimulation gains are scaled by: `postFaintDRMult = 1 / (1 + turnsSinceFaint × 0.9)`
+- On the faint turn itself: ~0.53×; after 4 post-faint actions: ~0.18×. The scene rapidly yields near-zero pleasure output — continuing past the faint is mechanically wasteful as well as consequential.
+- This scalar applies to both `finalStim` and arousal gain.
+
+**`partnerEngagementStatus` derivation (pure, per-turn):**
+
+| Status | Conditions (checked in order) |
+|---|---|
+| `Fainted` | `partnerHasFainted === true` |
+| `Horny` | arousal >= 80 AND currentResistance <= 20 |
+| `Aroused` | arousal >= 50 |
+| `Resisting` | currentResistance > 70 |
+| `Hesitant` | currentResistance > 30 OR (arousal < 30 AND shame >= 40) |
+| `Neutral` | all others |
+
+**Life force exhaustion (death):**
+- When `partnerLifeForce` reaches 0, the scene immediately terminates with `SceneStatus.PARTNER_DECEASED`.
+- `endScene()` checks `scene.status === 'PARTNER_DECEASED'` first (before the faint branch).
+- Consequences branch on `NpcPartnerProfile.entityType`:
+
+| Entity Type | Death Consequences |
+|---|---|
+| `NPC` | Emits `NPC_DIED_IN_INTIMACY`; reputation penalty applied (see below); dispatcher removes NPC from `contacts[]` and `party`, sets `isDeceased`, increments `flags['intimacy_death_count']`; satisfaction = 0; no love/trust deltas |
+| `ENEMY_HUMANOID` | Emits `ENEMY_KILLED_IN_INTIMACY`; dispatcher awards XP + resolves loot table identically to a combat kill; no reputation cost; satisfaction = 0 |
+
+**Reputation penalty scaling for NPC death:**
+
+| Scene Start Type | Penalty |
+|---|---|
+| `CONSENSUAL` | −20 (tragic accident; still a crime in-world) |
+| `POST_DEFEAT` | −30 (went too far after a victory) |
+| `FORCE_INTIMACY` / `FORCE_INTIMACY_SLEEPING` | −40 (murder during assault) |
+
+**Day-end recovery (fainted but alive):**
+- If the scene ends with `partnerHasFainted === true` but `partnerLifeForce > 0`: the NPC is blocked from further intimacy that day (`intimacyBlockedForDay = true`).
+- `calendarEngine.recoverFaintedPartners()` runs at step 7 of the day-end tick; it clears `intimacyBlockedForDay` and restores `intimacyLifeForce` to 100 on all living NPCs.
+- Deceased NPCs (`isDeceased === true`) are skipped by this recovery; they have already been removed from `contacts[]` by the dispatcher.
+
+**Humanoid monster death in intimacy (POST_DEFEAT scenes):**
+- Humanoid monsters (Succubus, Incubus, YukiOnna, Oni, KitsuneCorrupted, Lamia, Harpy) can be taken into a POST_DEFEAT intimacy scene after combat defeat.
+- If their life force reaches 0 during the scene, this is equivalent to killing them in combat: XP and loot are awarded via `ENEMY_KILLED_IN_INTIMACY`, and no reputation penalty is applied.
+- `NpcPartnerProfile.lootTableId` and `xpReward` are populated by the caller when building the profile from an `EnemyHumanoidCharacter`.
 
 ### 4.4 Relationships & Trust/Love
 
 - Relationships modeled by Trust and Love (each -100 to +100), plus encounter-based bond type and intimacy-derived fields (corruption, shame, broken flag, submission, attachment).
 - **Band thresholds:** Low = -100 to -25; Neutral = -25 to 25; High = 25 to 75; VeryHigh = 75 to 100.
-- **16-cell relationship matrix:** (TrustBand × LoveBand) → RelationshipStatus label + available interaction options.
+- **16-cell relationship matrix:** (TrustBand × LoveBand) → RelationshipStatus label + available interaction options. This grid applies to player-NPC relationships only.
 - Gift giving, flirting, touching, and dialogue choices modify Trust and Love.
 - Flirt and Touch have daily diminishing returns (max 3 per character per day; counters reset at day-end).
 - Move-in eligibility: Trust ≥ 60 AND Love ≥ 60 (or per-character override thresholds).
 - Bonding system: bond type and strength track deep relationship milestones (from encounter history).
+- `playerBondType` on `NpcCharacter` records the bond held with the player. The following bond types are player-exclusive: `Devoted`, `Owned`, `Broken`, `Corrupted`, `Submissive`. An NPC holding one of these with the player cannot simultaneously hold the same type with another NPC.
+
+### 4.4a NPC-NPC Relationship System
+
+- NPCs maintain their own social graph (up to **20 relationships** per NPC), separate from the player-NPC relationship grid.
+- **Single status:** `BondType` is the sole relationship status for NPC-NPC bonds (no 16-cell grid). `trust`, `love`, and `bondStrength` scalars provide granularity within each bond type.
+- **Bond type ladder** (Stranger → Acquaintance → Familiar → Friend → CloseFriend → Crush → Attachment → Dependent → Love → Devoted; with branching paths to Obsession, HateLove, PureHate, Submissive, Transactional).
+- **Bond caps per NPC** (maximum concurrent relationships of that type): Devoted 1, Owned 1, Submissive 1, Broken 1, Corrupted 1, Obsession 2, Love 2, HateLove 3, Worshipful 2, Dependent 4, Attachment 6, Transactional 10, PureHate 8. Collision resolution: weakest existing bond of that type is downgraded to Acquaintance.
+- **30-day decay:** any relationship with no interaction in 30 in-game days is dropped. A `NPC_RELATIONSHIP_DROPPED` game event is emitted.
+- **Interaction types per day-end tick:** Talk (all bonds except PureHate/Broken/Corrupted), Flirt (Crush/Attachment/Love/HateLove/Obsession/Devoted/Worshipful/CloseFriend), Intimate (Love/Devoted/Obsession/HateLove/Submissive/Owned — same-location gate + probability check), Conflict (PureHate/Broken/Corrupted).
+- **Intimate tick:** 4 loops × 5 randomly sampled actions (labels only, no per-action simulation); flat stat deltas applied per loop.
+- **Subset selection:** only a subset of NPCs tick per day. Inclusion score = personalityScore (0–40, extraversion + trustBaseline + emotionalStability) + relationshipPull (0–40, bond depth + recency) + locationBonus (0–20, player co-location). NPCs above threshold 25 tick; fully isolated NPCs also require sharing a scheduleId and personalityScore ≥ 15.
+- **Player-exclusive bond enforcement:** `evolveBond()` in `npcSocialEngine.ts` checks `npc.playerBondType`; if the NPC already holds a player-exclusive bond type with the player, it cannot evolve into that same type with another NPC.
 
 ### 4.5 Reputation System
 

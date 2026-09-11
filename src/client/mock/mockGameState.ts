@@ -4,12 +4,15 @@
  * All values satisfy the interfaces defined in src/state/gameState.ts.
  *
  * Scenario: Day 4, Afternoon. Player (Kenji, level 3) is in the Village Square
- * with 2 party companions, 5 contacts, 2 active quests.
+ * with 2 party companions, 3 contacts, 2 active quests.
  *
- * Task UI-2.1
+ * Task UI-2.1  (TileMap added: Task UI-5.1 / UI-5.3)
  */
 
-import type { GameState, PlayerCharacter, NpcCharacter, PartyMember } from '../../state/gameState';
+import type {
+  GameState, PlayerCharacter, NpcCharacter, PartyMember,
+  TileMap, TileTerrainType, OccupantPositions,
+} from '../../state/gameState';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 const fullVitals = (hp: number, stamina: number, cpw: number) => ({
@@ -98,6 +101,8 @@ const mockElara: NpcCharacter = {
   love:              65,
   flirtCountToday:   1,
   touchCountToday:   0,
+  playerBondType:    undefined,          // no player-exclusive bond yet (9a.3)
+  npcRelationships:  [],                  // NPC-NPC social graph (9a.2)
   companionLevel:    3,
   companionXP:       310,
 } as unknown as NpcCharacter;
@@ -124,6 +129,8 @@ const mockBram: NpcCharacter = {
   love:              30,
   flirtCountToday:   0,
   touchCountToday:   0,
+  playerBondType:    undefined,          // no player-exclusive bond yet
+  npcRelationships:  [],                  // NPC-NPC social graph
   companionLevel:    2,
   companionXP:       180,
 } as unknown as NpcCharacter;
@@ -162,8 +169,60 @@ const mockMeira: NpcCharacter = {
   npcId: 'npc-meira', hasBeenIntroduced: true,
   isProtected: false, isService: false,
   trust: 38, love: 45, flirtCountToday: 0, touchCountToday: 0,
+  playerBondType:   undefined,           // no player-exclusive bond yet
+  npcRelationships: [],                   // NPC-NPC social graph
   companionLevel: 0, companionXP: 0,
 } as unknown as NpcCharacter;
+
+// ─── Mock tile map — village_square ───────────────────────────────────────────
+// 30×30 grid. Outer border = EMPTY_EDGE (shapes the location boundary so it
+// isn't a full filled square). Row 5, cols 2–12 = inn façade wall; col 7 = DOOR.
+function buildVillageSquareTileMap(): TileMap {
+  const ROWS = 30;
+  const COLS = 30;
+
+  const tiles = Array.from({ length: ROWS }, (_, row) =>
+    Array.from({ length: COLS }, (_, col) => {
+      const coord = { row, col };
+      // Outer border ring → EMPTY_EDGE (invisible; not walkable; shapes location)
+      if (row === 0 || row === ROWS - 1 || col === 0 || col === COLS - 1) {
+        return { coord, terrain: 'EMPTY_EDGE' as TileTerrainType, isPassable: false };
+      }
+      // Inn façade wall: row 5, cols 2–12 (except col 7 which is the door)
+      if (row === 5 && col >= 2 && col <= 12 && col !== 7) {
+        return { coord, terrain: 'WALL' as TileTerrainType, isPassable: false };
+      }
+      // Door gap in the wall at row 5, col 7
+      if (row === 5 && col === 7) {
+        return { coord, terrain: 'DOOR' as TileTerrainType, isPassable: true };
+      }
+      // Everything else is walkable floor
+      return { coord, terrain: 'FLOOR' as TileTerrainType, isPassable: true };
+    })
+  );
+
+  return {
+    locationId:  'village_square',
+    safetyTier:  'SAFE',
+    tiles,
+    spawnPoints: {
+      'player-001': { row: 15, col: 15 },
+      'npc-elara':  { row: 15, col: 16 }, // companions share player tile cluster
+      'npc-bram':   { row: 15, col: 14 },
+      'npc-meira':  { row: 10, col: 10 },
+    },
+  };
+}
+
+// Live occupant positions (companions start on adjacent tiles to player, not the
+// same tile, just so the mock data is visually sensible — in real gameplay they
+// overlay the player's tile).
+const mockOccupantPositions: OccupantPositions = {
+  'player-001': { row: 15, col: 15 },
+  'npc-elara':  { row: 15, col: 16 },
+  'npc-bram':   { row: 15, col: 14 },
+  'npc-meira':  { row: 10, col: 10 },
+};
 
 // ─── Root GameState ───────────────────────────────────────────────────────────
 export const mockGameState: GameState = {
@@ -186,6 +245,8 @@ export const mockGameState: GameState = {
     currentLocationId:  'village_square',
     discoveredNodeIds:  ['village_square', 'forest_entrance', 'old_mill'],
     lastSafeLocationId: 'village_square',
+    tileMap:            buildVillageSquareTileMap(),
+    occupantPositions:  mockOccupantPositions,
   },
 
   calendar: {
@@ -226,6 +287,9 @@ export const mockGameState: GameState = {
     act1_ch1_started: true,
     met_elder:        false,
   },
+
+  // NPC-NPC interaction log — populated during day-end tick, cleared after (9a.4)
+  npcInteractionLog: [],
 
   settings: {
     adultContentEnabled:  true,

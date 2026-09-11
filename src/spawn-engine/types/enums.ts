@@ -874,6 +874,7 @@ export enum MoodValue {
     Ruined = "RUINED",
     Blank = "BLANK",
     // Post break
+    Unconscious = "UNCONSCIOUS",     // fainted; no mood processing; clears at day-end
     Dazed = "DAZED",
     Empty = "EMPTY",
     Floating = "FLOATING",
@@ -896,20 +897,28 @@ export enum MoodValue {
 }
 
 export enum BondType {
-    None = "NONE",
-    Transactional = "TRANSACTIONAL",
-    Attachment = "ATTACHMENT",
-    Dependent = "DEPENDENT",
-    Obsession = "OBSESSION",
-    Love = "LOVE",
-    HateLove = "HATE_LOVE",
-    PureHate = "PURE_HATE",
-    Broken = "BROKEN",
-    Owned = "OWNED",
-    Worshipful = "WORSHIPFUL",
-    Corrupted = "CORRUPTED",
-    Submissive = "SUBMISSIVE",
-    Devoted = "DEVOTED"
+    // ─ Social tiers (early → deep platonic/romantic) ────────────────────────
+    None           = "NONE",           // empty slot; no relationship exists
+    Stranger       = "STRANGER",       // just met; names exchanged at most
+    Acquaintance   = "ACQUAINTANCE",   // recognised; occasional contact
+    Familiar       = "FAMILIAR",       // regular contact; comfortable presence
+    Friend         = "FRIEND",         // genuine mutual warmth
+    CloseFriend    = "CLOSE_FRIEND",   // confide in each other; chosen family tier
+    Crush          = "CRUSH",          // one-sided or early romantic pull; not yet reciprocal
+    // ─ Purpose/intensity bonds ────────────────────────────────
+    Transactional  = "TRANSACTIONAL",
+    Attachment     = "ATTACHMENT",
+    Dependent      = "DEPENDENT",
+    Obsession      = "OBSESSION",
+    Love           = "LOVE",
+    HateLove       = "HATE_LOVE",
+    PureHate       = "PURE_HATE",
+    Broken         = "BROKEN",
+    Owned          = "OWNED",
+    Worshipful     = "WORSHIPFUL",
+    Corrupted      = "CORRUPTED",
+    Submissive     = "SUBMISSIVE",
+    Devoted        = "DEVOTED",
 }
 
 // ─── VOICE ──────────────────────────────────────────────────
