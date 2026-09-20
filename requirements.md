@@ -1,7 +1,7 @@
 # Ojisan in Another World — Product Requirements Document (PRD)
 
-**Version:** 1.6
-**Date:** 2026-09-08
+**Version:** 1.7
+**Date:** 2026-09-20
 **Status:** Draft for review
 
 ---
@@ -11,6 +11,8 @@
 **Ojisan in Another World** is a turn-based erotic RPG that blends tactical combat, relationship building, intimate encounters, and kingdom management. The player controls Player, a character in a fantasy world, as he explores, fights miasma, forms bonds with companions (special named preset NPCs) and NPCs, and ultimately purifies the land.
 
 The game is designed for adult audiences and features consensual and non-consensual sexual content (togglable), deep character progression, and a branching narrative influenced by player choices.
+
+The narrative is designed around **three morally equal paths** — Purifier, Pragmatist, and Sovereign — each with internally consistent worldviews, genuine costs, and full quest/dialogue/achievement coverage. No path is the "default"; the world reacts to all three with equal depth.
 
 ---
 
@@ -1156,6 +1158,105 @@ All server interaction goes through hooks in `src/client/hooks/`. No view import
 
 ---
 
+## 4.22 Moral Alignment System
+
+### 4.22.1 Design Intent
+
+The world does not have a single correct moral answer. Three worldviews exist in genuine tension, each with internal logic, real costs, and lore support equal in depth to the others. The player's alignment is not a score that unlocks a reward tier — it is a running reflection of the choices they have actually made, and it shapes how every faction, NPC, and quest line responds to them.
+
+No path is the default. The Purifier is not the hero. The Sovereign is not the villain. The Pragmatist is not a coward. All three are coherent, adult positions in a world that has earned its complexity.
+
+### 4.22.2 The Three Paths
+
+**Purifier — "The world can be healed"**
+The miasma is a corruption of something that was once whole. To purify is to restore what was lost. But the Purifier walks a shadow: the old world they seek to restore may no longer be wanted by those who built their lives in its absence. Cleaning up the world is not the same as improving it.
+- *Costs:* ecosystems adapted to miasma are disrupted; communities built on it resent you; some beings cannot be saved without being destroyed
+- *Rewards:* purity fragments/crystals, high regional reputation, holy-tier gear, alliance contacts among survivors and reformers
+- *Moral tension:* Is restoring the old world worth erasing what grew in its place?
+
+**Pragmatist — "The world adapts; so do I"**
+The miasma has been here long enough that entire economies, cultures, and creatures have formed around it. A Pragmatist does not see it as evil — they see it as the current reality, and they navigate it. They trade with both sides, fight only when necessary, and hold no loyalties that cost more than they pay.
+- *Costs:* no faction fully trusts you; you earn neither the Purifier's moral satisfaction nor the Sovereign's dark loyalty; every settlement knows you are for sale
+- *Rewards:* access to both-faction vendors, mercenary-tier items unavailable on either pure path, flexible faction standing, highest gold throughput
+- *Moral tension:* neutrality benefits you at the expense of everyone who needed you to pick a side
+
+**Sovereign — "Power is the only honest currency"**
+The miasma is not corruption — it is potential. The Sovereign path is not mindless cruelty; it is a coherent worldview that sees the purification effort as naive and the existing power structures as corrupt. The Sovereign builds something — it simply requires fear to sustain. Fear, submission, and the willingness to hold what you take.
+- *Costs:* NPCs die or flee; relationships that survive are based on fear or dependency; the thing you are building demands constant maintenance
+- *Rewards:* dark-faction allies, corrupted gear with genuine power advantages, fear-based reputation that opens unique dialogue and quest branches, infamy mechanics that become assets rather than penalties
+- *Moral tension:* you are also building — the question is what it costs the people inside it
+
+### 4.22.3 Alignment Score
+
+`alignmentScore: number` is added to `GameState.player` as a scalar in the range **[-100, +100]**.
+
+- Negative values reflect Sovereign tendency; positive values reflect Purifier tendency; values near zero reflect Pragmatist tendency
+- The score shifts gradually based on meaningful quest decisions, not combat outcomes (killing an enemy does not move alignment; *how* you resolve the aftermath does)
+- The score does not lock the player into a path — it reflects accumulated tendency
+- A **dominant alignment** is derived from the score for dialogue conditions and faction gating:
+  - `score >= 40` → `PURIFIER`
+  - `score <= -40` → `SOVEREIGN`
+  - `-39 to +39` → `PRAGMATIST`
+- Derived alignment is re-evaluated after every meaningful intent that shifts `alignmentScore`
+
+```typescript
+// Addition to PlayerCharacter (or PlayerState, depending on where progression state lives)
+alignmentScore: number;  // -100 to +100; init 0
+```
+
+### 4.22.4 Dual Reputation Track
+
+The existing `reputation: Record<RegionId, number>` track reflects standing with civilian/kingdom factions (Purifier-positive, Sovereign-negative). A parallel **dark reputation** track is added:
+
+```typescript
+darkReputation: Record<RegionId, number>;  // 0 to 100 per region; starts 0
+```
+
+- Dark reputation rises through Sovereign-path actions (infamy accumulation, dark-quest completion, coercion of local power structures)
+- Dark reputation falls when Purifier-path actions dominate a region or when a `crime_pardoned` flag is granted
+- At `darkReputation[regionId] >= 40`, the region's **shadow faction** (underground guild, demon court, or miasma cult — defined per region in the world graph) opens unique vendors, quests, and dialogue
+- The two reputation tracks are independent; high dark reputation does not directly reduce regular reputation (the actions that earn dark reputation may have their own separate regular reputation penalties, but the tracks are not linked by formula)
+
+### 4.22.5 Alignment-Gated Dialogue Conditions
+
+The `DialogueCondition` union gains a new variant:
+
+```typescript
+{ type: 'ALIGNMENT'; dominantAlignment: 'PURIFIER' | 'PRAGMATIST' | 'SOVEREIGN' }
+```
+
+This allows dialogue nodes, quest branches, and NPC reactions to gate on derived alignment without referencing the raw score. Used in:
+- NPC greeting and reaction lines (fear / wariness / gratitude depending on dominant alignment)
+- Quest resolution branch availability (all three branches may exist for a quest; only the relevant one is visible)
+- Dark-faction contact unlock conditions
+- Final convergence quest choice gating (see §4.22.6)
+
+### 4.22.6 Quest Authoring Contract
+
+All main-story quest chapters must have **three resolution branches** — one per dominant alignment — covering the same objective through morally distinct conclusions. The three branches are authored together; none is marked "true" or "canonical."
+
+**Side quests:** Each path requires at least **2 alignment-exclusive side quests** that are only available when the player's dominant alignment matches. These are not gated by a binary flag — they open naturally as alignment score crosses the threshold.
+
+**Board quests** are path-neutral: they pay gold and do not shift alignment.
+
+**Alignment-exclusive achievement entries** exist for each tier (see §4.15): one Purifier achievement per tier, one Sovereign, one Pragmatist.
+
+### 4.22.7 The Final Convergence Quest
+
+Late in the main story, a single quest — **"The Weight of What You've Built"** — becomes available to all players regardless of alignment. This quest presents three choices that each resolve the central conflict in a way consistent with the player's dominant path:
+
+| Choice | Path | Outcome |
+|--------|------|---------|
+| Purify the Sovereign core | Purifier | The miasma is destroyed; the world begins recovery; what was lost returns — slowly, at a cost to what now exists |
+| Bind and contain it | Pragmatist | The miasma is neither destroyed nor freed; you become the thing that holds it in check; the world stabilises under your watch, uneasy but alive |
+| Absorb and wield it | Sovereign | The miasma becomes yours; you are the new sovereign; the world fears you and functions because of that fear |
+
+All three endings are authored with equal narrative weight. None triggers a "bad ending" screen. Each has its own epilogue, achievement, and title unlock.
+
+The quest has no alignment gating on the choices themselves — any player may choose any outcome. The dominant alignment only determines which choice *feels earned* based on what the player has actually built.
+
+---
+
 ## 5. Non-Functional Requirements
 
 - **Performance:** UI interactions must respond within 100 ms; server processing within 500 ms for typical actions.
@@ -1198,6 +1299,10 @@ All server interaction goes through hooks in `src/client/hooks/`. No view import
 27. Switching between views (overworld → combat → intimacy) does not lose HUD state or Zustand store contents.
 28. All action buttons are disabled with a visible reason when the action is unavailable (insufficient CPW, wrong phase, etc.).
 29. The menu overlay can be opened and closed from any active view without disrupting the underlying view state.
+30. `alignmentScore` shifts only on meaningful quest/dialogue decisions; combat kill/purify outcomes alone do not move it.
+31. Dark reputation track is region-local and independent of the regular reputation track by formula.
+32. All three alignment paths have equal quest branch coverage — no main-story quest chapter has a resolution written for fewer than three paths.
+33. The final convergence quest choices are available to all players regardless of dominant alignment; gating is narrative, not mechanical.
 
 ---
 

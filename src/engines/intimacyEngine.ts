@@ -24,7 +24,8 @@
  *   - resolvePostIntimacy: calls resolvePostEncounter() from patches.ts
  */
 
-import type { GameEvent } from '../state/gameState';
+import type { GameEvent, GameState } from '../state/gameState';
+import { derivePassiveArousalBonus } from './skillEngine';
 
 // ── Spawn-engine type imports (single source of truth) ──────────────────────
 import {
@@ -1035,11 +1036,14 @@ export function orgasmDenial(scene: IntimacyScene): { scene: IntimacyScene; narr
 // ============================================================
 
 export function resolveSceneAction(
-  scene:     IntimacyScene,
-  actionId:  string,
+  scene:      IntimacyScene,
+  actionId:   string,
   positionId: string,
-  player:    Pick<PlayerProfile, 'technique'>,
-  partner:   NpcPartnerProfile,
+  player:     Pick<PlayerProfile, 'technique'>,
+  partner:    NpcPartnerProfile,
+  // gameState is optional so existing callers don't need updating immediately;
+  // when omitted, passive arousal bonus is 0 (no skills applied).
+  gameState?: GameState,
 ): SceneActionResult {
   if (scene.status !== 'RUNNING') {
     return { scene, narrative: ['The scene has already ended.'], events: [], tecPassed: false, pleasureGained: 0 };
@@ -1117,6 +1121,12 @@ export function resolveSceneAction(
     partner.corruptionShame.corruption,
   );
 
+  // 12b. Passive arousal bonus from unlocked passive skills (task 16.15).
+  //   derivePassiveArousalBonus() sums all passive AROUSAL_GAIN effects from any tree.
+  //   Returns a flat additive bonus (e.g. 0.10 = +10% stimulation).
+  //   Applied as (1 + bonus) multiplier so zero skills = ×1.0 (no change).
+  const passiveArousalMult = gameState ? 1.0 + derivePassiveArousalBonus(gameState) : 1.0;
+
   // 13. Diminishing-return scalar for post-faint stimulation.
   //   Formula: 1 / (1 + turnsSinceFaint * 0.9)
   //   Turn of faint   → scalar ~0.53 (first post-faint action already penalised)
@@ -1134,7 +1144,8 @@ export function resolveSceneAction(
     action.stimulationIntensity * tecEfficiency * overStimP
     * kinkMult * aroMult * momMult * zoneSensMult * postOrgMult * subspaceMult
     * stdJitter * cEff.arousalMult * resMult
-    * postFaintDRMult  // collapses to near-zero after fainting
+    * postFaintDRMult        // collapses to near-zero after fainting
+    * passiveArousalMult     // passive skill bonus (1.0 when no skills or gameState absent)
   );
 
   // 14. Stamina + faint latch + life-force bleed

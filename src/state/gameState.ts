@@ -29,6 +29,25 @@ export type {
 export type { NpcRelationship, NpcDailyInteraction };
 export type { BondCapTable };
 export type { NpcScheduleDef, LocationPopulationDef, NpcClassDef, NpcClass };
+export type { QuestStatus, QuestEntry, QuestLog };
+export type { CraftingJob, CraftingQueue, EquipmentSlot };
+export type { WorldNode, WorldEdge, EnemyRoamDef };
+export type { PregnancyState, OffspringRecord };
+export type { AchievementEntry };
+export type { ContactProfileView };
+export type { DialogueEffect, DialogueCondition, DialogueChoice, DialogueNode, DialogueTree, DialogueState };
+export type { HoldingCell };
+// Phase 24 generic engine schema types
+export type { AlignmentState, AlignmentAxis };
+export type { InfamyState, BountyTier };
+export type { EnvironmentState, WeatherCondition, WeatherEffect };
+export type { SpireNetwork, SpireState };
+export type { JobArchetypeState, JobResourceSystem, ClassProgressionState };
+export type { SynergyState, SynergyPairState };
+export type { CharacterCreationOptions };
+// SaveMeta is defined in saveEngine.ts; re-exported here so UI layers
+// can import it from the central state module without a direct engine import.
+export type { SaveMeta } from '../engines/saveEngine';
 
 // ─── Day phases ───────────────────────────────────────────────────────────────
 type DayPhase = 'Morning' | 'Afternoon' | 'Evening' | 'Night' | 'Midnight';
@@ -62,10 +81,56 @@ export interface ActiveStatusEffect {
   stacks: number;
 }
 
+// ─── Pregnancy (Phase 18) ────────────────────────────────────────────────────
+// Inline state block on NpcCharacter; undefined = not pregnant and not flagged.
+// pregnantFlaggedToday is set by flagPregnancyRisk() on day a creampie occurred;
+// cleared by checkConception() at day-end regardless of roll outcome.
+export interface PregnancyState {
+  pregnancyWeek:        number;          // 0 = just conceived; 12 = birth triggers
+  stage:                import('../spawn-engine/types/enums').PregnancyStage;
+  fatherId:             string;          // player.id in the normal case
+  conceptionDay:        number;          // calendar.day when week=0 was set
+  pregnantFlaggedToday: boolean;         // set by creampie; cleared at day-end
+}
+
+// Offspring born from pregnancy. Not a live character; read-only record.
+export interface OffspringRecord {
+  readonly id:          string;
+  readonly motherId:    string;          // NPC npcId
+  readonly fatherId:    string;          // player.id or NPC npcId
+  readonly birthDay:    number;
+  readonly alignment:   'Normal' | 'Troubled' | 'Criminal';
+  readonly stats:       CombatStats;
+  name?:                string;          // authored after birth; optional
+}
+
 // ─── Inventory ────────────────────────────────────────────────────────────────
 export interface InventorySlot {
-  itemId: string;
-  quantity: number;
+  itemId:       string;
+  quantity:     number;
+  // Equipment upgrade tier (0-3). Undefined = +0 (no upgrade applied).
+  // Lives on the slot (runtime state), not on ItemDef (static catalog).
+  upgradeLevel?: number;
+}
+
+// Six equipment slots the player and companions can fill.
+// OFF_HAND accepts WEAPON or TOOL; all others accept their respective item type.
+export type EquipmentSlot = 'WEAPON' | 'OFF_HAND' | 'HEAD' | 'CHEST' | 'HANDS' | 'LEGS';
+
+// ─── Crafting queue (Phase 15) ────────────────────────────────────────────────
+// One job per recipe in progress; multiple jobs only when manor tier allows it.
+export interface CraftingJob {
+  recipeId:         string;
+  slotIndex:        number;   // which crafting slot (0-indexed)
+  startedOnPhase:   number;   // absolute phase number when job was queued
+  completesOnPhase: number;   // absolute phase number when job resolves at day-end
+}
+
+// Root crafting queue on GameState.
+// maxSlots is 0 until manor tier 2; 1 at tier 2, +1/tier up to 4 at tier 5+.
+export interface CraftingQueue {
+  jobs:     CraftingJob[];
+  maxSlots: number;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -146,6 +211,9 @@ type PlayerCharacter = HumanoidCharacter & {
   gold:           number;
   inventorySlots: number; // base 20; expanded by Manor tier
   inventory:      InventorySlot[];
+  // Equipped items by slot. Values are itemId strings into the inventory.
+  // A slot being absent/undefined means nothing is equipped there.
+  equipped:       Partial<Record<EquipmentSlot, string>>;
 };
 
 // ─── NPC-NPC Relationship record ─────────────────────────────────────────────
@@ -230,11 +298,24 @@ type NpcCharacter = HumanoidCharacter & {
   // calendarEngine.recoverFaintedPartners() skips deceased NPCs.
   isDeceased?: boolean;
 
+  // Pregnancy state — present only while pregnant or flagged for a conception check.
+  // undefined = not pregnant and not pending a check.
+  pregnancyState?: PregnancyState;
+
+  // Lactation active flag — set to true on birth; not tied to sexualPhysiology
+  // (which is typed unknown until Task 3a.8).  Cleared only by explicit story event.
+  lactationActive?: boolean;
+
   // Per-NPC move-in override thresholds (Task 9.5).
   // When set, isMoveInEligible() uses these instead of the global 60/60 defaults.
   // Companion preset definitions may author lower thresholds; generic NPCs omit these.
   moveInTrustOverride?: number;
   moveInLoveOverride?:  number;
+
+  // Taming origin flag (Phase 23).
+  // Set to 'tamed_monster' when a captive is converted to a contact via tamingEngine.
+  // Undefined for all regular NPCs and companions.
+  originType?: 'tamed_monster';
 };
 
 // ─── Enemy Humanoid Character ─────────────────────────────────────────────────
@@ -279,8 +360,9 @@ export interface PartyMember {
   stats:               CombatStats;      // derived from NpcCharacter base + companion level
   activeStatusEffects: ActiveStatusEffect[];
   isDown:              boolean;          // true = incapacitated this encounter
-  equippedWeaponId?:   string;
-  equippedArmorId?:    string;
+  // Equipped items by slot (mirrors PlayerCharacter.equipped).
+  // Undefined slot = nothing equipped there.
+  equipped:            Partial<Record<EquipmentSlot, string>>;
 }
 
 export interface PartyState {
@@ -300,7 +382,41 @@ export interface CalendarState {
   phaseActionLimit: number;    // default 15
 }
 
-// ─── Tile map (Unified Spatial Exploration — PRD §4.21.3) ───────────────────────
+// ─── World graph (Phase 17) ──────────────────────────────────────────────────────
+// Static macro-map connecting named locations. Authored in src/data/worldGraph.ts.
+// Nodes are named locations; edges define which nodes are directly adjacent
+// and how many in-game phases traversing that edge consumes.
+
+type WorldNode = {
+  readonly id:             string;       // matches locationId in TileMap
+  readonly name:           string;       // display name
+  readonly regionId:       string;       // which region this node belongs to
+  readonly isSafe:         boolean;      // safe nodes allow sleep + no encounters on TRAVEL
+  readonly safetyTier:     SafetyTier;   // mirrors TileMap.safetyTier for the location
+  // Flat gold cost to fast-travel TO this node.
+  // Same-region travel uses FAST_TRAVEL_SAME_REGION_COST constant instead;
+  // this field is the cross-region override when authored (0 = use constant).
+  readonly fastTravelCost: number;
+};
+
+type WorldEdge = {
+  readonly fromId:       string;   // source WorldNode id
+  readonly toId:         string;   // destination WorldNode id (undirected: author both directions)
+  readonly travelPhases: number;   // in-game phases consumed to traverse (1–5)
+};
+
+// Per-enemy roam definition for a location's tile map.
+// Authored alongside the tile map in src/data/worldGraph.ts (deferred — Task 17.DATA).
+// The client reads these to run the real-time enemy roam tick (1s interval).
+type EnemyRoamDef = {
+  readonly enemyId:         string;     // matches key in OccupantPositions
+  readonly spawnCoord:      TileCoord;  // tile enemy starts on (and returns to if reset)
+  readonly roamRadius:      number;     // max Chebyshev distance from spawn enemy will wander
+  readonly encounterRadius: number;     // Chebyshev distance at which proximity triggers combat (usually 1)
+  // movementSpeed is always 1 tile per roam tick at this stage.
+};
+
+// ─── Tile map (Unified Spatial Exploration — PRD §4.21.3) ────────────────────
 // Static terrain layout for the current location's 30×30 grid canvas.
 // Authored in src/data/tileMaps.ts per location; loaded by the server when the
 // player enters a location and returned alongside GameState.
@@ -334,11 +450,52 @@ export type OccupantPositions = Record<string, TileCoord>;
 
 // ─── World state ──────────────────────────────────────────────────────────────
 export interface WorldState {
-  currentLocationId:  string;
+  // currentNodeId is the canonical field (Phase 17); currentLocationId is
+  // kept as an alias pointing to the same value for backward compatibility
+  // with calendarEngine.ts and other pre-Phase-17 references.
+  currentNodeId:      string;
+  currentLocationId:  string;            // alias for currentNodeId; always kept in sync
   discoveredNodeIds:  string[];
-  lastSafeLocationId: string;
+  lastSafeNodeId:     string;
+  lastSafeLocationId: string;            // alias for lastSafeNodeId; always kept in sync
   tileMap:            TileMap;           // static terrain for current location
   occupantPositions:  OccupantPositions; // live entity positions on the grid
+  // Per-location enemy roam definitions. Keyed by locationId.
+  // Populated when a location is entered; empty until world data is authored (Task 17.DATA).
+  enemyRoamDefs:      EnemyRoamDef[];   // enemies currently active in this location
+}
+
+// ─── Holding cell (Phase 23 — Monster Taming) ───────────────────────────────
+// One entry per captured humanoid enemy being held for taming.
+// Unlocked at manor tier 3 via the 'holding_cells' feature.
+// Capacity: tier 3 = 2 / tier 4 = 4 / tier 5 = 8 / tier 6 = 12.
+//
+// tamingProgress 0–100:
+//   - Starts at 0 on capture.
+//   - Advances via INTERACT_CAPTIVE intent; rate is modulated by the captive's
+//     resistanceProfile (read from capturedCharacter.sexualPsychology at tame-time).
+//   - Taming cannot complete (reach 100) unless the relationship status at interaction
+//     time is one of: Close, Devoted, Confidant, Infatuated, Lover, or Bonded.
+//     This requires ongoing gifting/dialogue after the initial capture.
+//
+// interactionCountToday: daily cap = 1 INTERACT_CAPTIVE per captive; reset at day-end.
+export interface HoldingCell {
+  cellId:                 string;           // e.g. 'cell_0', 'cell_1'
+  // Snapshot of the EnemyHumanoidCharacter at the moment of capture.
+  // After taming the cell is vacated; this snapshot is discarded.
+  capturedCharacter:      import('./gameState').EnemyHumanoidCharacter;
+  captureDay:             number;           // calendar.day of capture
+  tamingProgress:         number;           // 0–100; 100 = tamed
+  interactionCountToday:  number;           // reset to 0 at day-end
+  // Per-action daily counters — each capped at 3/day, matching normal NPC social rules.
+  // Reset to 0 at day-end alongside interactionCountToday.
+  talkCountToday:         number;
+  touchCountToday:        number;
+  flirtCountToday:        number;
+  // Running trust/love tallies that accumulate from INTERACT_CAPTIVE interactions.
+  // These mirror the NpcCharacter fields that will be set on conversion.
+  relationshipTrust:      number;           // -100 to +100
+  relationshipLove:       number;           // -100 to +100
 }
 
 // ─── Manor state ──────────────────────────────────────────────────────────────
@@ -347,6 +504,9 @@ export interface ManorState {
   constructionTimerDays:  number;                    // 0 = idle
   suiteAssignments:       Record<string, string>;    // suiteId → npcId
   passiveResourceQueue:   PassiveResource[];
+  // Holding cells for captured humanoid monsters (Phase 23).
+  // Empty array until 'holding_cells' feature is available (tier 3+).
+  holdingCells:           HoldingCell[];
 }
 
 export interface PassiveResource {
@@ -398,20 +558,288 @@ export interface LocationPopulationDef {
   serviceNpcIds:         string[];
 }
 
-// ─── Quest log ────────────────────────────────────────────────────────────────
-export interface QuestLog {
-  active:    QuestProgress[];
-  completed: string[];   // quest IDs
-  available: string[];   // quest IDs whose prerequisites are met
+// ─── Quest types (Phase 11) ───────────────────────────────────────────────────
+
+// Runtime status for a single quest in the player's log.
+export type QuestStatus = 'AVAILABLE' | 'ACTIVE' | 'COMPLETED' | 'FAILED';
+
+// One entry per quest the player has encountered (accepted, failed, or completed).
+// BOARD quests cycle back to AVAILABLE after cooldown; MAIN/COMPANION do not.
+export interface QuestEntry {
+  defId:               string;       // key into the static QuestDef catalog
+  status:              QuestStatus;
+  objectiveProgress:   number[];     // parallel array to QuestDef.objectives; current count per index
+  activatedOnDay?:     number;       // calendar.day when ACTIVE status was set
+  completedOnDay?:     number;       // calendar.day when COMPLETED
+  cooldownExpiresOnDay?: number;     // BOARD only: day on which cooldown expires; undefined = no cooldown active
 }
 
-export interface QuestProgress {
-  questId:               string;
-  objectiveProgress:     Record<string, number>; // objectiveId → current count
-  cooldownDayRemaining?: number;
+// Root quest log on GameState.  Replaces the old QuestLog / QuestProgress stubs.
+// All quests the player has ever encountered live here; status field drives filtering.
+export interface QuestLog {
+  entries: QuestEntry[];
+}
+
+// ─── Achievement runtime entry (Phase 20) ────────────────────────────────────
+// One entry per achievement the player has ever unlocked.
+// The AchievementDef catalog lives in src/data/achievements.ts;
+// achievementEngine.ts owns the AchievementDef type.
+// Only UNLOCKED entries are stored; LOCKED state is implied by absence.
+export interface AchievementEntry {
+  defId:         string;    // key into ACHIEVEMENT_CATALOG
+  unlockedOnDay: number;    // calendar.day when the achievement was granted
+}
+
+// ─── Contact profile view model (Phase 21 / Task 21.6) ──────────────────────
+// Flat DTO assembled by contactEngine.assembleProfileView().
+// Never stored in GameState — built on demand for the ContactsView UI.
+// Fields are typed as unknown where the underlying spawn-engine type is still
+// an unknown stub (Task 3a.8 will replace these).
+type ContactProfileView = {
+  // Identity
+  npcId:              string;
+  name:               string;
+  isDeceased:         boolean;
+
+  // ── Tab 1: Social / Bio ──────────────────────────────────────────────────
+  trust:              number;   // -100 to +100
+  love:               number;
+  relationshipStatus: string;   // RelationshipStatus label from 16-cell matrix
+  playerBondType:     string | undefined;  // BondType label or undefined
+  occupation:         string | undefined;  // background.occupation (may be unknown)
+  regionOfOrigin:     string | undefined;  // background.regionOfOrigin
+  // Parent names from history (undefined if history is still typed unknown)
+  motherName:         string | undefined;
+  fatherName:         string | undefined;
+  companionLevel:     number;  // 0 = not a companion
+
+  // ── Tab 2: Physical / Physiology ────────────────────────────────────────
+  // Measurements and physical detail are still typed unknown until Task 3a.8;
+  // we carry them as unknown so the UI can cast when the type is resolved.
+  measurements:       unknown;  // FemaleMeasurements | MaleMeasurements
+  physicalDetail:     unknown;  // FemalePhysicalDetail | MalePhysicalDetail
+  gender:             unknown;  // Gender enum
+  race:               unknown;  // Race enum
+  bodyType:           unknown;  // FemaleBodyType | MaleBodyType
+  // Derived flags readable without resolving spawn-engine types
+  isVirgin:           boolean;  // history.totalEncounterCount === 0
+  isPregnant:         boolean;
+  pregnancyStage:     string | undefined;   // PregnancyStage label or undefined
+  lactationActive:    boolean;
+
+  // ── Tab 3: Psychology ───────────────────────────────────────────────────
+  personality:        unknown;  // PersonalityCore + ExpandedPersonality
+  sexualPsychology:   unknown;  // SexualPsychology (includes acquiredKinks, resistanceProfile)
+};
+
+// ─── Dialogue system (Phase 13) ─────────────────────────────────────────────
+// DialogueCondition, DialogueChoice, DialogueNode were partially defined in the
+// old dialogueEngine.ts stub. This is the canonical definition in gameState.ts
+// (same pattern as all other schema types). The engine imports from here.
+
+// Effects applied when a choice is made or a node is entered.
+export type DialogueEffect =
+  | { type: 'SET_FLAG';     flagId: string;  value: boolean | number | string }
+  | { type: 'TRUST_DELTA';  npcId: string;   delta: number }
+  | { type: 'LOVE_DELTA';   npcId: string;   delta: number }
+  | { type: 'GIVE_ITEM';    itemId: string;  quantity: number }
+  | { type: 'TAKE_ITEM';    itemId: string;  quantity: number }
+  | { type: 'START_QUEST';  questDefId: string };
+
+// Conditions that gate a choice or node from being accessible.
+export type DialogueCondition =
+  | { type: 'FLAG';         flagId: string;      value: boolean | number | string }
+  | { type: 'TRUST';        npcId: string;       min: number }
+  | { type: 'LOVE';         npcId: string;       min: number }
+  | { type: 'QUEST_STAGE';  questId: string;     stage: number }
+  | { type: 'ITEM_IN_INV';  itemId: string }
+  | { type: 'COMPANION';    companionId: string; inParty: boolean };
+
+// A single choice the player can make at a node.
+export interface DialogueChoice {
+  label:      string;
+  nextNodeId: string;          // 'END' terminates the dialogue
+  effects?:   DialogueEffect[];
+  condition?: DialogueCondition;
+  hidden?:    boolean;         // when true: choice is never shown to the player
+}
+
+// A single node in a dialogue tree.
+export interface DialogueNode {
+  id:         string;
+  text:       string;
+  speakerId:  string;          // npcId of the speaker; 'player' for player lines
+  choices:    DialogueChoice[];
+  condition?: DialogueCondition;
+  onEnter?:   DialogueEffect[]; // effects fired when this node is entered
+}
+
+// A complete dialogue tree (authored in src/data/dialogueTrees.ts).
+export interface DialogueTree {
+  id:         string;
+  rootNodeId: string;
+  nodes:      Record<string, DialogueNode>;
+}
+
+// Runtime dialogue state — tracks the active tree and traversal position.
+export interface DialogueState {
+  activeTreeId:  string | null;
+  currentNodeId: string | null;
+  speakerNpcId:  string | null;
+  history:       string[];   // choice labels made so far this session
+}
+
+export function createEmptyDialogueState(): DialogueState {
+  return { activeTreeId: null, currentNodeId: null, speakerNpcId: null, history: [] };
 }
 
 // ─── Settings ─────────────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════════════════
+// PHASE 24 — GENERIC ENGINE SCHEMA BLOCKS
+// Each block is owned by its engine file but defined here so GameState can
+// embed it without circular imports.  All fields are data-driven / lore-agnostic.
+// ═══════════════════════════════════════════════════════════════════════════════
+
+// ─── Alignment system (alignmentEngine.ts) ───────────────────────────────────
+// 3-axis alignment.  Each axis is [-100, +100]; 0 is neutral.
+// The axes are intentionally unlabelled here so any game can name them
+// via a static AxisDef catalog (e.g. Rebel/Loyalist, Chaos/Order, Light/Dark).
+export type AlignmentAxis = 'axis_a' | 'axis_b' | 'axis_c';
+
+export interface AlignmentState {
+  // Current score on each axis.  Engines emit ALIGNMENT_DELTA events;
+  // alignmentEngine.applyAlignmentDelta() clamps each axis to [-100, 100].
+  scores: Record<AlignmentAxis, number>;
+  // Dominant axis id at the last evaluation (recomputed on every delta).
+  // undefined = truly neutral (all scores within [-20, 20]).
+  dominantAxis: AlignmentAxis | undefined;
+  // Difficulty multiplier applied when the player chooses a resolution path
+  // whose axis is OPPOSITE to dominantAxis.  Range [1.0, 2.5].
+  // Recomputed by alignmentEngine.deriveDivergenceMultiplier().
+  divergenceMultiplier: number;
+}
+
+// ─── Infamy / bounty system (infamyEngine.ts) ────────────────────────────────
+// Per-region infamy score (0-100) drives bounty tier escalation and faction
+// hostility.  Kept separate from reputation (which can be positive).
+export type BountyTier =
+  | 'NONE'         //  0-25: clean
+  | 'SUSPICIOUS'   // 26-50: guards monitor; shop prices +15%
+  | 'WANTED'       // 51-75: bounty hunters spawn; guards arrest on sight
+  | 'OUTLAW'       // 76-90: inquisitorial executioners dispatched
+  | 'CONDEMNED';   // 91-100: Black Ring brand; barred from civil towns
+
+export interface InfamyState {
+  // Per-region score (same RegionId key as reputation).
+  scores:       Record<RegionId, number>;
+  // Cached tier per region (recomputed by infamyEngine on every delta).
+  tiers:        Record<RegionId, BountyTier>;
+  // Accumulated fine debt (gold) that can be paid to clear infamy.
+  // Paid via CLEAR_INFAMY intent at Enclave Audit Desks or Cathedral Altars.
+  outstandingFines: Record<RegionId, number>;
+}
+
+// ─── Environment / weather system (environmentEngine.ts) ─────────────────────
+// Each region has one active WeatherCondition that changes each in-game day.
+export type WeatherCondition =
+  | 'CLEAR' | 'RAIN' | 'HEAVY_RAIN' | 'SALTFOG'
+  | 'SANDSTORM' | 'CLOUD_GALE' | 'TOXIC_SPORE'
+  | 'UNDERWATER_PRESSURE' | 'BLIZZARD' | 'HEAT_WAVE';
+
+// A single mechanical effect produced by a weather condition.
+// Engines read the active effects to modify damage, accuracy, stamina cost, etc.
+export interface WeatherEffect {
+  stat:      string;   // e.g. 'FIRE_DAMAGE', 'RANGED_ACCURACY', 'WATER_CONSUMPTION'
+  modifier:  number;   // additive percentage delta, e.g. -50 means -50%
+  // When true, this effect degrades equipment durability (SALTFOG corrodes metal).
+  degradesEquipment?: boolean;
+  // When set, only the specified item slot is affected by degradation.
+  degradationSlot?:   EquipmentSlot;
+}
+
+export interface EnvironmentState {
+  // Active weather per region.  Updated by environmentEngine.advanceWeather() at day-start.
+  weather:      Record<RegionId, WeatherCondition>;
+  // Resolved mechanical effects for the current location's weather.
+  // Recomputed when the player moves regions or when weather advances.
+  activeEffects: WeatherEffect[];
+  // Per-item durability (itemId -> current durability 0-100).
+  // Only tracked for equipped items that are degradation-eligible.
+  equipmentDurability: Record<string, number>;
+}
+
+// ─── Ley-line spire network (spireEngine.ts) ─────────────────────────────────
+// Spires are fast-travel anchor points unlocked per node when the player
+// establishes an Enclave Stronghold in that region.
+export interface SpireState {
+  nodeId:       string;    // WorldNode id this spire sits in
+  unlocked:     boolean;   // true = can be used as fast-travel destination for free
+  // Day on which this spire was unlocked; 0 = not yet unlocked.
+  unlockedOnDay: number;
+}
+
+export interface SpireNetwork {
+  // All authored spire locations (static catalog).  Unlocked flag is mutable.
+  spires: SpireState[];
+}
+
+// ─── Job archetype & class progression (jobEngine.ts) ────────────────────────
+// Job = combat role + resource system (lore: Tactician, Vanguard, Analyst…).
+// Class = equippable skill-tree specialization (lore: Mage, Warrior, Shadow…).
+// Both are data-agnostic here; the catalog lives in src/data/jobCatalog.ts.
+
+export interface JobResourceSystem {
+  // Generic resource pools (names resolved by the active JobDef).
+  // Pool A is always the primary (e.g. Action Points, Stamina, Energy, MP).
+  // Pool B is the secondary when the job has a dual-resource system.
+  poolA: { current: number; max: number; label: string };
+  poolB: { current: number; max: number; label: string } | undefined;
+}
+
+export interface JobArchetypeState {
+  // Id of the currently equipped job (matches JobDef.id in src/data/jobCatalog.ts).
+  activeJobId:   string | undefined;
+  // Id of the currently equipped equippable class (matches ClassDef.id).
+  activeClassId: string | undefined;
+  // Job-specific resource pools (reset at the start of each encounter).
+  jobResources:  JobResourceSystem;
+}
+
+export interface ClassProgressionState {
+  // classId -> SP spent on that class tree.
+  // SP is never lost on class swap; only reset via RESET_CLASS_TREE intent.
+  spSpentPerClass: Record<string, number>;
+  // classId -> set of unlocked node ids within that class tree.
+  unlockedNodesPerClass: Record<string, string[]>;
+}
+
+// ─── Companion synergy pairs / triples (synergyEngine.ts) ────────────────────
+// Synergies are author-defined pairs or triples of companion npcIds whose
+// combined intimacy threshold unlocks a combo attack.
+
+export interface SynergyPairState {
+  // Key = '<npcIdA>+<npcIdB>' or '<npcIdA>+<npcIdB>+<npcIdC>' (sorted alphabetically).
+  synergyId:    string;
+  unlocked:     boolean;   // true when all members are active party + intimacy gate met
+  useCountToday: number;   // reset at day-end; most synergies cap at 1/encounter
+}
+
+export interface SynergyState {
+  pairs: SynergyPairState[];
+}
+
+// ─── Character creation options snapshot (characterCreationEngine.ts) ─────────
+// Stored on GameState so NG+ and save/load can inspect origin choices.
+export interface CharacterCreationOptions {
+  playerName:    string;
+  subClassId:    string;   // matches SubClassDef.id (e.g. 'structural_engineer')
+  secondaryTrait: string;  // e.g. 'resource_efficient' | 'master_negotiator' | 'tenacious_survivalist'
+  jobId:         string;   // initial job archetype id
+  classId:       string;   // initial equippable class id
+  // Stat points allocated during creation (7 stats × freePoints distributed).
+  allocatedStats: Record<string, number>;
+}
+
 export interface GameSettings {
   adultContentEnabled:    boolean;
   nonConContentEnabled:   boolean;
@@ -437,17 +865,31 @@ export interface GameState {
   calendar: CalendarState;
 
   // ── Game systems ────────────────────────────────────────────────────────────
-  quests:     QuestLog;
-  reputation: Record<RegionId, number>;
-  manor:      ManorState;
+  offspring:     OffspringRecord[];   // Phase 18: all offspring born in this playthrough
+  dialogue:      DialogueState;       // Phase 13: active dialogue traversal state
+  quests:        QuestLog;
+  reputation:    Record<RegionId, number>;
+  manor:         ManorState;
+  craftingQueue: CraftingQueue;
 
   // NPC-NPC interaction log; populated during day-end tick, cleared after resolution.
   // Engines read this to generate narrative events; never mutate contacts mid-tick.
   npcInteractionLog: NpcDailyInteraction[];
 
   // ── Meta ────────────────────────────────────────────────────────────────────
+  achievements: AchievementEntry[];   // Phase 20: all unlocked achievements
   flags:    Record<string, boolean | number | string>; // story flags
   settings: GameSettings;
+
+  // ── Phase 24: generic engine states ────────────────────────────────────────
+  alignment:   AlignmentState;        // 3-axis moral alignment + divergence multiplier
+  infamy:      InfamyState;           // per-region infamy score + bounty tiers
+  environment: EnvironmentState;      // weather + equipment durability
+  spires:      SpireNetwork;          // ley-line fast-travel anchor points
+  jobState:    JobArchetypeState;     // active job/class + resource pools
+  classProgress: ClassProgressionState; // SP spent + unlocked nodes per class
+  synergies:   SynergyState;          // companion synergy pair unlock state
+  characterCreation: CharacterCreationOptions | undefined; // origin snapshot (undefined pre-creation)
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -465,7 +907,10 @@ export type GameEvent =
   | { type: 'NPC_INDIVIDUATED';     npcId: string }
   | { type: 'PREGNANCY_CONCEIVED';  npcId: string }
   | { type: 'BABY_BORN';            motherId: string }
-  | { type: 'ACHIEVEMENT_UNLOCKED'; achievementId: string }
+  // Phase 20: ACHIEVEMENT_UNLOCKED replaces the old stub variant.
+  // tier and reward are included so the UI can display the pop-up without
+  // a second catalog lookup.
+  | { type: 'ACHIEVEMENT_UNLOCKED'; defId: string; tier: 'BRONZE' | 'SILVER' | 'GOLD' | 'PLATINUM'; reward: { ap?: number; bp?: number; titleToken?: string } }
   | { type: 'COMPANION_DOWNED';     npcId: string }
   | { type: 'PARTY_WIPED' }
   | { type: 'COMPANION_ADDED';           npcId: string }
@@ -493,8 +938,159 @@ export type GameEvent =
   // Fired when the player's bond type with an NPC is explicitly set or changed (Task 9.9).
   // Dispatcher may use this to enforce exclusivity and trigger companion quest stages.
   | { type: 'PLAYER_BOND_SET'; npcId: string; bond: string }
+  // Reputation events (Phase 10)
+  // REPUTATION_CHANGED: emitted by applyReputationDelta() and tickReputationDecay() for every changed region.
+  // REPUTATION_TIER_CROSSED: emitted when a delta pushes the score across a tier boundary.
+  // BOUNTY_CHANGED: emitted when score enters or changes within the negative (bounty-active) range.
+  | { type: 'REPUTATION_CHANGED';      regionId: RegionId; delta: number; newScore: number; tier: string }
+  | { type: 'REPUTATION_TIER_CROSSED'; regionId: RegionId; from: string; to: string }
+  | { type: 'BOUNTY_CHANGED';          regionId: RegionId; newAmount: number }
+  // Quest events (Phase 11)
+  // QUEST_ACCEPTED:           player accepted a quest; entry created as ACTIVE.
+  // QUEST_OBJECTIVE_UPDATED:  an objective's progress counter changed.
+  // QUEST_COMPLETED:          all objectives met; reward granted.
+  // QUEST_FAILED:             quest was failed; BOARD quests reset to AVAILABLE.
+  | { type: 'QUEST_ACCEPTED';           defId: string }
+  | { type: 'QUEST_OBJECTIVE_UPDATED';  defId: string; objectiveIndex: number; newCount: number; required: number }
+  | { type: 'QUEST_COMPLETED';          defId: string; questType: 'MAIN' | 'COMPANION' | 'BOARD' }
+  | { type: 'QUEST_FAILED';             defId: string; questType: 'MAIN' | 'COMPANION' | 'BOARD' }
+  // Dispatcher trigger events (Phase 11 — used by processEventQueue objective hooks)
+  // ENEMY_KILLED:         emitted by combatEngine on kill; defId = monster/enemy type id.
+  // ITEM_COLLECTED:       emitted by economyEngine when an item enters inventory.
+  // DIALOGUE_COMPLETED:   emitted by dialogueEngine when a tree reaches an END node.
+  // TRAVEL_NODE_REACHED:  emitted by worldEngine on node arrival.
+  | { type: 'ENEMY_KILLED';         targetId: string; regionId: string }
+  | { type: 'ITEM_COLLECTED';       itemId: string; quantity: number }
+  | { type: 'DIALOGUE_COMPLETED';   speakerNpcId: string; treeId: string }
+  // TRAVEL_NODE_REACHED is defined in the World/travel section below (Phase 17 canonical)
+  // Economy / inventory events (Phase 12)
+  // ITEM_ACQUIRED:       item entered inventory (pickup, purchase, loot, quest reward).
+  // ITEM_REMOVED:        item left inventory; reason disambiguates audit trail.
+  // GOLD_CHANGED:        player.gold changed; newAmount = post-change value.
+  // INVENTORY_OVERFLOW:  item could not fit; auto-converted to gold at sell value.
+  | { type: 'ITEM_ACQUIRED';      itemId: string; quantity: number; source: 'PICKUP' | 'PURCHASE' | 'LOOT' | 'REWARD' }
+  | { type: 'ITEM_REMOVED';       itemId: string; quantity: number; reason: 'USED' | 'SOLD' | 'GIFTED' | 'DROPPED' | 'CONSUMED' }
+  | { type: 'GOLD_CHANGED';       delta: number; newAmount: number }
+  | { type: 'INVENTORY_OVERFLOW'; itemId: string; quantity: number; goldConverted: number }
+  // Status effect events (Phase 14)
+  // STATUS_APPLIED:  a new effect was placed on a character.
+  // STATUS_TICKED:   an effect fired its per-turn tick (damage, heal, stat mod, arousal).
+  // STATUS_EXPIRED:  an effect ran out of turns and was removed.
+  // STATUS_STACKED:  an existing effect gained an additional stack (duration refreshed).
+  | { type: 'STATUS_APPLIED';  defId: string; targetId: string }
+  | { type: 'STATUS_TICKED';   defId: string; targetId: string; effectType: string; value: number }
+  | { type: 'STATUS_EXPIRED';  defId: string; targetId: string }
+  | { type: 'STATUS_STACKED';  defId: string; targetId: string; newStacks: number }
+  // Crafting & equipment events (Phase 15)
+  // CRAFTING_STARTED:    ingredients consumed; job queued.
+  // CRAFTING_COMPLETED:  job resolved; output added to inventory.
+  // CRAFTING_FAILED:     guard check failed before job was queued (reason explains why).
+  // ITEM_EQUIPPED:       item moved into an equipment slot.
+  // ITEM_UNEQUIPPED:     item moved out of an equipment slot back to inventory.
+  // ITEM_UPGRADED:       upgrade attempt resolved; success = true/false.
+  // EQUIP_SWAP_CONFIRM:  emitted when a swap-out item can't fit; player must confirm gold conversion.
+  | { type: 'CRAFTING_STARTED';    recipeId: string; completesOnPhase: number }
+  | { type: 'CRAFTING_COMPLETED';  recipeId: string; outputItemId: string; outputQuantity: number }
+  | { type: 'CRAFTING_FAILED';     recipeId: string; reason: string }
+  | { type: 'ITEM_EQUIPPED';       itemId: string; slot: EquipmentSlot; targetId: string }
+  | { type: 'ITEM_UNEQUIPPED';     itemId: string; slot: EquipmentSlot; targetId: string }
+  | { type: 'ITEM_UPGRADED';       itemId: string; success: boolean; newTier: number }
+  | { type: 'EQUIP_SWAP_CONFIRM';  slot: EquipmentSlot; swapOutItemId: string; goldValue: number; targetId: string }
+  // Skill events (Phase 16)
+  // SKILL_UNLOCKED:     player spent BP or AP to unlock a skill node.
+  // SKILL_USED:         player activated an active skill; CPW was deducted.
+  // SKILL_TREE_RESET:   entire tree wiped; all spent points refunded.
+  | { type: 'SKILL_UNLOCKED';    skillId: string; tree: 'BATTLE' | 'ARDOR' }
+  | { type: 'SKILL_USED';        skillId: string; cpwCost: number }
+  | { type: 'SKILL_TREE_RESET';  tree: 'BATTLE' | 'ARDOR'; pointsRefunded: number }
   // Calendar / time events
   | { type: 'PHASE_ADVANCED';   fromPhase: DayPhase; toPhase: DayPhase; day: number }
   | { type: 'DAY_STARTED';      day: number }
   | { type: 'SLEPT';            day: number; locationId: string }
-  | { type: 'FATIGUE_COLLAPSE'; day: number };
+  | { type: 'FATIGUE_COLLAPSE'; day: number }
+  // World / travel events (Phase 17)
+  // TRAVEL_STARTED:          player began inter-node travel; fromId/toId are WorldNode ids.
+  // TRAVEL_NODE_REACHED:     player arrived at a node (also used by questEngine for TRAVEL objectives).
+  // SPECIAL_ENCOUNTER_ROLLED: spontaneous encounter triggered on a MOVE_TILE step; not a roam-proximity event.
+  // ROAM_ENCOUNTER_TRIGGERED: enemy closed distance during real-time roam tick; enemy gets first strike.
+  // FAST_TRAVEL_USED:         player teleported to a discovered node; gold deducted.
+  // LAST_SAFE_UPDATED:        lastSafeNodeId was updated because player entered a safe node.
+  | { type: 'TRAVEL_STARTED';            fromId: string; toId: string; travelPhases: number }
+  | { type: 'TRAVEL_NODE_REACHED';       nodeId: string }
+  | { type: 'SPECIAL_ENCOUNTER_ROLLED';  nodeId: string; phase: DayPhase }
+  | { type: 'ROAM_ENCOUNTER_TRIGGERED';  enemyId: string; nodeId: string; enemyInitiated: boolean }
+  | { type: 'FAST_TRAVEL_USED';          fromId: string; toId: string; goldCost: number }
+  | { type: 'LAST_SAFE_UPDATED';         nodeId: string }
+  // Pregnancy events (Phase 18)
+  // CONCEPTION_CHECK_PASSED: conception roll succeeded; NPC is now pregnant.
+  // PREGNANCY_STAGE_ADVANCED: pregnancyWeek crossed a stage boundary.
+  // BIRTH_OCCURRED: week 12 reached; offspring record created; NPC lactating.
+  // LACTATION_STARTED: emitted alongside BIRTH_OCCURRED so UI can react separately.
+  | { type: 'CONCEPTION_CHECK_PASSED';   npcId: string; fatherId: string }
+  | { type: 'PREGNANCY_STAGE_ADVANCED';  npcId: string; stage: import('../spawn-engine/types/enums').PregnancyStage }
+  | { type: 'BIRTH_OCCURRED';            npcId: string; offspringId: string }
+  | { type: 'LACTATION_STARTED';         npcId: string }
+  // Manor events (Phase 19)
+  // MANOR_UPGRADE_STARTED:   construction underway; timer set.
+  // MANOR_UPGRADE_COMPLETED: tier incremented; new features unlocked.
+  // SUITE_ASSIGNED:          NPC moved into a suite.
+  // SUITE_VACATED:           suite occupant cleared.
+  // PASSIVE_GEN_TICK:        day-end passive generation resolved; gold credited + items queued.
+  | { type: 'MANOR_UPGRADE_STARTED';   fromTier: number; toTier: number; timerDays: number; goldCost: number }
+  | { type: 'MANOR_UPGRADE_COMPLETED'; newTier: number }
+  | { type: 'SUITE_ASSIGNED';          suiteId: string; npcId: string }
+  | { type: 'SUITE_VACATED';           suiteId: string; npcId: string }
+  | { type: 'PASSIVE_GEN_TICK';        goldGenerated: number; itemsQueued: number }
+  // Dialogue events (Phase 13)
+  // DIALOGUE_STARTED:        player entered a dialogue tree with an NPC.
+  // DIALOGUE_CHOICE_MADE:    player selected a choice; node advanced.
+  // DIALOGUE_COMPLETED:      dialogue reached an END node and was cleared.
+  // DIALOGUE_EFFECT_APPLIED: a DialogueEffect was applied (flag, delta, item, quest).
+  | { type: 'DIALOGUE_STARTED';         treeId: string; npcId: string }
+  | { type: 'DIALOGUE_CHOICE_MADE';     choiceIndex: number; nextNodeId: string }
+  // Note: DIALOGUE_COMPLETED is already in the union above (task 11.4).
+  // It has fields speakerNpcId + treeId. That variant is the canonical one;
+  // no duplicate added here.
+  | { type: 'DIALOGUE_EFFECT_APPLIED';  effect: DialogueEffect }
+  // Taming events (Phase 23)
+  // CAPTIVE_ADDED:       humanoid enemy captured after combat defeat; rope consumed.
+  // CAPTIVE_INTERACTION: player interacted with a captive; tamingProgress updated.
+  // MONSTER_TAMED:       tamingProgress reached 100; captive converted to NpcCharacter.
+  | { type: 'CAPTIVE_ADDED';        cellId: string; enemyId: string; enemyName: string }
+  | { type: 'CAPTIVE_INTERACTION';  cellId: string; progressDelta: number; newProgress: number }
+  | { type: 'MONSTER_TAMED';        cellId: string; newNpcId: string; name: string }
+  // CAPTIVE_RELEASED: player chose to release a captive before taming completed.
+  | { type: 'CAPTIVE_RELEASED';     cellId: string; enemyName: string }
+  // Phase 24 — Alignment engine
+  | { type: 'ALIGNMENT_DELTA';       axis: AlignmentAxis; delta: number; newScore: number; source: string }
+  | { type: 'ALIGNMENT_AXIS_CROSSED'; axis: AlignmentAxis; from: string; to: string }
+  | { type: 'DIVERGENCE_PENALTY_ACTIVE'; multiplier: number }
+  // Phase 24 — Infamy / Bounty engine
+  | { type: 'INFAMY_DELTA';           regionId: RegionId; delta: number; newScore: number }
+  | { type: 'BOUNTY_TIER_CHANGED';    regionId: RegionId; from: BountyTier; to: BountyTier }
+  | { type: 'INFAMY_CLEARED';         regionId: RegionId; goldPaid: number }
+  | { type: 'BOUNTY_HUNTER_SPAWNED';  regionId: RegionId; tier: BountyTier }
+  // Phase 24 — Environment engine
+  | { type: 'WEATHER_CHANGED';        regionId: RegionId; from: WeatherCondition; to: WeatherCondition }
+  | { type: 'WEATHER_EFFECT_TICK';    regionId: RegionId; effectStat: string; modifier: number }
+  | { type: 'EQUIPMENT_DEGRADED';     itemId: string; slot: EquipmentSlot; newDurability: number }
+  | { type: 'EQUIPMENT_BROKEN';       itemId: string; slot: EquipmentSlot }
+  // Phase 24 — Spire engine
+  | { type: 'SPIRE_UNLOCKED';         nodeId: string }
+  | { type: 'SPIRE_TRAVEL_USED';      fromNodeId: string; toNodeId: string }
+  // Phase 24 — Job / Class engine
+  | { type: 'JOB_EQUIPPED';           jobId: string }
+  | { type: 'CLASS_EQUIPPED';         classId: string }
+  | { type: 'CLASS_NODE_UNLOCKED';    classId: string; nodeId: string; spCost: number }
+  | { type: 'CLASS_TREE_RESET';       classId: string; spRefunded: number }
+  | { type: 'JOB_RESOURCE_USED';      pool: 'A' | 'B'; amount: number; label: string }
+  | { type: 'JOB_PROMOTED';           fromJobId: string; toJobId: string }
+  | { type: 'ARMOR_FRACTURE_APPLIED'; targetId: string; reduction: number; turns: number }
+  | { type: 'WEAK_NODE_DETECTED';     targetId: string; nodeLabel: string; bonusDamage: number }
+  // Phase 24 — Synergy engine
+  | { type: 'SYNERGY_UNLOCKED';       synergyId: string }
+  | { type: 'SYNERGY_ACTIVATED';      synergyId: string; comboName: string }
+  | { type: 'SYNERGY_LOCKED';         synergyId: string; reason: string }
+  // Phase 24 — Character creation
+  | { type: 'NEW_GAME_STARTED';       options: CharacterCreationOptions }
+  | { type: 'CHARACTER_CREATION_COMPLETE'; playerName: string };

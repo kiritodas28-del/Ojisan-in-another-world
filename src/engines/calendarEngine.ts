@@ -44,8 +44,19 @@ import {
   applyFullRestoreToParty,
 } from './partyEngine';
 import { runNpcSocialTick } from './npcSocialEngine';
+import { tickReputationDecay } from './reputationEngine';
 import { tickPopulationRefresh } from './npcPopulationEngine';
 import { resetDailySocialCounters } from './relationshipEngine';
+import { tickQuestCooldowns } from './questEngine';
+import { resolveCraftingJobs } from './craftingEngine';
+import { checkConception, tickPregnancy } from './pregnancyEngine';
+import { tickConstruction, generatePassiveResources } from './manorEngine';
+import { saveGame, AUTOSAVE_SLOT } from './saveEngine';
+import { advanceWeather, tickEquipmentDurability } from './environmentEngine';
+import type { WeatherCatalogEntry } from './environmentEngine';
+import { tickInfamyDecay } from './infamyEngine';
+import { resetSynergyDailyCounts } from './synergyEngine';
+import { resetCaptiveDailyInteractions } from './tamingEngine';
 
 // ─── Phase ordering ───────────────────────────────────────────────────────────
 
@@ -370,11 +381,14 @@ function tickFatigueAndCheckCollapse(
   if (newFatigue >= 5) {
     // Forced collapse: full restore, teleport to last safe location
     state = applyFullRestoreToParty(state);
+    // Keep currentNodeId + alias in sync; same for lastSafe pair.
+    const safeId = state.world.lastSafeNodeId ?? state.world.lastSafeLocationId;
     state = {
       ...state,
       world: {
         ...state.world,
-        currentLocationId: state.world.lastSafeLocationId,
+        currentNodeId:      safeId,
+        currentLocationId:  safeId,
         // Reset tile map occupant positions to safe location spawn points
         occupantPositions: state.world.tileMap.spawnPoints ?? {},
       },
@@ -402,12 +416,45 @@ export function runDayEndTick(
   let state = gameState;
   const events: GameEvent[] = [];
 
-  // Step 1: Reputation decay
-  // TODO (Task 10.1): state = reputationEngine.applyDailyDecay(state)
-  // Negative reputation decays toward 0 by 5 pts/day; positive does not decay.
+  // Step 0: Weather advancement (Task 24.21)
+  // Advance weather for all regions before any other ticks. regionIds are
+  // derived from the keys currently present in the reputation record; full
+  // region catalog injection happens once worldGraph.WORLD_NODES is authored
+  // (Task 17.DATA). weatherCatalog is empty until Task 24.37 authors it;
+  // advanceWeather no-ops gracefully on an empty catalog.
+  {
+    const regionIds = Object.keys(state.reputation);
+    const weatherResult = advanceWeather(
+      state,
+      regionIds as import('../state/gameState').RegionId[],
+      [] as WeatherCatalogEntry[], // replaced with WEATHER_CATALOG after Task 24.37
+      state.calendar.day,
+    );
+    state = weatherResult.state;
+    events.push(...weatherResult.events);
+  }
 
-  // Step 2: Pregnancy progression + birth checks
-  // TODO (Task 10.9): state = pregnancyEngine.tickPregnancy(state)
+  // Step 1: Reputation decay (Task 10.13)
+  // Negative scores decay toward 0 by 5 pts/day; positive scores do not decay.
+  const repDecay = tickReputationDecay(state);
+  state = repDecay.state;
+  events.push(...repDecay.events);
+
+  // Step 2: Pregnancy progression + birth checks (Task 18.9)
+  // Phase A: run conception rolls for all NPCs flagged by a same-day creampie.
+  // Phase B: tick all currently pregnant NPCs (newly conceived NPCs skip this
+  //          tick because conceptionDay === calendar.day; see tickPregnancy guard).
+  for (const record of state.contacts) {
+    const npc = record.character;
+    if (npc.pregnancyState?.pregnantFlaggedToday) {
+      const result = checkConception(state, npc.npcId);
+      state = result.state;
+      events.push(...result.events);
+    }
+  }
+  const pregnancyTickResult = tickPregnancy(state);
+  state = pregnancyTickResult.state;
+  events.push(...pregnancyTickResult.events);
 
   // Step 3: NPC population refresh (every 3rd day; npcPopulationEngine handles the guard)
   if (Object.keys(locationDefs).length > 0) {
@@ -421,21 +468,33 @@ export function runDayEndTick(
     state = { ...state, contacts: refreshedContacts };
   }
 
-  // Step 4: Crafting job resolution
-  // TODO (Task 10.4): state = craftingEngine.resolveJobs(state)
+  // Step 4: Crafting job resolution (Task 15.10)
+  const craftResult = resolveCraftingJobs(state);
+  state = craftResult.state;
+  events.push(...craftResult.events);
 
   // Step 5: Construction timer decrement
-  // TODO (Task 10.10): state = manorEngine.tickConstruction(state)
+  const constructResult = tickConstruction(state);
+  state = constructResult.state;
+  events.push(...constructResult.events);
 
-  // Step 6: Manor passive generation
-  // TODO (Task 10.10): state = manorEngine.generatePassiveResources(state)
+  // Step 6: Manor passive generation (gold credited directly; items queued for collection)
+  const passiveResult = generatePassiveResources(state);
+  state = passiveResult.state;
+  events.push(...passiveResult.events);
 
   // Step 7: Daily counter resets
   // 7a. Flirt/touch limits + faint recovery
   state = recoverFaintedPartners(state);
   state = resetDailySocialCounters(state);
-  // 7b. Quest cooldown decrement
-  // TODO (Task 10.2): state = questEngine.tickCooldowns(state)
+  // 7b. Quest cooldown expiry — resets BOARD quests whose cooldown has elapsed to AVAILABLE
+  const cooldownResult = tickQuestCooldowns(state);
+  state = cooldownResult.state;
+  events.push(...cooldownResult.events);
+  // 7c. Synergy daily use count reset (Task 24.24)
+  state = resetSynergyDailyCounts(state);
+  // 7d. Captive daily interaction reset (Task 23.20)
+  state = resetCaptiveDailyInteractions(state);
 
   // Step 8: Date increment + fatigue tick
   // Fatigue increments here; collapse (if fatigue >= 5) also fires here.
@@ -444,6 +503,21 @@ export function runDayEndTick(
   // (on the old day number) because it tracks "days without sleep" which
   // is a property of the ending day, not the new one.
   state = tickFatigueAndCheckCollapse(state, events);
+  // Step 8b: Infamy passive decay (Task 24.23)
+  // Infamy < OUTLAW threshold decays 2 points/day; OUTLAW+ is frozen.
+  {
+    const infamyDecay = tickInfamyDecay(state);
+    state = infamyDecay.state;
+    events.push(...infamyDecay.events);
+  }
+  // Step 8c: Equipment durability tick for active weather effects (Task 24.22)
+  // No-op until weatherCatalog is authored (Task 24.37); gracefully handles
+  // empty activeEffects array.
+  {
+    const durabilityResult = tickEquipmentDurability(state);
+    state = durabilityResult.state;
+    events.push(...durabilityResult.events);
+  }
 
   // Step 9: NPC-NPC social tick
   const socialResult = runNpcSocialTick(state);
@@ -452,6 +526,16 @@ export function runDayEndTick(
 
   // Clear the interaction log after the tick resolves
   state = { ...state, npcInteractionLog: [] };
+
+  // Step 10 (Task 22.11): Autosave at Midnight day-end
+  // Runs after all tick mutations so the save reflects the fully-resolved state.
+  // Autosave errors are caught and swallowed — a failed autosave should never
+  // crash the game or block the Midnight→Morning transition.
+  try {
+    saveGame(state, AUTOSAVE_SLOT);
+  } catch {
+    // Autosave failure is non-fatal; the player can still use manual save slots.
+  }
 
   return { state, events };
 }

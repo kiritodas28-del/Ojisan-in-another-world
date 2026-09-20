@@ -18,9 +18,20 @@ import type {
   PartyMember,
 } from '../state/gameState';
 import { downCompanion, isPartyWiped } from './partyEngine';
+import {
+  tickStatusEffects,
+  hasStatus,
+  applyStatus,
+  deriveEffectiveStats,
+} from './statusEffectEngine';
+import { applyPassiveSkills } from './skillEngine';
+import { restoreJobResources, detectWeakNodes, applyArmorFracture } from './jobEngine';
+import { applyStatus as _applyStatusEffect } from './statusEffectEngine';
+import { getWeatherModifier } from './environmentEngine';
 
 // ─── Re-exported AI pattern type (used by enemySpawnEngine) ──────────────────
 export type AiPattern = 'Aggressive' | 'Defensive' | 'SupportCaster' | 'BossScripted';
+// Note: COMBAT_DEFEAT_OUTCOME is defined in the GameEvent union (gameState.ts).
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // TASK 7.1 — COMBAT SCHEMA
@@ -49,6 +60,8 @@ export interface KilledEnemy {
   id:           string;
   lootTableId:  string | null;
   xpReward:     number;
+  /** Task 24.29: optional infamy delta for the encounter's region. +N = gain, -N = lose. */
+  infamyDelta?: number;
 }
 
 // ─── Narrative log entry ──────────────────────────────────────────────────────
@@ -82,6 +95,14 @@ export interface CombatState {
   killedEnemies:        KilledEnemy[];
   /** Narrative log; one entry per action resolution. */
   log:                  CombatLogEntry[];
+  /**
+   * Task 24.26: weak-node scan results for the current round.
+   * Populated at the start of each round when the player's active job has
+   * hasWeakNodeScan === true (Analyst archetype). Applied to the next hit
+   * against the matching enemy as bonus damage + armor fracture.
+   * Reset at the start of each new round.
+   */
+  weakNodeHits:         WeakNodeHit[];
 }
 
 // ─── Combat action ────────────────────────────────────────────────────────────
@@ -95,6 +116,13 @@ export interface CombatAction {
   isAoe?:     boolean;
   skillId?:   string;
   itemId?:    string;
+  // Status effects to try applying on a successful (non-dodged) hit.
+  // chance is 0-1 probability per entry. Resolved after damage in _applyDamage().
+  statusEffectsApplied?: { defId: string; chance: number }[];
+  // Injected by dispatcher when the player used a DAMAGE_MULTIPLIER active skill
+  // on the preceding turn (USE_SKILL intent). Consumed here and not persisted
+  // to GameState — one-shot per attack.
+  damageMultiplier?: number;
 }
 
 // ─── Combat result ────────────────────────────────────────────────────────────
@@ -221,26 +249,66 @@ export function buildInitiativeOrder(combatants: AnyCharacter[]): string[] {
  *
  * weaponPower defaults to 10 when no weapon is equipped (bare-hand/natural attack).
  * AOE actions receive a pre-applied ×0.65 scalar on weaponPower before this call.
+ *
+ * Stat pipeline (task 16.14):
+ *   base stats
+ *     → deriveEffectiveStats()  (status-effect layer)
+ *     → applyPassiveSkills()    (passive STAT_BOOST / passive DAMAGE_MULTIPLIER)
+ *     × action.damageMultiplier (active skill DAMAGE_MULTIPLIER, injected by dispatcher)
+ *
+ * applyPassiveSkills() is only called for player-controlled attackers; enemies
+ * do not have a skill tree and their stats are already final after deriveEffectiveStats().
  */
 function resolveHit(
-  attacker: AnyCharacter,
-  defender: AnyCharacter,
-  weaponPower: number,
+  attacker:        AnyCharacter,
+  defender:        AnyCharacter,
+  weaponPower:     number,
+  gameState:       GameState,
+  damageMultiplier: number = 1.0,
 ): CombatHit {
+  // Layer 1: status-effect stat modifiers (task 14.13)
+  let atkStats = deriveEffectiveStats(attacker);
+  const defStats = deriveEffectiveStats(defender);
+
+  // Layer 2: passive skill bonuses (task 16.14) — player-side only
+  let passiveDamageMult = 1.0;
+  if (attacker.id === gameState.player.id ||
+      gameState.party.companions.some((m: PartyMember) => m.npcId === attacker.id)) {
+    const passiveResult = applyPassiveSkills(gameState, atkStats);
+    atkStats           = passiveResult.stats;
+    passiveDamageMult  = passiveResult.damageMultiplier;
+  }
+
+  // Task 24.27: apply active weather damage modifier to attacker STR.
+  // getWeatherModifier returns an additive % modifier on the 'damage' stat key
+  // (e.g. -50 for SALTFOG fog reducing effectiveness; 0 if no relevant effect).
+  // No-op until weatherCatalog is authored (Task 24.37).
+  const weatherDamageMod = getWeatherModifier(gameState, 'damage');
+  if (weatherDamageMod !== 0) {
+    // Modifier is expressed as a flat additive percentage: +20 = ×1.20, -50 = ×0.50
+    atkStats = { ...atkStats, str: Math.max(1, Math.round(atkStats.str * (1 + weatherDamageMod / 100))) };
+  }
+
   // ── Dodge check ──────────────────────────────────────────────────────────
-  const dodgeChance = clamp(defender.stats.agi / 300, 0, 0.33);
+  const dodgeChance = clamp(defStats.agi / 300, 0, 0.33);
   if (Math.random() < dodgeChance) {
     return { targetId: defender.id, damage: 0, crit: false, dodged: true };
   }
 
   // ── Base damage ───────────────────────────────────────────────────────────
-  let dmg = weaponPower * (attacker.stats.str / 10) - defender.stats.def * 0.5;
+  let dmg = weaponPower * (atkStats.str / 10) - defStats.def * 0.5;
   dmg = Math.max(1, dmg);
 
   // ── Crit check ────────────────────────────────────────────────────────────
-  const critChance = clamp(attacker.stats.lck / 200, 0, 0.5);
+  const critChance = clamp(atkStats.lck / 200, 0, 0.5);
   const isCrit = Math.random() < critChance;
   if (isCrit) dmg *= 1.75;
+
+  // Layer 3: multiplicative skill multipliers (passive × active)
+  // passiveDamageMult: product of all passive DAMAGE_MULTIPLIER effects
+  // damageMultiplier:  injected from dispatcher when a DAMAGE_MULTIPLIER active
+  //                    skill was used on the preceding turn
+  dmg *= passiveDamageMult * damageMultiplier;
 
   return { targetId: defender.id, damage: Math.round(dmg), crit: isCrit, dodged: false };
 }
@@ -523,6 +591,11 @@ function checkCombatantsDowned(
 /**
  * Called when an enemy's HP reaches 0.
  * Records the kill in killedEnemies for batch loot/XP resolution at fight end.
+ * Task 24.29: emits INFAMY_DELTA for criminal-faction enemies so the
+ * dispatcher's infamyEngine handler increments the current region's score.
+ * Criminal faction detection: if the enemy's characterType is 'ENEMY_HUMANOID'
+ * and lootTable.faction === 'CRIMINAL', the kill raises regional infamy by 3.
+ * Guard faction kills reduce infamy by 2 (e.g. player killed a city guard).
  */
 function recordEnemyKill(enemy: AnyCharacter, state: CombatState): void {
   const lootTable = (enemy as MonsterCharacter | EnemyHumanoidCharacter).lootTable;
@@ -531,6 +604,17 @@ function recordEnemyKill(enemy: AnyCharacter, state: CombatState): void {
   const xpReward = (purificationReward as { xp?: number } | null)?.xp ?? 50;
 
   state.killedEnemies.push({ id: enemy.id, lootTableId, xpReward });
+
+  // Infamy delta: guard kills raise infamy; criminal kills lower it (Task 24.29).
+  // Faction field is optional on lootTable; absent = neutral monster, no delta.
+  const faction = (lootTable as { faction?: string } | null)?.faction;
+  if (faction === 'GUARD') {
+    // Guard kill: +5 infamy in the encounter region
+    state.killedEnemies[state.killedEnemies.length - 1].infamyDelta = 5;
+  } else if (faction === 'CRIMINAL') {
+    // Criminal kill: −2 infamy (positive reputation effect)
+    state.killedEnemies[state.killedEnemies.length - 1].infamyDelta = -2;
+  }
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -544,12 +628,6 @@ function recordEnemyKill(enemy: AnyCharacter, state: CombatState): void {
  * Humanoid enemies + adultContentEnabled → 'Intimate' outcome available.
  * Routed by dispatcher to enemySpawnEngine.selectDefeatOutcome().
  */
-export interface CombatDefeatOutcomeEvent {
-  type:            'COMBAT_DEFEAT_OUTCOME';
-  primaryEnemyId:  string;
-  regionId:        string;
-}
-
 function emitDefeatOutcome(
   state:     CombatState,
   gameState: GameState,
@@ -587,17 +665,25 @@ function emitVictoryEvents(
 ): void {
   for (const kill of state.killedEnemies) {
     events.push({
-      type:        'ENEMY_KILLED_IN_INTIMACY', // re-using unified kill event
+      type:        'ENEMY_KILLED_IN_INTIMACY',
       enemyId:     kill.id,
       lootTableId: kill.lootTableId ?? '',
       xpReward:    kill.xpReward,
     });
+    // Task 24.29: emit INFAMY_DELTA for faction kills (guard / criminal).
+    if (kill.infamyDelta !== undefined && kill.infamyDelta !== 0) {
+      events.push({
+        type:     'INFAMY_DELTA',
+        regionId: state.regionId as import('../state/gameState').RegionId,
+        delta:    kill.infamyDelta,
+        newScore: 0, // recalculated by infamyEngine.applyInfamyDelta() in dispatcher
+      });
+    }
   }
-  // Reputation change is emitted per-region; dispatcher applies delta
   events.push({
     type:     'REPUTATION_CHANGE',
     regionId: state.regionId,
-    delta:    state.killedEnemies.length * 2, // +2 rep per kill
+    delta:    state.killedEnemies.length * 2,
   });
 }
 
@@ -609,16 +695,41 @@ function emitVictoryEvents(
  * startCombat — initialises a CombatState from the combatant list.
  * Call this when the player enters an encounter; pass the result to resolveCombatAction().
  */
+// WeakNodeHit records the enemy ids whose weak nodes were detected this round.
+// Stored in CombatState so resolveCombatAction() can apply fracture on hit.
+export interface WeakNodeHit { enemyId: string; bonusDamage: number }
+
 export function startCombat(
-  encounterId: string,
-  regionId:    string,
-  combatants:  AnyCharacter[],
-  bossScripts: Record<string, BossPhase[]> = {},
+  encounterId:  string,
+  regionId:     string,
+  combatants:   AnyCharacter[],
+  bossScripts:  Record<string, BossPhase[]> = {},
+  gameState?:   GameState,
 ): CombatState {
   const initiativeOrder = buildInitiativeOrder(combatants);
   const combatantMap: Record<string, AnyCharacter> = {};
   for (const c of combatants) {
     combatantMap[c.id] = c;
+  }
+
+  // Task 24.25: restore job resources at encounter start.
+  // If the player has an active job, reset pool A and B to their max values.
+  let state = gameState;
+  if (state) {
+    try {
+      // jobEngine.restoreJobResources requires the live JobDef; we read it from
+      // state.jobState.activeJobId. If no job is equipped, this is a no-op.
+      const activeJobId = (state.jobState as { activeJobId?: string } | undefined)?.activeJobId;
+      if (activeJobId) {
+        // Lazy import to avoid circular dep; jobEngine never imports combatEngine.
+        const { JOB_CATALOG } = require('../data/jobCatalog') as { JOB_CATALOG?: Record<string, unknown> };
+        const jobDef = JOB_CATALOG?.[activeJobId];
+        if (jobDef) {
+          const restored = restoreJobResources(state, jobDef as Parameters<typeof restoreJobResources>[1]);
+          state = restored.state;
+        }
+      }
+    } catch { /* job catalog not yet authored; safe to skip */ }
   }
 
   return {
@@ -634,6 +745,7 @@ export function startCombat(
     bossPhaseScripts:     bossScripts,
     killedEnemies:        [],
     log:                  [],
+    weakNodeHits:         [],
   };
 }
 
@@ -667,8 +779,30 @@ export function resolveCombatAction(
   const hits:   CombatHit[]      = [];
   const log:    CombatLogEntry[] = [];
 
-  const actor = state.combatants[action.actorId];
+  let actor = state.combatants[action.actorId];
   if (!actor) throw new Error(`resolveCombatAction: unknown actorId ${action.actorId}`);
+
+  // ── START-OF-TURN STATUS TICK (Task 14.12) ─────────────────────────────────
+  // Tick active effects on the current actor; merge returned events into our list.
+  // This runs for ALL action types including FLEE/DEFEND/PURIFY so every turn
+  // counts toward duration even if the actor cannot attack.
+  {
+    const tickResult = tickStatusEffects(actor);
+    actor = tickResult.character;
+    state.combatants[actor.id] = actor;
+    events.push(...tickResult.events);
+    // If the actor was stunned: skip their action and advance turn.
+    // STUNNED expires after 1 turn, so the tick above has already decremented
+    // remainingTurns to 0 and emitted STATUS_EXPIRED before we check here.
+    // We use the PRE-TICK actor from combatState (not the ticked version) to
+    // detect stun, because the tick may have already removed it.
+    const wasStunned = hasStatus(combatState.combatants[action.actorId]!, 'STUNNED');
+    if (wasStunned) {
+      log.push({ round: state.roundNumber, actorId: actor.id, message: `${actor.name} is stunned and cannot act!` });
+      _advanceTurn(state, gameState);
+      return { combatState: state, hits, events, log };
+    }
+  }
 
   // ── FLEE (Task 7.7) ────────────────────────────────────────────────────────
   if (action.type === 'FLEE') {
@@ -682,7 +816,8 @@ export function resolveCombatAction(
       const enemies = livingEnemyIds(state, gameState);
       if (enemies.length > 0) {
         const punisher = state.combatants[enemies[0]]!;
-        const counterHit = resolveHit(punisher, actor, 10);
+        // Counter-attack from an enemy punisher — no active skill multiplier (1.0).
+        const counterHit = resolveHit(punisher, actor, 10, gameState, 1.0);
         hits.push(counterHit);
         _applyDamage(actor, counterHit, state, gameState, events, log);
         log.push({
@@ -760,14 +895,17 @@ export function resolveCombatAction(
 
   // AOE damage scalar (×0.65 split among targets)
   const weaponPower = action.isAoe ? 10 * 0.65 : 10;
+  // Active skill DAMAGE_MULTIPLIER from dispatcher; defaults to 1.0 (no bonus).
+  const actionDamageMult = action.damageMultiplier ?? 1.0;
 
   for (const targetId of targetIds) {
     const target = state.combatants[targetId];
     if (!target || !isAlive(target)) continue;
 
-    const hit = resolveHit(actor, target, weaponPower);
+    const hit = resolveHit(actor, target, weaponPower, gameState, actionDamageMult);
     hits.push(hit);
-    _applyDamage(target, hit, state, gameState, events, log);
+    // Pass on-hit status effects from the action (task 14.14)
+    _applyDamage(target, hit, state, gameState, events, log, action.statusEffectsApplied);
 
     log.push({
       round:   state.roundNumber,
@@ -814,6 +952,9 @@ export function resolveCombatAction(
  * Applies a resolved hit's damage to the target in-place within combatState.
  * Records enemy kills immediately so batch loot resolution at fight-end is
  * comprehensive regardless of which action dealt the killing blow.
+ *
+ * statusEffectsToApply (task 14.14): on a non-dodged hit, rolls each entry's
+ * chance and calls applyStatus() on the target if the roll passes.
  */
 function _applyDamage(
   target:    AnyCharacter,
@@ -822,19 +963,48 @@ function _applyDamage(
   gameState: GameState,
   events:    GameEvent[],
   log:       CombatLogEntry[],
+  statusEffectsToApply?: { defId: string; chance: number }[],
 ): void {
   if (hit.dodged || hit.damage === 0) return;
 
   const newHp = Math.max(0, target.vitals.hp.current - hit.damage);
-  state.combatants[target.id] = {
+  let updatedTarget: AnyCharacter = {
     ...target,
     vitals: { ...target.vitals, hp: { ...target.vitals.hp, current: newHp } },
   };
+  state.combatants[updatedTarget.id] = updatedTarget;
+
+  // Apply any on-hit status effects (task 14.14)
+  for (const se of statusEffectsToApply ?? []) {
+    if (Math.random() < se.chance) {
+      const applyResult = applyStatus(updatedTarget, se.defId);
+      updatedTarget = applyResult.character;
+      state.combatants[updatedTarget.id] = updatedTarget;
+      events.push(...applyResult.events);
+      log.push({ round: state.roundNumber, actorId: 'system', message: `${updatedTarget.name} is afflicted with ${se.defId}!` });
+    }
+  }
+
+  // Task 24.28: apply armor fracture if this enemy is in weakNodeHits.
+  // applyArmorFracture reduces the enemy's DEF by a fixed amount for the
+  // remainder of the encounter; safe no-op when jobEngine not yet authored.
+  if (!hit.dodged && hit.damage > 0) {
+    const weakHit = state.weakNodeHits.find(w => w.enemyId === updatedTarget.id);
+    if (weakHit) {
+      try {
+        const fractured = applyArmorFracture(updatedTarget, weakHit.bonusDamage);
+        state.combatants[updatedTarget.id] = fractured;
+        // Remove from weakNodeHits so the fracture doesn't apply again this round.
+        state.weakNodeHits = state.weakNodeHits.filter(w => w.enemyId !== updatedTarget.id);
+        log.push({ round: state.roundNumber, actorId: 'system', message: `${updatedTarget.name}'s weak node fractured! DEF reduced.` });
+      } catch { /* jobEngine not yet authored; skip */ }
+    }
+  }
 
   if (newHp === 0) {
-    if (!isPlayerControlled(target.id, gameState)) {
-      recordEnemyKill(state.combatants[target.id]!, state);
-      log.push({ round: state.roundNumber, actorId: 'system', message: `${target.name} has been defeated!` });
+    if (!isPlayerControlled(updatedTarget.id, gameState)) {
+      recordEnemyKill(state.combatants[updatedTarget.id]!, state);
+      log.push({ round: state.roundNumber, actorId: 'system', message: `${updatedTarget.name} has been defeated!` });
     }
     checkCombatantsDowned(state, gameState, events, log);
   }
@@ -843,6 +1013,8 @@ function _applyDamage(
 /**
  * Advances currentTurnIndex to the next living combatant.
  * Wraps around; increments roundNumber when a full rotation completes.
+ * Task 24.26: when a new round begins, run weak-node detection for the player's
+ * active job (if the job has hasWeakNodeScan) and populate weakNodeHits.
  */
 function _advanceTurn(state: CombatState, gameState: GameState): void {
   if (state.status !== 'RUNNING') return;
@@ -857,9 +1029,28 @@ function _advanceTurn(state: CombatState, gameState: GameState): void {
     loops++;
   }
 
-  if (next <= state.currentTurnIndex) {
+  const isNewRound = next <= state.currentTurnIndex;
+  if (isNewRound) {
     // Wrapped around — new round
     state.roundNumber += 1;
+
+    // Task 24.26: weak-node scan at start of each new round.
+    // detectWeakNodes() returns an array of { enemyId, bonusDamage } for enemies
+    // whose weak node is exposed. Applied in _applyDamage() then cleared next round.
+    try {
+      const enemies = livingEnemyIds(state, gameState)
+        .map(id => state.combatants[id])
+        .filter(Boolean) as AnyCharacter[];
+      if (enemies.length > 0) {
+        const hits = detectWeakNodes(gameState, enemies);
+        state.weakNodeHits = hits as WeakNodeHit[];
+      } else {
+        state.weakNodeHits = [];
+      }
+    } catch {
+      // jobEngine not yet authored; silently skip
+      state.weakNodeHits = [];
+    }
   }
 
   state.currentTurnIndex = next;

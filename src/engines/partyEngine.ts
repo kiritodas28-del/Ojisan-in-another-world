@@ -253,15 +253,19 @@ function applyRecoveryToVitals(vitals: CharacterVitals, rate: number): Character
  * Called by calendarEngine.resolveSleep().
  */
 export function applyFullRestoreToParty(gameState: GameState): GameState {
+  // Full rest (sleep) clears all status effects in addition to restoring vitals
+  // (task 14.15 -- activeStatusEffects is on the character, not CharacterVitals).
   const player = {
     ...gameState.player,
-    vitals: fullRestore(gameState.player.vitals),
+    vitals:              fullRestore(gameState.player.vitals),
+    activeStatusEffects: [],
   };
 
   const companions = gameState.party.companions.map(m => ({
     ...m,
-    isDown: false,
-    vitals:  fullRestore(m.vitals),
+    isDown:              false,
+    vitals:              fullRestore(m.vitals),
+    activeStatusEffects: [],
   }));
 
   return { ...gameState, player, party: { ...gameState.party, companions } };

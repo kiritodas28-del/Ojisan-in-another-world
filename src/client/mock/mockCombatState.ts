@@ -31,7 +31,8 @@ const mockBandit: AnyCharacter = {
   characterType: 'ENEMY_HUMANOID',
   vitals:        { hp: { current: 40, max: 55 }, stamina: { current: 80, max: 80 }, cpw: { current: 10, max: 20 }, arousal: 0, fatigue: 0 },
   stats:         { str: 13, agi: 10, wis: 7, def: 9, lck: 6 },
-  activeStatusEffects: [{ defId: 'bleed', remainingTurns: 2, stacks: 1 }],
+  // BURNING replaces 'bleed' (not in catalog); stacks 2 = two fire DoTs per tick
+  activeStatusEffects: [{ defId: 'BURNING', remainingTurns: 2, stacks: 2 }],
   gender: 'Male', race: 'Human',
   raceFeatures: {}, bodyType: {}, skin: {}, face: {}, hair: {},
   measurements: {}, physicalDetail: {}, sexualPhysiology: {},

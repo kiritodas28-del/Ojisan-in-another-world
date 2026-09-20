@@ -11,8 +11,11 @@
 
 import type {
   GameState, PlayerCharacter, NpcCharacter, PartyMember,
-  TileMap, TileTerrainType, OccupantPositions,
+  TileMap, TileTerrainType, OccupantPositions, QuestLog,
+  AlignmentState, InfamyState, EnvironmentState, SpireNetwork,
+  JobArchetypeState, ClassProgressionState, SynergyState,
 } from '../../state/gameState';
+import { createEmptyDialogueState } from '../../state/gameState';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 const fullVitals = (hp: number, stamina: number, cpw: number) => ({
@@ -34,7 +37,8 @@ const mockPlayer: PlayerCharacter = {
   characterType: 'PLAYER',
   vitals:        { ...fullVitals(85, 160, 40), fatigue: 1 },
   stats:         baseStats(14, 12, 8, 10, 9),
-  activeStatusEffects: [],
+  // Task 14.16: WEAKENED active so StatusIconRow renders in CombatView (1 turn remaining)
+  activeStatusEffects: [{ defId: 'WEAKENED', remainingTurns: 1, stacks: 1 }],
 
   // Spawn-engine profile (unknown stubs until Task 3a.8)
   gender: 'Male',
@@ -67,15 +71,25 @@ const mockPlayer: PlayerCharacter = {
   unspentAP: 1,
   unlockedSkillIds: ['battle_power_strike', 'ardor_gentle_touch'],
 
-  // Economy
-  gold:           240,
+  // Economy (Task 12.18: 7 slots, gold 340)
+  gold:           340,
   inventorySlots: 20,
+  // Task 23.22: rope in inventory for taming captures
   inventory: [
     { itemId: 'herb_basic',    quantity: 5 },
-    { itemId: 'iron_sword',    quantity: 1 },
+    { itemId: 'health_potion', quantity: 2 },
+    { itemId: 'iron_sword',    quantity: 1, upgradeLevel: 1 },
     { itemId: 'leather_armor', quantity: 1 },
     { itemId: 'gift_flower',   quantity: 2 },
+    { itemId: 'condom',        quantity: 3 },
+    { itemId: 'rope_silk',     quantity: 1 },
+    { itemId: 'rope',          quantity: 2 },  // taming rope (Phase 23)
   ],
+  // Task 15.5: player has iron_sword equipped in WEAPON slot
+  equipped: {
+    WEAPON: 'iron_sword',
+    CHEST:  'leather_armor',
+  },
 } as unknown as PlayerCharacter; // cast until spawn-engine types are wired (Task 3a.8)
 
 // ─── Companions (as NpcCharacter — they live in contacts and party) ───────────
@@ -142,8 +156,11 @@ const mockPartyElara: PartyMember = {
   stats:               mockElara.stats,
   activeStatusEffects: [],
   isDown:              false,
-  equippedWeaponId:    'staff_oak',
-  equippedArmorId:     'robe_basic',
+  // Task 15.5: migrated from old equippedWeaponId / equippedArmorId fields
+  equipped: {
+    WEAPON: 'staff_oak',
+    CHEST:  'robe_basic',
+  },
 };
 
 const mockPartyBram: PartyMember = {
@@ -152,8 +169,10 @@ const mockPartyBram: PartyMember = {
   stats:               mockBram.stats,
   activeStatusEffects: [],
   isDown:              false,
-  equippedWeaponId:    'iron_axe',
-  equippedArmorId:     'chainmail',
+  equipped: {
+    WEAPON: 'iron_axe',
+    CHEST:  'chainmail',
+  },
 };
 
 // ─── Additional contacts (not in party) ──────────────────────────────────────
@@ -242,11 +261,16 @@ export const mockGameState: GameState = {
   ],
 
   world: {
+    // Phase 17: currentNodeId is canonical; currentLocationId is an alias kept in sync.
+    currentNodeId:      'village_square',
     currentLocationId:  'village_square',
     discoveredNodeIds:  ['village_square', 'forest_entrance', 'old_mill'],
+    lastSafeNodeId:     'village_square',
     lastSafeLocationId: 'village_square',
     tileMap:            buildVillageSquareTileMap(),
     occupantPositions:  mockOccupantPositions,
+    // No roam defs for village_square (SAFE node). Authored in Task 17.DATA.
+    enemyRoamDefs:      [],
   },
 
   calendar: {
@@ -256,32 +280,76 @@ export const mockGameState: GameState = {
     phaseActionLimit: 15,
   },
 
+  // Phase 18: offspring records — empty at game start; populated on birth
+  offspring: [],
+
+  // Phase 13: no active dialogue at game start
+  dialogue: createEmptyDialogueState(),
+
+  // Phase 11 QuestLog — entries[] replaces old active/completed/available split.
+  // Two ACTIVE quests (one with partial progress), one COMPLETED.
+  // Objectives are parallel arrays matching the QuestDef.objectives order;
+  // counts are placeholders until quest data is authored (task 11.5).
   quests: {
-    active: [
+    entries: [
       {
-        questId: 'board_wolf_hunt',
-        objectiveProgress: { 'kill_wolves': 3 },
+        // BOARD: Wolf Hunt — 2 of 5 wolves killed
+        defId:              'board_wolf_hunt',
+        status:             'ACTIVE',
+        objectiveProgress:  [2],      // [killCount]
+        activatedOnDay:     2,
       },
       {
-        questId: 'main_act1_ch1',
-        objectiveProgress: { 'reach_village': 1, 'talk_elder': 0 },
+        // MAIN: Act 1 Ch 1 — arrived in village (obj 0 done); elder not yet spoken (obj 1 pending)
+        defId:              'main_act1_ch1',
+        status:             'ACTIVE',
+        objectiveProgress:  [1, 0],   // [travelToVillage, talkElder]
+        activatedOnDay:     1,
+      },
+      {
+        // BOARD: Herb Gather — completed on day 3; cooldown expires day 7
+        defId:              'board_herb_gather',
+        status:             'COMPLETED',
+        objectiveProgress:  [5],      // [collectCount] — fully met
+        activatedOnDay:     3,
+        completedOnDay:     3,
+        cooldownExpiresOnDay: 7,
       },
     ],
-    completed: ['tutorial_arrival'],
-    available: ['board_herb_gather', 'side_meira_request'],
-  },
+  } satisfies QuestLog,
 
+  // 5 regions covering all 5 reputation tiers (Task 10.14):
+  //   region_start    +120 → Liked
+  //   region_plains    +450 → Renowned
+  //   region_forest    -30  → Neutral (negative but above Disliked threshold)
+  //   region_swamp    -250  → Disliked
+  //   region_abyss    -550  → Infamous  (also has an active bounty)
   reputation: {
     region_start:  120,
+    region_plains: 450,
     region_forest: -30,
+    region_swamp:  -250,
+    region_abyss:  -550,
   },
 
+  // Phase 19: tier 2 unlocked; Elara assigned to suite_1.
+  // Day-end passive gen yields: (5 * 2) + (2 * 3) = 16 gold/day from Elara.
   manor: {
-    tier:                  1,
+    tier:                  2,
     constructionTimerDays: 0,
-    suiteAssignments:      {},
+    suiteAssignments:      { suite_1: 'npc-elara' },
     passiveResourceQueue:  [],
+    holdingCells:          [],  // Task 23.22: empty at game start; populated on capture
   },
+
+  // Task 15.3: crafting bench unlocked at tier 2; maxSlots=1
+  craftingQueue: {
+    jobs:     [],
+    maxSlots: 1,  // crafting bench unlocked at tier 2
+  },
+
+  // Phase 20: no achievements unlocked yet in the mock scenario.
+  achievements: [],
 
   flags: {
     act1_ch1_started: true,
@@ -298,4 +366,47 @@ export const mockGameState: GameState = {
     partyMaxSize:         3,
     textSize:             'medium',
   },
+
+  // ── Phase 24: generic engine states (Tasks 24.41–42) ────────────────────
+  alignment: {
+    scores:              { axis_a: 0, axis_b: 0, axis_c: 0 },
+    dominantAxis:        undefined,
+    divergenceMultiplier: 1.0,
+  } satisfies AlignmentState,
+
+  infamy: {
+    scores:           {},
+    tiers:            {},
+    outstandingFines: {},
+  } satisfies InfamyState,
+
+  environment: {
+    weather:              {},
+    activeEffects:        [],
+    equipmentDurability:  {},
+  } satisfies EnvironmentState,
+
+  spires: {
+    spires: [],  // populated from spireNetwork catalog after Task 24.35
+  } satisfies SpireNetwork,
+
+  jobState: {
+    activeJobId:  undefined,
+    activeClassId: undefined,
+    jobResources: {
+      poolA: { current: 0, max: 0, label: '' },
+      poolB: undefined,
+    },
+  } satisfies JobArchetypeState,
+
+  classProgress: {
+    spSpentPerClass:        {},
+    unlockedNodesPerClass:  {},
+  } satisfies ClassProgressionState,
+
+  synergies: {
+    pairs: [],  // populated from synergyCatalog after Task 24.38
+  } satisfies SynergyState,
+
+  characterCreation: undefined,  // set during new-game character creation flow
 };

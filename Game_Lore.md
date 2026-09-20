@@ -11654,7 +11654,7 @@ The Geothermal Crystal Onsen is owned and operated by **Widow Yumi** and her two
     * *Midnight (00:00–06:00)*: Sleeping in Family Quarters East Bedchamber (`Map 7.15`).
 
 #### 3. Kasumi (*Younger Daughter & Spring Attendant*)
-* **Profile**: Yumi's energetic 17-year-old younger daughter. Cheerful and hardworking, Kasumi regulates geothermal steam valves, scrubs cedar bath rims, and serves hot botanical tea to bathing guests.
+* **Profile**: Yumi's energetic 19-year-old younger daughter. Cheerful and hardworking, Kasumi regulates geothermal steam valves, scrubs cedar bath rims, and serves hot botanical tea to bathing guests.
 * **Residence**: *Owner's Private Family Quarters* (`Map 7.15`).
 * **Family Unit**: Mother & Two Daughters (Younger Daughter).
 * **Weekday Schedule**:
