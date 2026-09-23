@@ -1,7 +1,7 @@
 # Ojisan -- Execution Task List
 
-**Task list version:** 3.7 (updated 2026-09-20)
-**Tracks:** requirements_analysis.md v1.3, PRD v1.7
+**Task list version:** 3.8 (updated 2026-09-21)
+**Tracks:** requirements_analysis.md v1.3, PRD v1.8
 
 ---
 
@@ -1145,31 +1145,31 @@
 
 ### 23a-1. Schema
 
-- [ ] **23a.1** Add `alignmentScore: number` to `PlayerCharacter` in `gameState.ts` -- init `0`; range -100 to +100; negative = Sovereign tendency, positive = Purifier tendency, near-zero = Pragmatist tendency; does not lock the player into a path
-- [ ] **23a.2** Add `darkReputation: Record<RegionId, number>` to root `GameState` alongside existing `reputation` -- init all regions `0`; range 0–100; independent of `reputation` by formula; at `>= 40` in a region the shadow faction unlocks (vendors, quests, dialogue)
-- [ ] **23a.3** Extend `DialogueCondition` union in `gameState.ts` with `{ type: 'ALIGNMENT'; dominantAlignment: 'PURIFIER' | 'PRAGMATIST' | 'SOVEREIGN' }` variant; update `evaluateCondition()` in `dialogueEngine.ts` to handle it
-- [ ] **23a.4** Add alignment `GameEvent` variants: `ALIGNMENT_SHIFTED` (`delta`, `newScore`, `dominantAlignment`), `DARK_REPUTATION_CHANGED` (`regionId`, `delta`, `newScore`)
-- [ ] **23a.5** Update `mockGameState.ts` -- add `alignmentScore: 0`, `darkReputation: {}` (or matching 3-region sample set)
+- [x] **23a.1** Add `alignmentScore: number` to `PlayerCharacter` in `gameState.ts` -- init `0`; range -100 to +100; negative = Sovereign tendency, positive = Purifier tendency, near-zero = Pragmatist tendency; does not lock the player into a path
+- [x] **23a.2** Add `darkReputation: Record<RegionId, number>` to root `GameState` alongside existing `reputation` -- init all regions `0`; range 0–100; independent of `reputation` by formula; at `>= 40` in a region the shadow faction unlocks (vendors, quests, dialogue)
+- [x] **23a.3** Extend `DialogueCondition` union in `gameState.ts` with `{ type: 'ALIGNMENT'; dominantAlignment: 'PURIFIER' | 'PRAGMATIST' | 'SOVEREIGN' }` variant; update `evaluateCondition()` in `dialogueEngine.ts` to handle it
+- [x] **23a.4** Add alignment `GameEvent` variants: `ALIGNMENT_SHIFTED` (`delta`, `newScore`, `dominantAlignment`), `DARK_REPUTATION_CHANGED` (`regionId`, `delta`, `newScore`)
+- [x] **23a.5** Update `mockGameState.ts` -- add `alignmentScore: 0`, `darkReputation: {}` (or matching 3-region sample set)
 
 ### 23a-2. Core engine
 
-- [ ] **23a.6** Implement `deriveDominantAlignment(score: number): 'PURIFIER' | 'PRAGMATIST' | 'SOVEREIGN'` pure helper -- `>= 40` → PURIFIER; `<= -40` → SOVEREIGN; else → PRAGMATIST
-- [ ] **23a.7** Implement `shiftAlignment(gameState, delta: number): { state: GameState; events: GameEvent[] }` -- clamps score to [-100, +100]; derives dominant alignment; emits `ALIGNMENT_SHIFTED`; called by dispatcher on meaningful quest/dialogue decisions, NOT on combat kill/purify outcomes
-- [ ] **23a.8** Implement `applyDarkReputationDelta(gameState, regionId, delta): { state: GameState; events: GameEvent[] }` -- clamps [0, 100]; emits `DARK_REPUTATION_CHANGED`; at threshold 40 emits additional `DARK_FACTION_UNLOCKED` event; shadow faction content available when `darkReputation[regionId] >= 40`
-- [ ] **23a.9** Implement `getDarkReputation(gameState, regionId): number` pure helper
-- [ ] **23a.10** Implement `getDominantAlignment(gameState): 'PURIFIER' | 'PRAGMATIST' | 'SOVEREIGN'` pure convenience wrapper around `deriveDominantAlignment(gameState.player.alignmentScore)`
+- [x] **23a.6** Implement `deriveDominantAlignment(score: number): 'PURIFIER' | 'PRAGMATIST' | 'SOVEREIGN'` pure helper -- `>= 40` → PURIFIER; `<= -40` → SOVEREIGN; else → PRAGMATIST
+- [x] **23a.7** Implement `shiftAlignment(gameState, delta: number): { state: GameState; events: GameEvent[] }` -- clamps score to [-100, +100]; derives dominant alignment; emits `ALIGNMENT_SHIFTED`; called by dispatcher on meaningful quest/dialogue decisions, NOT on combat kill/purify outcomes
+- [x] **23a.8** Implement `applyDarkReputationDelta(gameState, regionId, delta): { state: GameState; events: GameEvent[] }` -- clamps [0, 100]; emits `DARK_REPUTATION_CHANGED`; at threshold 40 emits additional `DARK_FACTION_UNLOCKED` event; shadow faction content available when `darkReputation[regionId] >= 40`
+- [x] **23a.9** Implement `getDarkReputation(gameState, regionId): number` pure helper
+- [x] **23a.10** Implement `getDominantAlignment(gameState): 'PURIFIER' | 'PRAGMATIST' | 'SOVEREIGN'` pure convenience wrapper around `deriveDominantAlignment(gameState.player.alignmentScore)`
 
 ### 23a-3. Integration
 
-- [ ] **23a.11** Update `questEngine.grantQuestReward()` -- when `reward.flagsSet` contains `'alignment_purifier'`, `'alignment_pragmatist'`, or `'alignment_sovereign'`, call `shiftAlignment()` with respective delta (+10 / 0 / -10) after credits; delta defined per quest in catalog (deferred to task 11.5)
-- [ ] **23a.12** Update `applyDialogueEffect()` in `dialogueEngine.ts` -- add `ALIGNMENT_SHIFT` variant to `DialogueEffect` union: `{ type: 'ALIGNMENT_SHIFT'; delta: number }`; apply via `shiftAlignment()` when dialogue choice is made
-- [ ] **23a.13** Update `evaluateCondition()` in `dialogueEngine.ts` -- handle the new `ALIGNMENT` condition type using `getDominantAlignment(gameState)` (task 23a.3)
-- [ ] **23a.14** Wire `DARK_REPUTATION_CHANGED` into day-end tick: add a `tickDarkReputationDecay(gameState)` no-op stub in `reputationEngine.ts` for now (dark reputation does not decay passively like regular reputation); note in comment that decay only occurs on Purifier-dominant events in a region, handled by existing `REPUTATION_EVENT_TABLE` extensions that will be authored in task 11.5
-- [ ] **23a.15** Add `ALIGNMENT_CONDITION` to `DialogueCondition` union check in `getAvailableChoices()` -- locked when dominant alignment does not match; hidden when `choice.hidden === true`
+- [x] **23a.11** Update `questEngine.grantQuestReward()` -- when `reward.flagsSet` contains `'alignment_purifier'`, `'alignment_pragmatist'`, or `'alignment_sovereign'`, call `shiftAlignment()` with respective delta (+10 / 0 / -10) after credits; delta defined per quest in catalog (deferred to task 11.5)
+- [x] **23a.12** Update `applyDialogueEffect()` in `dialogueEngine.ts` -- add `ALIGNMENT_SHIFT` variant to `DialogueEffect` union: `{ type: 'ALIGNMENT_SHIFT'; delta: number }`; apply via `shiftAlignment()` when dialogue choice is made
+- [x] **23a.13** Update `evaluateCondition()` in `dialogueEngine.ts` -- handle the new `ALIGNMENT` condition type using `getDominantAlignment(gameState)` (task 23a.3)
+- [x] **23a.14** Wire `DARK_REPUTATION_CHANGED` into day-end tick: add a `tickDarkReputationDecay(gameState)` no-op stub in `reputationEngine.ts` for now (dark reputation does not decay passively like regular reputation); note in comment that decay only occurs on Purifier-dominant events in a region, handled by existing `REPUTATION_EVENT_TABLE` extensions that will be authored in task 11.5
+- [x] **23a.15** Add `ALIGNMENT_CONDITION` to `DialogueCondition` union check in `getAvailableChoices()` -- locked when dominant alignment does not match; hidden when `choice.hidden === true`
 
 ### 23a-4. Achievement hooks
 
-- [ ] **23a.16** Add `ach_counter_alignment_purifier_choices`, `ach_counter_alignment_sovereign_choices`, `ach_counter_alignment_pragmatist_choices` counters -- incremented by `shiftAlignment()` alongside the score shift; used by achievement conditions of type COUNT in task 20.4
+- [x] **23a.16** Add `ach_counter_alignment_purifier_choices`, `ach_counter_alignment_sovereign_choices`, `ach_counter_alignment_pragmatist_choices` counters -- incremented by `shiftAlignment()` alongside the score shift; used by achievement conditions of type COUNT in task 20.4
 
 ---
 
@@ -1434,3 +1434,221 @@
 - [ ] **I.4** Configure build pipeline (tsconfig paths, output dirs)
 - [ ] **I.5** Add basic unit test harness (Jest or Vitest)
 - [ ] **I.6** Write unit tests for spawn engine
+
+---
+
+## Phase 27: Companion Side Quest System — Schema, Stat-Gating & Alignment Branching
+
+> **Design contract** (do not alter without a design session):
+>
+> Each named companion has **two quest chains**:
+>
+> 1. **Standard Side Quest chain** (SQ-X.xA / SQ-X.xB / SQ-X.xC — already lore-authored):
+>    - Gated by **Love** and **Trust** thresholds. Accepting SQ-X.xA requires Love ≥ L₁ & Trust ≥ T₁; each subsequent quest raises the bar.
+>    - Once a quest is active, **Love and Trust cannot increase above the gate for the next quest** until that quest is completed (stat-ceiling freeze).
+>    - Each quest contains **one lightweight alignment branch** — a single dialogue moment scored ±10 Rebel/Loyalist/Pragmatist (not a full three-path fork; one choice that tilts the score and colours the outcome line).
+>    - SQ-X.xC (Intimacy Unlock) additionally requires the **Enclave** for that chapter to be established.
+>
+> 2. **Advanced Side Quest chain** (ASQ-X.x — new, 3 quests per companion):
+>    - Unlocks only after SQ-X.xC (Intimacy) is complete.
+>    - Gated by **Relationship** (Love + Trust combined), **Corruption**, and **Sexual stat** thresholds.
+>    - Same stat-ceiling freeze rule: relevant stats cannot exceed the gate for the next ASQ until the current one is completed.
+>    - Each quest contains **one alignment branch** with two concrete divergent outcomes (Rebel vs Loyalist); Pragmatist gets a contextual blend outcome if no tilt exceeds ±20.
+>    - Content is explicitly adult RPG: deeper intimacy, power dynamics, companion-specific scenarios.
+>
+> **Alignment branch design rule (both chain types):**
+> - One choice per quest maximum.
+> - Rebel/Light branch: consent, mutual growth, protective action.
+> - Loyalist/Dark branch: dominance, coercion, possession, breaking.
+> - Pragmatist/Neutral: blended outcome when neither tilt exceeds ±20.
+> - Scoring: ±10 per SQ branch; ±15 per ASQ branch. Lighter than main quest (±25) by design.
+>
+> **Stat-freeze implementation rule:**
+> - Implemented as `statCeiling` entries on the active `QuestEntry`: `{ stat: 'love' | 'trust' | 'corruption' | 'sexual_stat'; maxWhileActive: number }[]`.
+> - `applyPostSceneRelationshipDelta()` and `resolveSocialAction()` must clamp against active quest ceilings for the relevant NPC.
+> - Ceiling lifted (entry removed) when `checkQuestCompletion()` resolves the quest.
+
+---
+
+### 27a. Schema extensions
+
+- [ ] **27a.1** Extend `QuestDef` in `src/data/quests.ts` — add `chain: 'STANDARD_SQ' | 'ADVANCED_SQ'`; add `statGates: { stat: 'love' | 'trust' | 'corruption' | 'sexual_stat'; minValue: number }[]`; add `alignmentBranch?: { choiceLabel: string; rebelOutcomeFlag: string; loyalistOutcomeFlag: string; pragmatistOutcomeFlag?: string; delta: number }` (one branch per quest maximum)
+- [ ] **27a.2** Extend `QuestEntry` runtime state — add `statCeilings: { stat: string; maxWhileActive: number; npcId: string }[]`; populated on `acceptQuest()`, cleared on quest completion or failure
+- [ ] **27a.3** Add `ADVANCED_SQ` to the `type` union on `QuestDef` (`'MAIN' | 'COMPANION' | 'STANDARD_SQ' | 'ADVANCED_SQ' | 'BOARD'`)
+- [ ] **27a.4** Define `AlignmentBranchChoice` interface — `{ questId: string; npcId: string; chosenPath: 'REBEL' | 'LOYALIST' | 'PRAGMATIST'; flagSet: string; alignmentDelta: number }` — emitted as `GameEvent` variant `QUEST_ALIGNMENT_BRANCH_CHOSEN`
+
+### 27b. Engine changes
+
+- [ ] **27b.1** Update `acceptQuest()` in `questEngine.ts` — after creating `QuestEntry`, compute `statCeilings` from the next quest in chain's `statGates` and write onto the active entry
+- [ ] **27b.2** Update `checkQuestCompletion()` — on COMPLETED, call new helper `liftStatCeilings(gameState, questId, npcId)` before emitting `QUEST_COMPLETED`
+- [ ] **27b.3** Implement `liftStatCeilings(gameState, questId, npcId): GameState` — removes ceiling entries from all active `QuestEntry` records matching questId+npcId pair
+- [ ] **27b.4** Update `applyPostSceneRelationshipDelta()` in `relationshipEngine.ts` — before writing Love/Trust deltas, call `clampToStatCeilings(gameState, npcId, deltas)` which inspects active quest entries and reduces deltas that would breach a ceiling
+- [ ] **27b.5** Update `resolveSocialAction()` in `relationshipEngine.ts` — same ceiling clamp applied to daily flirt/touch Love/Trust gains
+- [ ] **27b.6** Implement `resolveAlignmentBranch(gameState, questId, npcId, chosenPath): GameState` — applies `alignmentDelta` to player alignment score; sets corresponding outcome flag in `gameState.flags`; emits `QUEST_ALIGNMENT_BRANCH_CHOSEN`
+- [ ] **27b.7** Wire `QUEST_BRANCH_CHOSEN` intent in `dispatcher.ts` → `resolveAlignmentBranch()`
+- [ ] **27b.8** Implement `getCompanionQuestStage(gameState, npcId): { standardChain: number; advancedChain: number }` — returns highest completed quest index (0=none, 1=xA, 2=xB, 3=xC/all) for each chain; used by `sortContacts()`
+- [ ] **27b.9** Add corruption and sexual-stat ceiling clamp to `resolvePostIntimacy()` in `intimacyEngine.ts` — same pattern as 27b.4 but for ASQ gates
+
+### 27c. Chapter 1 — Standard SQ stat gates & alignment branches (Valeria, Teresa, Beatrix)
+
+- [ ] **27c.1** Define stat-gate thresholds for Valeria's chain (SQ-1.1A/B/C) — A: Love ≥ 20 & Trust ≥ 20; B: Love ≥ 40 & Trust ≥ 35 (ceiling while A active: Love max 39, Trust max 34); C: Love ≥ 60 & Trust ≥ 55 (ceiling while B active: Love max 59, Trust max 54); requires Highwatch Enclave for C
+- [ ] **27c.2** Define alignment branch moment for each Valeria SQ — SQ-1.1A: confrontation with Blackwood (Rebel: offer freedom to Elena+Kaelen / Loyalist: take their contracts for the Enclave); SQ-1.1B: recovering squad gear (Rebel: return all gear freely / Loyalist: retain one chest as Enclave collateral); SQ-1.1C: sunset moment (Rebel: mutual oath / Loyalist: she pledges service as condition of safety)
+- [ ] **27c.3** Define stat-gate thresholds for Teresa's chain (SQ-1.2A/B/C) — A: Love ≥ 15 & Trust ≥ 25; B: Love ≥ 35 & Trust ≥ 45; C: Love ≥ 55 & Trust ≥ 65; requires Highwatch Enclave for C
+- [ ] **27c.4** Define alignment branch moment for each Teresa SQ — SQ-1.2A: Rot-Hound ambush (Rebel: treat wounded beasts / Loyalist: destroy remaining pack); SQ-1.2B: apothecary (Rebel: leave a donation note / Loyalist: strip the storehouse completely); SQ-1.2C: chapel altar (Rebel: shared prayer and renewal / Loyalist: she renounces her vows under your authority)
+- [ ] **27c.5** Define stat-gate thresholds for Beatrix's chain (SQ-1.3A/B/C) — A: Love ≥ 20 & Trust ≥ 30; B: Love ≥ 40 & Trust ≥ 50; C: Love ≥ 60 & Trust ≥ 70; requires Highwatch Enclave for C
+- [ ] **27c.6** Define alignment branch moment for each Beatrix SQ — SQ-1.3A: toll station (Rebel: release bandits with a warning / Loyalist: hand over for bounty); SQ-1.3B: courier interception (Rebel: let him go after confiscating notes / Loyalist: detain as Enclave asset); SQ-1.3C: pawn broker — natural three-way split (Rebel: audit leverage / Loyalist: intimidation / Pragmatist: gold buyback)
+
+### 27d. Chapter 1 — Advanced SQ chains (Valeria, Teresa, Beatrix)
+
+- [ ] **27d.1** Define ASQ-1.1 chain for Valeria — 3 quests; gate: ASQ-1.1A: Love ≥ 75 & Corruption ≥ 20; ASQ-1.1B: Love ≥ 85 & Corruption ≥ 35 (ceiling while A: Corruption max 34); ASQ-1.1C: Love ≥ 95 & Corruption ≥ 50 & sexual_stat (submission) ≥ 30; branch themes: trust-test sparring / private oath renewal / absolute devotion rite
+- [ ] **27d.2** Define ASQ-1.2 chain for Teresa — gate: ASQ-1.2A: Love ≥ 70 & Corruption ≥ 15; ASQ-1.2B: Love ≥ 80 & Corruption ≥ 30; ASQ-1.2C: Love ≥ 90 & Corruption ≥ 45 & sexual_stat (purity_erosion) ≥ 25; branch themes: healing ritual boundary / sanctuary confession / willing surrender of vows
+- [ ] **27d.3** Define ASQ-1.3 chain for Beatrix — gate: ASQ-1.3A: Love ≥ 75 & Corruption ≥ 20; ASQ-1.3B: Love ≥ 85 & Corruption ≥ 35; ASQ-1.3C: Love ≥ 95 & Corruption ≥ 50 & sexual_stat (analytical_surrender) ≥ 30; branch themes: after-hours audit / ledger-and-body audit / full cipher exchange
+
+### 27e. Chapter 2 — Standard SQ stat gates & alignment branches (Lysandra, Genevieve)
+
+- [ ] **27e.1** Define stat-gate thresholds for Lysandra's chain (SQ-2.1A/B/C) — A: Love ≥ 20 & Trust ≥ 20; B: Love ≥ 40 & Trust ≥ 35; C: Love ≥ 60 & Trust ≥ 55; requires Harbor Watchtower Enclave for C
+- [ ] **27e.2** Define alignment branch for each Lysandra SQ — SQ-2.1A: defeating Drake (Rebel: publicly expose / Loyalist: absorb operation into network); SQ-2.1B: Agent Vane capture (Rebel: release with warning / Loyalist: hold as counterintelligence asset); SQ-2.1C: telegraph activation (Rebel: share relay with allied factions / Loyalist: monopolise for Enclave)
+- [ ] **27e.3** Define stat-gate thresholds for Genevieve's chain (SQ-2.2A/B/C) — A: Love ≥ 25 & Trust ≥ 20; B: Love ≥ 45 & Trust ≥ 40; C: Love ≥ 65 & Trust ≥ 60; requires Harbor Watchtower Enclave for C
+- [ ] **27e.4** Define alignment branch for each Genevieve SQ — SQ-2.2A: Silas's manor (Rebel: take only heirlooms, leave evidence / Loyalist: take full ledger as leverage); SQ-2.2B: fishing village (Rebel: help rebuild / Loyalist: recruit strongest as Enclave labour); SQ-2.2C: annulment charter (Rebel: she seals freely / Loyalist: protagonist holds seal as condition of her protection)
+
+### 27f. Chapter 2 — Advanced SQ chains (Lysandra, Genevieve)
+
+- [ ] **27f.1** Define ASQ-2.1 chain for Lysandra — gate: ASQ-2.1A: Love ≥ 75 & Corruption ≥ 25; ASQ-2.1B: Love ≥ 85 & Corruption ≥ 40; ASQ-2.1C: Love ≥ 95 & Corruption ≥ 55 & sexual_stat (shadow_control) ≥ 30; branch themes: private intelligence briefing / vault-below-the-vault / total network surrender
+- [ ] **27f.2** Define ASQ-2.2 chain for Genevieve — gate: ASQ-2.2A: Love ≥ 70 & Corruption ≥ 20; ASQ-2.2B: Love ≥ 82 & Corruption ≥ 35; ASQ-2.2C: Love ≥ 95 & Corruption ≥ 50 & sexual_stat (noble_submission) ≥ 28; branch themes: dissolving the last cartel tie / private arcanum session / the matriarch reborn as devotee
+
+### 27g. Chapter 3 — Standard SQ stat gates & alignment branches (Corinne, Lucilla)
+
+- [ ] **27g.1** Define stat-gate thresholds for Corinne's chain (SQ-3.1A/B/C) — A: Love ≥ 15 & Trust ≥ 15 (lower entry — starts adversarial); B: Love ≥ 35 & Trust ≥ 30; C: Love ≥ 55 & Trust ≥ 50; requires Sunken Monastery Enclave for C
+- [ ] **27g.2** Define alignment branch for each Corinne SQ — SQ-3.1A: voiding warrants (Rebel: villagers decide her fate / Loyalist: declare she now serves Enclave publicly); SQ-3.1B: casket unsealing (Rebel: destroy armory contents / Loyalist: transfer to Enclave arsenal); SQ-3.1C: oath scene (Rebel: voluntary oath with terms / Loyalist: unconditional oath under duress)
+- [ ] **27g.3** Define stat-gate thresholds for Lucilla's chain (SQ-3.2A/B/C) — A: Love ≥ 20 & Trust ≥ 20; B: Love ≥ 40 & Trust ≥ 40; C: Love ≥ 60 & Trust ≥ 60; requires Sunken Monastery Enclave for C
+- [ ] **27g.4** Define alignment branch for each Lucilla SQ — SQ-3.2A: laundering vault (Rebel: distribute to refugees / Loyalist: bank in Enclave vault); SQ-3.2B: desecration ritual (Rebel: preserve one relic / Loyalist: destroy all relics publicly); SQ-3.2C: the saint's fall (Rebel: she stays of her own will / Loyalist: she surrenders under explicit command)
+
+### 27h. Chapter 3 — Advanced SQ chains (Corinne, Lucilla)
+
+- [ ] **27h.1** Define ASQ-3.1 chain for Corinne — gate: ASQ-3.1A: Love ≥ 70 & Corruption ≥ 30; ASQ-3.1B: Love ≥ 82 & Corruption ≥ 45; ASQ-3.1C: Love ≥ 95 & Corruption ≥ 60 & sexual_stat (knight_submission) ≥ 35; branch themes: sparring that becomes more / armour removal rite / absolute knight's vow
+- [ ] **27h.2** Define ASQ-3.2 chain for Lucilla — gate: ASQ-3.2A: Love ≥ 72 & Corruption ≥ 28; ASQ-3.2B: Love ≥ 85 & Corruption ≥ 45; ASQ-3.2C: Love ≥ 95 & Corruption ≥ 62 & sexual_stat (holy_corruption) ≥ 35; branch themes: confessional reversal / desecration intimacy / the saint's complete fall
+
+### 27i. Chapter 4 — Standard SQ stat gates & alignment branches (Morvanya, Tali)
+
+- [ ] **27i.1** Define stat-gate thresholds for Morvanya's chain (SQ-4.1A/B/C) — A: Love ≥ 20 & Trust ≥ 20; B: Love ≥ 40 & Trust ≥ 38; C: Love ≥ 60 & Trust ≥ 58; requires Sunken Citadel Enclave for C
+- [ ] **27i.2** Define alignment branch for each Morvanya SQ — SQ-4.1A: Blood-Feather defeat (Rebel: exile / Loyalist: conscript as Enclave fighter); SQ-4.1B: behemoth hunt (Rebel: minimal kills / Loyalist: strip cave of all trophies); SQ-4.1C: rite of submission (Rebel: yields on her own terms / Loyalist: formally broken before the clan)
+- [ ] **27i.3** Define stat-gate thresholds for Tali's chain (SQ-4.2A/B/C) — A: Love ≥ 18 & Trust ≥ 20; B: Love ≥ 38 & Trust ≥ 40; C: Love ≥ 58 & Trust ≥ 60; requires Sunken Citadel Enclave for C
+- [ ] **27i.4** Define alignment branch for each Tali SQ — SQ-4.2A: rescuing Talon (Rebel: free all falcons / Loyalist: keep best falcon as Enclave scout asset); SQ-4.2B: ruin puzzle (Rebel: catalogue and report / Loyalist: strip ruin for Enclave); SQ-4.2C: star-lit oasis (Rebel: she chooses devotion freely / Loyalist: she surrenders independence under explicit claim)
+
+### 27j. Chapter 4 — Advanced SQ chains (Morvanya, Tali)
+
+- [ ] **27j.1** Define ASQ-4.1 chain for Morvanya — gate: ASQ-4.1A: Love ≥ 75 & Corruption ≥ 25; ASQ-4.1B: Love ≥ 87 & Corruption ≥ 42; ASQ-4.1C: Love ≥ 97 & Corruption ≥ 58 & sexual_stat (tribal_surrender) ≥ 32; branch themes: blood-pact renewal / chieftain's private war council / the crown laid down
+- [ ] **27j.2** Define ASQ-4.2 chain for Tali — gate: ASQ-4.2A: Love ≥ 70 & Corruption ≥ 20; ASQ-4.2B: Love ≥ 82 & Corruption ≥ 35; ASQ-4.2C: Love ≥ 94 & Corruption ≥ 50 & sexual_stat (scout_devotion) ≥ 28; branch themes: night hunt alone together / the scout's map and secrets / under the desert stars
+
+### 27k. Chapter 5 — Standard SQ stat gates & alignment branches (Evangeline, Seraphina, Aurelia, Rosalie)
+
+- [ ] **27k.1** Define stat-gate thresholds for Evangeline's chain (SQ-5.1A/B/C) — A: Love ≥ 22 & Trust ≥ 18; B: Love ≥ 42 & Trust ≥ 38; C: Love ≥ 62 & Trust ≥ 58; requires Royal Citadel Enclave for C
+- [ ] **27k.2** Define alignment branch for each Evangeline SQ — SQ-5.1A: scullery combat (Rebel: expose assassination order publicly / Loyalist: use as court blackmail); SQ-5.1B: bloodstain cover-up (Rebel: refuse further killings / Loyalist: add to Enclave leverage file); SQ-5.1C: the maid's master (Rebel: she chooses freely / Loyalist: serves under unconditional contract)
+- [ ] **27k.3** Define stat-gate thresholds for Seraphina's chain (SQ-5.2A/B/C) — A: Love ≥ 20 & Trust ≥ 20; B: Love ≥ 40 & Trust ≥ 40; C: Love ≥ 60 & Trust ≥ 60; requires Royal Citadel Enclave for C
+- [ ] **27k.4** Define alignment branch for each Seraphina SQ — SQ-5.2A: chancellor's blackmail files (Rebel: destroy all / Loyalist: archive for Enclave); SQ-5.2B: golden-cage unsealing (Rebel: free all captive concubines / Loyalist: reassign useful ones to Enclave); SQ-5.2C: concubine's surrender (Rebel: she chooses freely / Loyalist: surrenders under explicit possession)
+- [ ] **27k.5** Define stat-gate thresholds for Aurelia's chain (SQ-5.3A/B/C) — A: Love ≥ 18 & Trust ≥ 22; B: Love ≥ 38 & Trust ≥ 42; C: Love ≥ 58 & Trust ≥ 62; requires Royal Citadel Enclave for C
+- [ ] **27k.6** Define alignment branch for each Aurelia SQ — SQ-5.3A: broken shield (Rebel: honour the fallen publicly / Loyalist: absorb unit into Enclave quietly); SQ-5.3B: honour restoration (Rebel: restored knighthood under reformed oath / Loyalist: replaced with personal pledge to protagonist); SQ-5.3C: knight's submission (Rebel: mutual honour-bound vow / Loyalist: absolute submission to sole master)
+- [ ] **27k.7** Define stat-gate thresholds for Rosalie's chain (SQ-5.4A/B/C) — A: Love ≥ 25 & Trust ≥ 15; B: Love ≥ 45 & Trust ≥ 35; C: Love ≥ 65 & Trust ≥ 55; requires Royal Citadel Enclave for C
+- [ ] **27k.8** Define alignment branch for each Rosalie SQ — SQ-5.4A: princess's research (Rebel: publish openly / Loyalist: classify under Enclave control); SQ-5.4B: ley-line generator (Rebel: share specs with allied scholars / Loyalist: seal under Enclave lock); SQ-5.4C: princess's surrender (Rebel: stays as equal by choice / Loyalist: surrenders as devoted ward)
+
+### 27l. Chapter 5 — Advanced SQ chains (Evangeline, Seraphina, Aurelia, Rosalie)
+
+- [ ] **27l.1** Define ASQ-5.1 chain for Evangeline — gate: ASQ-5.1A: Love ≥ 75 & Corruption ≥ 28; ASQ-5.1B: Love ≥ 87 & Corruption ≥ 44; ASQ-5.1C: Love ≥ 96 & Corruption ≥ 60 & sexual_stat (shadow_maid_service) ≥ 32; branch themes: covert mission together / private debrief / the shadow's full loyalty
+- [ ] **27l.2** Define ASQ-5.2 chain for Seraphina — gate: ASQ-5.2A: Love ≥ 72 & Corruption ≥ 22; ASQ-5.2B: Love ≥ 84 & Corruption ≥ 38; ASQ-5.2C: Love ≥ 95 & Corruption ≥ 55 & sexual_stat (concubine_devotion) ≥ 30; branch themes: the charm reversed / private performance / surrender of the charmer
+- [ ] **27l.3** Define ASQ-5.3 chain for Aurelia — gate: ASQ-5.3A: Love ≥ 73 & Corruption ≥ 25; ASQ-5.3B: Love ≥ 85 & Corruption ≥ 42; ASQ-5.3C: Love ≥ 96 & Corruption ≥ 58 & sexual_stat (paladin_submission) ≥ 33; branch themes: the shield becomes a shield-maiden / armour and what's beneath / knight's final oath
+- [ ] **27l.4** Define ASQ-5.4 chain for Rosalie — gate: ASQ-5.4A: Love ≥ 70 & Corruption ≥ 18; ASQ-5.4B: Love ≥ 82 & Corruption ≥ 33; ASQ-5.4C: Love ≥ 94 & Corruption ≥ 50 & sexual_stat (royal_surrender) ≥ 28; branch themes: the princess tests the protagonist / arcanum experiment on herself / royal surrender
+
+### 27m. Chapter 6 — Standard SQ stat gates & alignment branches (Celeste, Aria)
+
+- [ ] **27m.1** Define stat-gate thresholds for Celeste's chain (SQ-6.1A/B/C) — A: Love ≥ 22 & Trust ≥ 22; B: Love ≥ 42 & Trust ≥ 42; C: Love ≥ 62 & Trust ≥ 62; requires Sky Sanctuary Citadel Enclave for C
+- [ ] **27m.2** Define alignment branch for each Celeste SQ — SQ-6.1A: dragon rescue (Rebel: free all dragons / Loyalist: recruit largest as Enclave mount); SQ-6.1B: bloodline rite (Rebel: private personal act / Loyalist: performed before Enclave as loyalty ceremony); SQ-6.1C: princess's submission (Rebel: chosen freely / Loyalist: blood-pact claimed)
+- [ ] **27m.3** Define stat-gate thresholds for Aria's chain (SQ-6.2A/B/C) — A: Love ≥ 20 & Trust ≥ 18; B: Love ≥ 40 & Trust ≥ 38; C: Love ≥ 60 & Trust ≥ 58; requires Sky Sanctuary Citadel Enclave for C
+- [ ] **27m.4** Define alignment branch for each Aria SQ — SQ-6.2A: salvage claim (Rebel: split equally with crew / Loyalist: claim best salvage for Enclave exclusively); SQ-6.2B: turbine blueprint (Rebel: open-source specs / Loyalist: classify under Enclave airship program); SQ-6.2C: captain's surrender (Rebel: stays captain and partner / Loyalist: yields captainship to Enclave)
+
+### 27n. Chapter 6 — Advanced SQ chains (Celeste, Aria)
+
+- [ ] **27n.1** Define ASQ-6.1 chain for Celeste — gate: ASQ-6.1A: Love ≥ 76 & Corruption ≥ 22; ASQ-6.1B: Love ≥ 88 & Corruption ≥ 38; ASQ-6.1C: Love ≥ 97 & Corruption ≥ 55 & sexual_stat (dragon_bond) ≥ 30; branch themes: flight alone together / the dragon princess and her rider / blood-pact intimacy
+- [ ] **27n.2** Define ASQ-6.2 chain for Aria — gate: ASQ-6.2A: Love ≥ 72 & Corruption ≥ 20; ASQ-6.2B: Love ≥ 84 & Corruption ≥ 36; ASQ-6.2C: Love ≥ 95 & Corruption ≥ 52 & sexual_stat (pirate_devotion) ≥ 28; branch themes: stowaway night on the Zephyr / the captain's quarters / anchor dropped for good
+
+### 27o. Chapter 7 — Standard SQ stat gates & alignment branches (Vespera, Nyx, Hilda, Gretel)
+
+- [ ] **27o.1** Define stat-gate thresholds and alignment branches for Vespera's chain (SQ-7.1A/B/C) — A: Love ≥ 25 & Trust ≥ 22; B: Love ≥ 45 & Trust ≥ 42; C: Love ≥ 65 & Trust ≥ 62; branch themes: ancient matriarch's test of will / rune-vault access / the queen kneels (Rebel: willing / Loyalist: claimed)
+- [ ] **27o.2** Define stat-gate thresholds and alignment branches for Nyx's chain (SQ-7.2A/B/C) — A: Love ≥ 20 & Trust ≥ 20; B: Love ≥ 40 & Trust ≥ 40; C: Love ≥ 60 & Trust ≥ 60; branch themes: shadow-hunt together / cipher map exchange / the scout's full devotion
+- [ ] **27o.3** Define stat-gate thresholds and alignment branches for Hilda's chain (SQ-7.3A/B/C) — A: Love ≥ 18 & Trust ≥ 20; B: Love ≥ 38 & Trust ≥ 40; C: Love ≥ 58 & Trust ≥ 60; branch themes: forge challenge / magma-hammer creation rite / the forge-master's oath
+- [ ] **27o.4** Define stat-gate thresholds and alignment branches for Gretel's chain (SQ-7.4A/B/C) — A: Love ≥ 20 & Trust ≥ 18; B: Love ≥ 40 & Trust ≥ 38; C: Love ≥ 60 & Trust ≥ 58; branch themes: demolition field test / ventilation system repair / the engineer's dedication
+
+### 27p. Chapter 7 — Advanced SQ chains (Vespera, Nyx, Hilda, Gretel)
+
+- [ ] **27p.1** Define ASQ-7.1 chain for Vespera — gate: ASQ-7.1A: Love ≥ 78 & Corruption ≥ 30; ASQ-7.1B: Love ≥ 90 & Corruption ≥ 48; ASQ-7.1C: Love ≥ 98 & Corruption ≥ 65 & sexual_stat (dark_elf_dominion) ≥ 38; branch themes: ancient ritual reversal / the matriarch instructs / queen and consort
+- [ ] **27p.2** Define ASQ-7.2 chain for Nyx — gate: ASQ-7.2A: Love ≥ 73 & Corruption ≥ 24; ASQ-7.2B: Love ≥ 85 & Corruption ≥ 40; ASQ-7.2C: Love ≥ 95 & Corruption ≥ 56 & sexual_stat (shadow_devotion) ≥ 32; branch themes: shadows and warmth / the scout unmasks / full shadow bond
+- [ ] **27p.3** Define ASQ-7.3 chain for Hilda — gate: ASQ-7.3A: Love ≥ 70 & Corruption ≥ 20; ASQ-7.3B: Love ≥ 82 & Corruption ≥ 36; ASQ-7.3C: Love ≥ 93 & Corruption ≥ 52 & sexual_stat (dwarven_fire) ≥ 28; branch themes: the forge after hours / hammered softness / the forgemaster's mark
+- [ ] **27p.4** Define ASQ-7.4 chain for Gretel — gate: ASQ-7.4A: Love ≥ 68 & Corruption ≥ 18; ASQ-7.4B: Love ≥ 80 & Corruption ≥ 32; ASQ-7.4C: Love ≥ 92 & Corruption ≥ 48 & sexual_stat (engineer_curiosity) ≥ 26; branch themes: after-hours experiment / the test subject volunteers / blueprint of the heart
+
+### 27q. Chapter 7 — Onsen NPCs Standard SQ chains (Yumi, Ayame, Kasumi)
+
+> Onsen NPCs are non-combat support characters. Chains are 2 quests + intimacy unlock; lighter Love/Trust gates.
+
+- [ ] **27q.1** Define stat-gate thresholds and alignment branch for Widow Yumi's chain — SQ-7.O1A: Love ≥ 20 & Trust ≥ 25; SQ-7.O1B (unlock): Love ≥ 45 & Trust ≥ 50; branch in SQ-7.O1A: geothermal valve repair (Rebel: report Church mining damage to authorities / Loyalist: keep quiet to avoid Enclave attention)
+- [ ] **27q.2** Define stat-gate thresholds and alignment branch for Ayame's chain — SQ-7.O2A: Love ≥ 18 & Trust ≥ 20; SQ-7.O2B (unlock): Love ≥ 40 & Trust ≥ 45; branch in SQ-7.O2A: difficult guest who threatens the onsen (Rebel: mediate / Loyalist: eject and blacklist)
+- [ ] **27q.3** Define stat-gate thresholds and alignment branch for Kasumi's chain — SQ-7.O3A: Love ≥ 15 & Trust ≥ 18; SQ-7.O3B (unlock): Love ≥ 35 & Trust ≥ 40; branch in SQ-7.O3A: steam valve over-pressure incident (Rebel: teach her the safe method / Loyalist: take over the task and make her watch)
+
+### 27r. Chapter 7 — Onsen NPCs Advanced SQ chains (Yumi, Ayame, Kasumi)
+
+- [ ] **27r.1** Define ASQ-7.O1 for Yumi — gate: Love ≥ 60 & Corruption ≥ 18 & sexual_stat (widow_warmth) ≥ 22; 2-quest chain; branch themes: private onsen session / widow's comfort
+- [ ] **27r.2** Define ASQ-7.O2 for Ayame — gate: Love ≥ 55 & Corruption ≥ 15 & sexual_stat (attendant_care) ≥ 20; branch themes: late-night bath service / the elder daughter's secret
+- [ ] **27r.3** Define ASQ-7.O3 for Kasumi — gate: Love ≥ 50 & Corruption ≥ 12 & sexual_stat (spring_energy) ≥ 18; branch themes: steam-room mishap / the younger daughter opens up
+
+### 27s. Chapter 8 — Standard SQ stat gates & alignment branches (Nerida, Marina)
+
+- [ ] **27s.1** Define stat-gate thresholds and alignment branches for Nerida's chain (SQ-8.1A/B/C) — A: Love ≥ 24 & Trust ≥ 22; B: Love ≥ 44 & Trust ≥ 42; C: Love ≥ 64 & Trust ≥ 62; branch themes: siren song choice / tidal rite / the queen of the deep yields (Rebel: chosen / Loyalist: commanded)
+- [ ] **27s.2** Define stat-gate thresholds and alignment branches for Marina's chain (SQ-8.2A/B/C) — A: Love ≥ 20 & Trust ≥ 20; B: Love ≥ 40 & Trust ≥ 40; C: Love ≥ 60 & Trust ≥ 60; branch themes: salvage ethics / submarine secrets / captain and first mate
+
+### 27t. Chapter 8 — Advanced SQ chains (Nerida, Marina)
+
+- [ ] **27t.1** Define ASQ-8.1 chain for Nerida — gate: ASQ-8.1A: Love ≥ 78 & Corruption ≥ 28; ASQ-8.1B: Love ≥ 90 & Corruption ≥ 45; ASQ-8.1C: Love ≥ 98 & Corruption ≥ 62 & sexual_stat (siren_bond) ≥ 35; branch themes: underwater alone / the siren's call answered / the deep pact
+- [ ] **27t.2** Define ASQ-8.2 chain for Marina — gate: ASQ-8.2A: Love ≥ 72 & Corruption ≥ 22; ASQ-8.2B: Love ≥ 84 & Corruption ≥ 38; ASQ-8.2C: Love ≥ 95 & Corruption ≥ 54 & sexual_stat (salvager_grit) ≥ 30; branch themes: the sub bunk / pressure test / docking permanently
+
+### 27u. Chapter 9 — Standard SQ stat gates & alignment branches (Elaria, Lyra, Sylvia, Guinevere, Elizabeth, Martha)
+
+- [ ] **27u.1** Define stat-gate thresholds and alignment branches for Elaria's chain — A: Love ≥ 22 & Trust ≥ 20; B: Love ≥ 42 & Trust ≥ 40; C: Love ≥ 62 & Trust ≥ 60; branch themes: betrothal politics / sunlit elf rite / the princess chooses her consort (Rebel: freely / Loyalist: as treaty condition)
+- [ ] **27u.2** Define stat-gate thresholds and alignment branches for Lyra's chain — A: Love ≥ 28 & Trust ≥ 25; B: Love ≥ 48 & Trust ≥ 45; C: Love ≥ 68 & Trust ≥ 65; branch themes: the queen's secret meeting / elven court subversion / the queen steps down for love
+- [ ] **27u.3** Define stat-gate thresholds and alignment branches for Sylvia's chain — A: Love ≥ 20 & Trust ≥ 20; B: Love ≥ 40 & Trust ≥ 40; C: Love ≥ 60 & Trust ≥ 60; branch themes: rebel safehouse / bow and allegiance / the ranger's surrender
+- [ ] **27u.4** Define stat-gate thresholds and alignment branches for Guinevere's chain — A: Love ≥ 18 & Trust ≥ 22; B: Love ≥ 38 & Trust ≥ 42; C: Love ≥ 58 & Trust ≥ 62; branch themes: the commander defects / honour without an army / the general bows
+- [ ] **27u.5** Define stat-gate thresholds and alignment branches for Elizabeth's chain — A: Love ≥ 22 & Trust ≥ 18; B: Love ≥ 42 & Trust ≥ 38; C: Love ≥ 62 & Trust ≥ 58; branch themes: the lab after defection / cooling regulator ethics / the scholar's complete data transfer
+- [ ] **27u.6** Define stat-gate thresholds and alignment branches for Martha's chain (Ch. 9 re-introduction — 6 quests; split SQ-9.6A–C + SQ-9.6D–F) — A/D: Love ≥ 15 & Trust ≥ 20; B/E: Love ≥ 35 & Trust ≥ 40; C/F: Love ≥ 55 & Trust ≥ 60; branch themes: capital arrest recovery / farm wife in the city / homecoming and hearth
+
+### 27v. Chapter 9 — Advanced SQ chains (Elaria, Lyra, Sylvia, Guinevere, Elizabeth, Martha)
+
+- [ ] **27v.1** Define ASQ-9.1 for Elaria — gate: Love ≥ 76 & Corruption ≥ 20; B: Love ≥ 88 & Corruption ≥ 36; C: Love ≥ 97 & Corruption ≥ 52 & sexual_stat (sun_princess) ≥ 30
+- [ ] **27v.2** Define ASQ-9.2 for Lyra — gate: Love ≥ 80 & Corruption ≥ 24; B: Love ≥ 92 & Corruption ≥ 42; C: Love ≥ 99 & Corruption ≥ 60 & sexual_stat (queen_yield) ≥ 35
+- [ ] **27v.3** Define ASQ-9.3 for Sylvia — gate: Love ≥ 72 & Corruption ≥ 20; B: Love ≥ 84 & Corruption ≥ 36; C: Love ≥ 95 & Corruption ≥ 52 & sexual_stat (ranger_devotion) ≥ 28
+- [ ] **27v.4** Define ASQ-9.4 for Guinevere — gate: Love ≥ 73 & Corruption ≥ 22; B: Love ≥ 85 & Corruption ≥ 38; C: Love ≥ 95 & Corruption ≥ 55 & sexual_stat (commander_submission) ≥ 32
+- [ ] **27v.5** Define ASQ-9.5 for Elizabeth — gate: Love ≥ 70 & Corruption ≥ 18; B: Love ≥ 82 & Corruption ≥ 34; C: Love ≥ 93 & Corruption ≥ 50 & sexual_stat (scholar_experiment) ≥ 28
+- [ ] **27v.6** Define ASQ-9.6 for Martha — gate: Love ≥ 65 & Corruption ≥ 12; B: Love ≥ 78 & Corruption ≥ 26; C: Love ≥ 90 & Corruption ≥ 42 & sexual_stat (hearth_devotion) ≥ 24; branch themes: farm wife's private garden / the husband's memory / Martha's full heart
+
+### 27w. Chapter 10 — Standard SQ stat gates & alignment branches (Lilith, Morrgain, Seraphiel, Gabriel, Goddess Eve)
+
+- [ ] **27w.1** Define stat-gate thresholds and alignment branches for Lilith's chain — A: Love ≥ 26 & Trust ≥ 24; B: Love ≥ 46 & Trust ≥ 44; C: Love ≥ 66 & Trust ≥ 64; branch themes: demonic bargain test / sigil of loyalty / the duchess yields her throne (Rebel: alliance of equals / Loyalist: absolute fealty)
+- [ ] **27w.2** Define stat-gate thresholds and alignment branches for Morrgain's chain — A: Love ≥ 22 & Trust ≥ 20; B: Love ≥ 42 & Trust ≥ 40; C: Love ≥ 62 & Trust ≥ 60; branch themes: the succubus reversal / stolen moments before the reckoning / the general surrenders her shadow
+- [ ] **27w.3** Define stat-gate thresholds and alignment branches for Seraphiel's chain — A: Love ≥ 28 & Trust ≥ 28; B: Love ≥ 48 & Trust ≥ 48; C: Love ≥ 68 & Trust ≥ 68; branch themes: fallen archangel's grief / order rewritten / six wings fold (Rebel: equal partnership / Loyalist: celestial submission)
+- [ ] **27w.4** Define stat-gate thresholds and alignment branches for Gabriel's chain — A: Love ≥ 22 & Trust ≥ 22; B: Love ≥ 42 & Trust ≥ 42; C: Love ≥ 62 & Trust ≥ 62; branch themes: divine scout's report / the bow restrung / guardian and ward
+- [ ] **27w.5** Define stat-gate thresholds and alignment branches for Goddess Eve's chain — A: Love ≥ 40 & Trust ≥ 40 (elevated entry — she is the Creator); B: Love ≥ 65 & Trust ≥ 65; C: Love ≥ 90 & Trust ≥ 90; both Rebel and Loyalist paths available; Rebel branch: mutual divine covenant — she chooses to bind herself to you as an equal, sharing her creative power willingly; Loyalist branch: her divinity is systematically broken through the chain — each quest escalates the sexual and psychological claim over her, culminating in her complete submission of will and being, the Creator made wholly yours
+
+### 27x. Chapter 10 — Advanced SQ chains (Lilith, Morrgain, Seraphiel, Gabriel, Goddess Eve)
+
+- [ ] **27x.1** Define ASQ-10.1 for Lilith — gate: Love ≥ 80 & Corruption ≥ 35; B: Love ≥ 92 & Corruption ≥ 55; C: Love ≥ 99 & Corruption ≥ 72 & sexual_stat (demon_dominion) ≥ 40; branch themes: the duchess tests her limit / obsidian chamber / the fallen one submits
+- [ ] **27x.2** Define ASQ-10.2 for Morrgain — gate: Love ≥ 75 & Corruption ≥ 30; B: Love ≥ 88 & Corruption ≥ 48; C: Love ≥ 97 & Corruption ≥ 65 & sexual_stat (succubus_inversion) ≥ 38; branch themes: the succubus drained / dream and waking / soul-bound
+- [ ] **27x.3** Define ASQ-10.3 for Seraphiel — gate: Love ≥ 82 & Corruption ≥ 20; B: Love ≥ 93 & Corruption ≥ 36; C: Love ≥ 99 & Corruption ≥ 52 & sexual_stat (holy_fall) ≥ 38; branch themes: wings and warmth / the order dissolved / archangel's grace surrendered
+- [ ] **27x.4** Define ASQ-10.4 for Gabriel — gate: Love ≥ 75 & Corruption ≥ 18; B: Love ≥ 87 & Corruption ≥ 34; C: Love ≥ 96 & Corruption ≥ 50 & sexual_stat (seraph_devotion) ≥ 32; branch themes: the scout alone / bowstring and heartstring / forever at your side
+- [ ] **27x.5** Define ASQ-10.5 for Goddess Eve — gate: ASQ-10.5A: Love ≥ 95 & Corruption ≥ 10 & sexual_stat (divine_submission) ≥ 40; ASQ-10.5B: Love ≥ 98 & Corruption ≥ 25 & sexual_stat (divine_submission) ≥ 55; ASQ-10.5C: Love ≥ 100 & Corruption ≥ 40 & sexual_stat (divine_submission) ≥ 70; Loyalist path across all three quests: each quest escalates the breaking of her divine nature — ASQ-10.5A establishes her physical surrender, ASQ-10.5B breaks her will and identity as Creator, ASQ-10.5C is the complete dissolution — she who made the world submits her whole being, erasing the boundary between goddess and possession; Rebel path: a mirror arc where she surrenders freely at each stage, retaining her love and choosing deeper devotion each time; both paths unlock the same final scene flag `eve_fully_bonded` but set different sub-flags (`eve_broken` vs `eve_willing`) that affect the epilogue
+
+### 27y. Prologue companion — Martha (Prologue-era chain)
+
+- [ ] **27y.1** Define stat-gate thresholds and alignment branches for Prologue Martha SQ chain (SQ-0.1A/B/C) — A: Love ≥ 12 & Trust ≥ 18; B: Love ≥ 28 & Trust ≥ 35; C: Love ≥ 45 & Trust ≥ 52; requires Oakhaven Homestead secure for C; branch themes: helping Goran / farm wife's small courage / the first heartfelt moment (Rebel: she chooses freely / Loyalist: she relies on protagonist for security)
+- [ ] **27y.2** Define ASQ-0.1 for Prologue Martha — gate: Love ≥ 58 & Corruption ≥ 8 & sexual_stat (farm_warmth) ≥ 18; B: Love ≥ 72 & Corruption ≥ 22; C: Love ≥ 85 & Corruption ≥ 36 & sexual_stat (hearth_depth) ≥ 25; branch themes: the farmhouse evening / something more than kindness / Martha's complete trust
+
+### 27z. PRD and task list housekeeping
+
+- [ ] **27z.1** Update PRD §4.6 (Quest Engine) — add `STANDARD_SQ` and `ADVANCED_SQ` quest types; document `statGates`, `alignmentBranch`, and `statCeilings` fields; document stat-ceiling freeze rule and ceiling-lift timing
+- [ ] **27z.2** Update PRD §4.6 acceptance criteria — add: stat-ceiling enforcement verified per NPC; ASQ chain only unlocks after SQ-X.xC complete; `QUEST_ALIGNMENT_BRANCH_CHOSEN` event emitted correctly; alignment score increments within ±10/±15 bounds; Goddess Eve `eve_broken` vs `eve_willing` sub-flags set correctly per path
+- [ ] **27z.3** Update `task_list.md` version header to v3.8 and tracking reference to `PRD v1.8`

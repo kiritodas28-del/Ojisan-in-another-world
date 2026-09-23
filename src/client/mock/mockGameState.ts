@@ -65,6 +65,7 @@ const mockPlayer: PlayerCharacter = {
   sensitivity: 10,
   technique:   12,
   virility:    14,
+  alignmentScore: 0,  // Phase 23a: neutral Pragmatist at game start
   battlePoints: 6,
   ardorPoints:  4,
   unspentBP: 2,
@@ -330,6 +331,17 @@ export const mockGameState: GameState = {
     region_forest: -30,
     region_swamp:  -250,
     region_abyss:  -550,
+  },
+
+  // Phase 23a: dark/shadow faction reputation (task 23a.5).
+  // Seeded with region_abyss at 55 so shadow faction is accessible there;
+  // all others start at 0 (shadow faction locked until events push score >= 40).
+  darkReputation: {
+    region_start:  0,
+    region_plains: 0,
+    region_forest: 0,
+    region_swamp:  0,
+    region_abyss:  55,
   },
 
   // Phase 19: tier 2 unlocked; Elara assigned to suite_1.

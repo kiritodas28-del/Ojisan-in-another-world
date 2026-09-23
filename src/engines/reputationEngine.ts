@@ -149,3 +149,20 @@ export function applyReputationEvent(
   }
   return applyReputationDelta(gameState, regionId, delta);
 }
+
+// ─── Phase 23a (task 23a.14) — Dark reputation decay stub ─────────────────────────
+/**
+ * Day-end stub for dark reputation decay.
+ * Dark reputation does NOT decay passively like regular reputation.
+ * Decay only occurs on Purifier-dominant events in a region, which are
+ * authored in QuestReward.reputationEvents (task 11.5 data session).
+ * This function is a no-op placeholder so calendarEngine can call it
+ * unconditionally once that hook is authored.
+ */
+export function tickDarkReputationDecay(
+  gameState: GameState,
+): { state: GameState; events: GameEvent[] } {
+  // No-op: dark reputation does not decay passively.
+  // Decay is event-driven; see REPUTATION_EVENT_TABLE extensions in task 11.5.
+  return { state: gameState, events: [] };
+}

@@ -27,6 +27,7 @@ import { updateObjective }              from './questEngine';
 import { individuateContact } from './npcPopulationEngine';
 import { QUEST_CATALOG }                from '../data/quests';
 import { incrementAchievementCounter }  from './achievementEngine';
+import { shiftAlignment, getDominantAlignment } from './alignmentEngine';
 
 // ─── Re-exports for consumers that previously imported from here ──────────────
 // The canonical types now live in gameState.ts. Re-export so that any
@@ -75,6 +76,10 @@ export function evaluateCondition(
     case 'COMPANION': {
       const inParty = gameState.party.companions.some(m => m.npcId === condition.companionId);
       return condition.inParty ? inParty : !inParty;
+    }
+    // Phase 23a (task 23a.13): gate dialogue on dominant moral alignment.
+    case 'ALIGNMENT': {
+      return getDominantAlignment(gameState) === condition.dominantAlignment;
     }
   }
 }
@@ -166,6 +171,13 @@ export function applyDialogueEffect(
         console.warn(`applyDialogueEffect START_QUEST: ${(err as Error).message}`);
         return { state: gameState, events };
       }
+    }
+
+    // Phase 23a (task 23a.12): apply an alignment score shift via shiftAlignment().
+    case 'ALIGNMENT_SHIFT': {
+      const result = shiftAlignment(gameState, effect.delta);
+      events.push({ type: 'DIALOGUE_EFFECT_APPLIED', effect }, ...result.events);
+      return { state: result.state, events };
     }
   }
 }

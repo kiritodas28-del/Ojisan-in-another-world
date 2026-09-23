@@ -200,6 +200,11 @@ type PlayerCharacter = HumanoidCharacter & {
   technique:   number;
   virility:    number;
 
+  // Moral alignment score (Phase 23a — task 23a.1)
+  // Range [-100, +100]. Negative = Sovereign tendency, positive = Purifier,
+  // near-zero = Pragmatist. Does NOT lock the player into a path.
+  alignmentScore: number;
+
   // Skill points
   battlePoints: number;  // total earned BP
   ardorPoints:  number;  // total earned AP
@@ -639,21 +644,25 @@ type ContactProfileView = {
 
 // Effects applied when a choice is made or a node is entered.
 export type DialogueEffect =
-  | { type: 'SET_FLAG';     flagId: string;  value: boolean | number | string }
-  | { type: 'TRUST_DELTA';  npcId: string;   delta: number }
-  | { type: 'LOVE_DELTA';   npcId: string;   delta: number }
-  | { type: 'GIVE_ITEM';    itemId: string;  quantity: number }
-  | { type: 'TAKE_ITEM';    itemId: string;  quantity: number }
-  | { type: 'START_QUEST';  questDefId: string };
+  | { type: 'SET_FLAG';        flagId: string;  value: boolean | number | string }
+  | { type: 'TRUST_DELTA';     npcId: string;   delta: number }
+  | { type: 'LOVE_DELTA';      npcId: string;   delta: number }
+  | { type: 'GIVE_ITEM';       itemId: string;  quantity: number }
+  | { type: 'TAKE_ITEM';       itemId: string;  quantity: number }
+  | { type: 'START_QUEST';     questDefId: string }
+  // Phase 23a: alignment shift effect on a dialogue choice (task 23a.12)
+  | { type: 'ALIGNMENT_SHIFT'; delta: number };
 
 // Conditions that gate a choice or node from being accessible.
 export type DialogueCondition =
-  | { type: 'FLAG';         flagId: string;      value: boolean | number | string }
-  | { type: 'TRUST';        npcId: string;       min: number }
-  | { type: 'LOVE';         npcId: string;       min: number }
-  | { type: 'QUEST_STAGE';  questId: string;     stage: number }
-  | { type: 'ITEM_IN_INV';  itemId: string }
-  | { type: 'COMPANION';    companionId: string; inParty: boolean };
+  | { type: 'FLAG';       flagId: string;       value: boolean | number | string }
+  | { type: 'TRUST';      npcId: string;        min: number }
+  | { type: 'LOVE';       npcId: string;        min: number }
+  | { type: 'QUEST_STAGE'; questId: string;     stage: number }
+  | { type: 'ITEM_IN_INV'; itemId: string }
+  | { type: 'COMPANION';   companionId: string; inParty: boolean }
+  // Phase 23a: condition on dominant moral alignment (task 23a.3)
+  | { type: 'ALIGNMENT';  dominantAlignment: 'PURIFIER' | 'PRAGMATIST' | 'SOVEREIGN' };
 
 // A single choice the player can make at a node.
 export interface DialogueChoice {
@@ -869,6 +878,10 @@ export interface GameState {
   dialogue:      DialogueState;       // Phase 13: active dialogue traversal state
   quests:        QuestLog;
   reputation:    Record<RegionId, number>;
+  // Phase 23a: dark/shadow faction reputation per region (task 23a.2).
+  // Independent of `reputation`; range [0, 100]; >= 40 unlocks the shadow
+  // faction in that region (vendors, quests, special dialogue branches).
+  darkReputation: Record<RegionId, number>;
   manor:         ManorState;
   craftingQueue: CraftingQueue;
 
@@ -1093,4 +1106,11 @@ export type GameEvent =
   | { type: 'SYNERGY_LOCKED';         synergyId: string; reason: string }
   // Phase 24 — Character creation
   | { type: 'NEW_GAME_STARTED';       options: CharacterCreationOptions }
-  | { type: 'CHARACTER_CREATION_COMPLETE'; playerName: string };
+  | { type: 'CHARACTER_CREATION_COMPLETE'; playerName: string }
+  // Phase 23a — Moral Alignment System
+  // ALIGNMENT_SHIFTED: player's alignmentScore changed via shiftAlignment().
+  // DARK_REPUTATION_CHANGED: darkReputation[regionId] changed via applyDarkReputationDelta().
+  // DARK_FACTION_UNLOCKED: darkReputation crossed >= 40; shadow faction now accessible.
+  | { type: 'ALIGNMENT_SHIFTED';       delta: number; newScore: number; dominantAlignment: 'PURIFIER' | 'PRAGMATIST' | 'SOVEREIGN' }
+  | { type: 'DARK_REPUTATION_CHANGED'; regionId: RegionId; delta: number; newScore: number }
+  | { type: 'DARK_FACTION_UNLOCKED';   regionId: RegionId };

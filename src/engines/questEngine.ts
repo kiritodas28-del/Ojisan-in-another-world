@@ -28,6 +28,7 @@ import {
 import { addItem } from './economyEngine';
 import type { RegionId } from '../state/gameState';
 import { QUEST_CATALOG, type QuestDef, type QuestReward } from '../data/quests';
+import { shiftAlignment } from './alignmentEngine';
 
 // ─── 11.6 — Catalog lookup ────────────────────────────────────────────────────
 
@@ -289,6 +290,34 @@ export function grantQuestReward(
       const repResult = applyReputationEvent(state, currentRegion, eventKey);
       state = repResult.state;
       events.push(...repResult.events);
+    }
+  }
+
+  // Phase 23a (task 23a.11): alignment shift from quest rewards.
+  // When flagsSet contains an alignment marker key, apply the corresponding
+  // delta.  Quest catalog authors write the delta in flagsSet as a number;
+  // marker keys: 'alignment_purifier' (+10), 'alignment_sovereign' (-10),
+  // 'alignment_pragmatist' (0 — no-op but counted for achievements).
+  const ALIGNMENT_FLAG_DELTAS: Record<string, number> = {
+    alignment_purifier:   +10,
+    alignment_pragmatist:   0,
+    alignment_sovereign:  -10,
+  };
+  for (const [flagKey, delta] of Object.entries(ALIGNMENT_FLAG_DELTAS)) {
+    if (Object.prototype.hasOwnProperty.call(reward.flagsSet, flagKey)) {
+      if (delta !== 0) {
+        const alignResult = shiftAlignment(state, delta);
+        state = alignResult.state;
+        events.push(...alignResult.events);
+      }
+      // delta === 0 (Pragmatist): shiftAlignment still needed to increment
+      // the counter.  Call with 0 so the achievement counter increments.
+      else {
+        const alignResult = shiftAlignment(state, 0);
+        state = alignResult.state;
+        events.push(...alignResult.events);
+      }
+      break; // only one alignment flag per reward
     }
   }
 
