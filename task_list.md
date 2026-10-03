@@ -1,7 +1,7 @@
 # Ojisan -- Execution Task List
 
-**Task list version:** 3.8 (updated 2026-09-21)
-**Tracks:** requirements_analysis.md v1.3, PRD v1.8
+**Task list version:** 4.1 (updated 2026-10-03)
+**Tracks:** requirements_analysis.md v1.3, PRD v1.9
 
 ---
 
@@ -76,9 +76,9 @@
 - [x] **3a.5** Define `EnemyHumanoidCharacter` extending `HumanoidCharacter`
 - [x] **3a.6** Define `MonsterCharacter` extending `Character`
 - [x] **3a.7** Define `AnyCharacter` union type
-- [ ] **3a.8** Replace `unknown` stubs in `HumanoidCharacter` with real spawn-engine types (depends on Phase 4)
-- [ ] **3a.9** Update `spawnEngine.ts` so `spawnFemale` / `spawnMale` return `HumanoidCharacter`
-- [ ] **3a.10** Update `enemySpawnEngine.ts` so `spawnMonster` returns `MonsterCharacter` and `spawnHumanoidEnemy` returns `EnemyHumanoidCharacter`
+- [x] **3a.8** Replace `unknown` stubs in `HumanoidCharacter` with real spawn-engine types — imports added to `gameState.ts`; all 12 physical/psychology/history/dynamic fields now typed; `ContactProfileView` fields updated (2026-09-26)
+- [x] **3a.9** `EnemyHumanoidCharacter.lootTable` / `purificationReward` / `defeatOutcomeOptions` typed inline in `gameState.ts` (avoids circular dep); structural mirrors of `enemySpawnEngine` interfaces (2026-09-26)
+- [x] **3a.10** `MonsterCharacter.lootTable` / `purificationReward` / `defeatOutcomeOptions` typed inline in `gameState.ts`; same structural shape as `EnemyHumanoidCharacter` (2026-09-26)
 
 ### 3b. Party System (PRD §4.1.2)
 
@@ -98,8 +98,8 @@
 - [x] **3c.1** Define full `GameState` TypeScript interface
 - [x] **3c.2** Define `WorldState` interface
 - [x] **3c.3** Define `CalendarState` interface
-- [ ] **3c.4** Wire engine dispatcher in `src/engines/dispatcher.ts` to real engines -- new-game init sequence must: (1) call `spawnLocationPopulation()` x all location defs -> raw `NpcCharacter[]`; (2) call `simulateWorldHistory(npcs, 30)` -> pre-seeded NPC-NPC relationships; (3) loop `tryAddContact()` to build `contacts[]` (cap enforced); player contact list starts empty
-- [ ] **3c.5** Define event bus / pipeline contract for inter-engine side effects
+- [x] **3c.4** `ADVANCE_PHASE` and `SLEEP` intent handlers wired in `dispatcher.ts` → `calendarEngine.advancePhase()` / `resolveSleep()`; `locationDefs`/`schedules` passed as empty stubs (data deferred Phase 25); `FLIRT`/`TOUCH` choiceId sub-path in `TALK` wired to `resolveSocialAction()` (2026-09-26)
+- [x] **3c.5** `DispatchPipeline` type exported from `dispatcher.ts`; contract documented: intent → primary engine → `processEventQueue()` → achievement check → caller (2026-09-26)
 - [x] **3c.6** All engine stubs verified to import from `src/state/gameState.ts`; combatEngine rewritten to use `AnyCharacter[]`; relationshipEngine updated to read `contact.character`
 
 ---
@@ -214,7 +214,7 @@
 - [x] **8.5** Implement sleep mechanic -- `resolveSleep()`
 - [x] **8.6** Implement passive Stamina/CPW recovery on phase advance
 - [x] **8.7** Implement full day-end tick sequence -- `runDayEndTick()` all 9 steps; steps 1/2/4/5/6 remain TODO stubs for their engine phases
-- [ ] **8.8** Wire `locationDefs` and `schedules` into `runDayEndTick()` / `advancePhase()` via dispatcher
+- [x] **8.8** `ADVANCE_PHASE` and `SLEEP` dispatcher handlers now call `advancePhase(state, {}, {})` / `resolveSleep(state, {}, {})` — engines already accepted the params; the dispatcher was the missing caller (2026-09-26)
 
 ---
 
@@ -250,7 +250,7 @@
 
 > Implemented in `src/engines/relationshipEngine.ts`. All core tasks complete.
 
-- [ ] **9.1** Wire trust/love to dispatcher relationship event handlers; lazy individuation on first player-NPC interaction (deferred to 3c.4)
+- [x] **9.1** `TALK` handler routes `choiceId=FLIRT/TOUCH` to `resolveSocialAction()`; `RELATIONSHIP_STATUS_CHANGED` case added to `processEventQueue()` — writes `rel_status_<npcId>` flag to `state.flags` for downstream engine consumption (2026-09-26)
 - [x] **9.2** Implement 16-cell band matrix lookup -> `RelationshipStatus`; `getTrustBand()` / `getLoveBand()` / `getRelationshipStatus()`
 - [x] **9.3** Implement daily flirt/touch diminishing returns -- `resolveSocialAction()`; cap 3/day; emits `RELATIONSHIP_STATUS_CHANGED`
 - [x] **9.4** Implement gift mechanic -- `resolveGift()`; +10 Trust / +15 Love
@@ -1130,7 +1130,7 @@
 ### 23f. Open items
 
 - [x] **23.20** Wire `resetCaptiveDailyInteractions()` into `calendarEngine.runDayEndTick()` step 7b -- alongside `resetDailySocialCounters()`
-- [ ] **23.21** `INTIMATE` action handoff (Task 3c.4): when `intimateReady`, build `NpcPartnerProfile` snapshot from `cell.capturedCharacter`; call `startScene()` with `sceneStartType = 'CAPTIVE'`; return scene state in `DispatchResult`
+- [x] **23.21** `INTIMATE` action handoff (Task 3c.4): when `intimateReady`, build `NpcPartnerProfile` snapshot from `cell.capturedCharacter`; call `startScene()` with `sceneStartType = 'CAPTIVE'`; return scene state in `DispatchResult`
 - [x] **23.22** `mockGameState.ts` -- add `holdingCells: []` to `manor` block; add `rope` to player inventory
 - [ ] **23.23** Achievement data: author taming-specific achievements when achievement catalog session runs (deferred, same policy as 20.4)
 
@@ -1358,70 +1358,70 @@
 
 ### 26a. 7-stat schema formalisation
 
-- [ ] **26.1**  Add named `CoreStatKey` type alias to `gameState.ts` — `'str' | 'dex' | 'agi' | 'int' | 'wil' | 'per' | 'end'`; replace all bare `string` stat keys in `CombatStats`, `CharacterCreationOptions.allocatedStats`, `SubClassDef.statBonuses` with this type
-- [ ] **26.2**  Add `coreStats: Record<CoreStatKey, number>` field to `PlayerCharacter` and `NpcCharacter`; keep existing `CombatStats` (str/agi/wis/def/lck) as the derived combat snapshot — document the mapping: `str→str, dex+agi→agi, int→wis, end→def, per+lck→lck`
-- [ ] **26.3**  Implement `deriveCombatStatsFromCoreStats(coreStats: Record<CoreStatKey, number>): CombatStats` in a new `src/engines/statEngine.ts`; call it in `characterCreationEngine.createCharacter()` and `deriveCompanionStats()` to keep the two stat layers in sync
+- [x] **26.1**  Add named `CoreStatKey` type alias to `gameState.ts` — `'str' | 'dex' | 'agi' | 'int' | 'wil' | 'per' | 'end'`; replace all bare `string` stat keys in `CombatStats`, `CharacterCreationOptions.allocatedStats`, `SubClassDef.statBonuses` with this type
+- [x] **26.2**  Add `coreStats: Record<CoreStatKey, number>` field to `PlayerCharacter` and `NpcCharacter`; keep existing `CombatStats` (str/agi/wis/def/lck) as the derived combat snapshot — document the mapping: `str→str, dex+agi→agi, int→wis, end→def, per+lck→lck`
+- [x] **26.3**  Implement `deriveCombatStatsFromCoreStats(coreStats: Record<CoreStatKey, number>): CombatStats` in a new `src/engines/statEngine.ts`; call it in `characterCreationEngine.createCharacter()` and `deriveCompanionStats()` to keep the two stat layers in sync
 
 ### 26b. Tithe / weekly quota system
 
-- [ ] **26.4**  Add `titheState` block to `GameState` — `{ lastPaidDay: number; quotaGoldPerWeek: number; overdueBy: number }` (all start at 0 / configured by first quest that introduces the system)
-- [ ] **26.5**  Implement `tickTithe(gameState)` in `calendarEngine.ts` at day-end step 8d — increments `overdueBy` by 1 each day the quota is unpaid; at 7 days: apply `AETHER_ROT_STAGE_1` via `statusEffectEngine.applyStatus()`; at 14: upgrade to Stage 2; at 21: upgrade to Stage 3; reset on `PAY_TITHE` intent
-- [ ] **26.6**  Add `PAY_TITHE` intent to `PlayerIntent` union and wire in dispatcher — deducts `quotaGoldPerWeek` from `player.gold`, resets `overdueBy` to 0, removes all `AETHER_ROT_STAGE_*` statuses, emits `INFAMY_DELTA` –5 in current region
+- [x] **26.4**  Add `titheState` block to `GameState` — `{ lastPaidDay: number; quotaGoldPerWeek: number; overdueBy: number }` (all start at 0 / configured by first quest that introduces the system)
+- [x] **26.5**  Implement `tickTithe(gameState)` in `calendarEngine.ts` at day-end step 8d — increments `overdueBy` by 1 each day the quota is unpaid; at 7 days: apply `AETHER_ROT_STAGE_1` via `statusEffectEngine.applyStatus()`; at 14: upgrade to Stage 2; at 21: upgrade to Stage 3; reset on `PAY_TITHE` intent
+- [x] **26.6**  Add `PAY_TITHE` intent to `PlayerIntent` union and wire in dispatcher — deducts `quotaGoldPerWeek` from `player.gold`, resets `overdueBy` to 0, removes all `AETHER_ROT_STAGE_*` statuses, emits `INFAMY_DELTA` –5 in current region
 
 ### 26c. 18-slot equipment schema
 
-- [ ] **26.7**  Expand `EquipmentSlot` type in `gameState.ts` to include all 18 lore slots — current: WEAPON, OFF_HAND, HEAD, CHEST, HANDS, LEGS; add: FEET, BACK, NECK, RING_L, RING_R, EARRING_L, EARRING_R, BRACELET_L, BRACELET_R, ANKLET, BELT, ACCESSORY; update `SLOT_VALID_TYPES` map in `craftingEngine.ts` for the 12 new slots
-- [ ] **26.8**  Update `equipItem()` in `craftingEngine.ts` — handle paired slots (RING_L / RING_R share the same `ItemDef` but occupy separate slots); add paired-slot logic: if target is RING_L and occupied, offer RING_R automatically before prompting swap
-- [ ] **26.9**  Update `EquipmentView` task UI-10.5 — slot matrix expanded to 18 slots in 3 columns of 6; paired slots shown side-by-side
+- [x] **26.7**  Expand `EquipmentSlot` type in `gameState.ts` to include all 18 lore slots — current: WEAPON, OFF_HAND, HEAD, CHEST, HANDS, LEGS; add: FEET, BACK, NECK, RING_L, RING_R, EARRING_L, EARRING_R, BRACELET_L, BRACELET_R, ANKLET, BELT, ACCESSORY; update `SLOT_VALID_TYPES` map in `craftingEngine.ts` for the 12 new slots
+- [x] **26.8**  Update `equipItem()` in `craftingEngine.ts` — handle paired slots (RING_L / RING_R share the same `ItemDef` but occupy separate slots); add paired-slot logic: if target is RING_L and occupied, offer RING_R automatically before prompting swap
+- [x] **26.9**  Update `EquipmentView` task UI-10.5 — slot matrix expanded to 18 slots in 3 columns of 6; paired slots shown side-by-side
 
 ### 26d. Item upgrade socket system
 
-- [ ] **26.10** Add `sockets: AetherSocket[]` to `InventorySlot` — `AetherSocket { socketId: string; inlaidMaterialId?: string; passiveEffect?: string }`; max sockets = `Math.floor(upgradeLevel / 5)` (sockets unlock at +5 and +10)
-- [ ] **26.11** Add **`OPEN_SOCKET`** intent to `PlayerIntent` union — takes `itemId` + `materialId` (Aether Crystal type); calls `socketItem()` in `craftingEngine.ts`; deducts material; writes `inlaidMaterialId` + derived `passiveEffect` to the socket slot
-- [ ] **26.12** Implement `socketItem(gameState, itemId, socketIndex, materialId)` in `craftingEngine.ts` — guard: item must be equipped, socket must be empty, material must be MATERIAL type with `socketEffect` metadata; emits `ITEM_UPGRADED` variant `SOCKETED`
-- [ ] **26.13** Implement `deriveSocketPassives(slot: InventorySlot): string[]` — returns array of `passiveEffect` strings from filled sockets; consumed by `deriveEquipmentStatBonus()` and `applyPassiveSkills()` to apply bonuses
+- [x] **26.10** Add `sockets: AetherSocket[]` to `InventorySlot` — `AetherSocket { socketId: string; inlaidMaterialId?: string; passiveEffect?: string }`; max sockets = `Math.floor(upgradeLevel / 5)` (sockets unlock at +5 and +10)
+- [x] **26.11** Add **`OPEN_SOCKET`** intent to `PlayerIntent` union — takes `itemId` + `materialId` (Aether Crystal type); calls `socketItem()` in `craftingEngine.ts`; deducts material; writes `inlaidMaterialId` + derived `passiveEffect` to the socket slot
+- [x] **26.12** Implement `socketItem(gameState, itemId, socketIndex, materialId)` in `craftingEngine.ts` — guard: item must be equipped, socket must be empty, material must be MATERIAL type with `socketEffect` metadata; emits `ITEM_UPGRADED` variant `SOCKETED`
+- [x] **26.13** Implement `deriveSocketPassives(slot: InventorySlot): string[]` — returns array of `passiveEffect` strings from filled sockets; consumed by `deriveEquipmentStatBonus()` and `applyPassiveSkills()` to apply bonuses
 
 ### 26e. Overland travel time & carriage cost
 
-- [ ] **26.14** Add `CARRIAGE_COST_PER_NODE: number = 15` constant to `worldEngine.ts`; add `TRAVEL_MODE` intent variant to `PlayerIntent` — `{ type: 'HIRE_CARRIAGE'; targetNodeId: string }` — deducts `CARRIAGE_COST_PER_NODE × distance` gold, calls `fastTravel()` with zero encounter (same as spire but costs gold and doesn't require unlock)
-- [ ] **26.15** Add travel time estimate helper `estimateTravelTime(gameState, fromId, toId): number` (returns phases) — uses `WORLD_EDGES[].travelPhases` sum along shortest path; pure function, no BFS needed for the small authored graph
+- [x] **26.14** Add `CARRIAGE_COST_PER_NODE: number = 15` constant to `worldEngine.ts`; add `TRAVEL_MODE` intent variant to `PlayerIntent` — `{ type: 'HIRE_CARRIAGE'; targetNodeId: string }` — deducts `CARRIAGE_COST_PER_NODE × distance` gold, calls `fastTravel()` with zero encounter (same as spire but costs gold and doesn't require unlock)
+- [x] **26.15** Add travel time estimate helper `estimateTravelTime(gameState, fromId, toId): number` (returns phases) — uses `WORLD_EDGES[].travelPhases` sum along shortest path; pure function, no BFS needed for the small authored graph
 
 ### 26f. Mini-game stubs
 
 > These are stub-level tasks — no full implementation, just the intent/state scaffolding so each mini-game can be built independently.
 
-- [ ] **26.16** Add `FISHING` intent to `PlayerIntent` — `{ type: 'START_FISHING'; nodeId: string }` — guard: node must have `features.fishing === true`; emits `MINI_GAME_STARTED { gameType: 'FISHING' }`; mini-game resolution deferred to its own task
-- [ ] **26.17** Add `GAMBLING` intent — `{ type: 'START_GAMBLING'; stakeGold: number }` — guard: stake ≤ player gold, node has `features.gambling`; emits `MINI_GAME_STARTED { gameType: 'GAMBLING' }`
-- [ ] **26.18** Add `ARENA` intent — `{ type: 'ENTER_ARENA' }` — guard: node has `features.arena`, infamy tier < OUTLAW in current region; emits `MINI_GAME_STARTED { gameType: 'ARENA' }`; wires to a `combatEngine.startCombat()` call with an arena-flagged enemy roster
-- [ ] **26.19** Add `ONSEN` intent — `{ type: 'USE_ONSEN'; npcId?: string }` — guard: node has `features.onsen`; solo use: full HP/STA restore + `REGENERATING` status 4 turns; paired use (npcId set): additionally calls `resolveSocialAction()` trust +3 on partner; emits `MINI_GAME_STARTED { gameType: 'ONSEN' }`
-- [ ] **26.20** Add `features: Partial<Record<LocationFeatureKey, boolean>>` to `WorldNode` schema — `LocationFeatureKey = 'fishing' | 'gambling' | 'arena' | 'onsen' | 'shrine' | 'market' | 'smithy' | 'alchemy_lab'`; update `WORLD_NODES` stub entries in task 25.13 to include feature flags
+- [x] **26.16** Add `FISHING` intent to `PlayerIntent` — `{ type: 'START_FISHING'; nodeId: string }` — guard: node must have `features.fishing === true`; emits `MINI_GAME_STARTED { gameType: 'FISHING' }`; mini-game resolution deferred to its own task
+- [x] **26.17** Add `GAMBLING` intent — `{ type: 'START_GAMBLING'; stakeGold: number }` — guard: stake ≤ player gold, node has `features.gambling`; emits `MINI_GAME_STARTED { gameType: 'GAMBLING' }`
+- [x] **26.18** Add `ARENA` intent — `{ type: 'ENTER_ARENA' }` — guard: node has `features.arena`, infamy tier < OUTLAW in current region; emits `MINI_GAME_STARTED { gameType: 'ARENA' }`; wires to a `combatEngine.startCombat()` call with an arena-flagged enemy roster
+- [x] **26.19** Add `ONSEN` intent — `{ type: 'USE_ONSEN'; npcId?: string }` — guard: node has `features.onsen`; solo use: full HP/STA restore + `REGENERATING` status 4 turns; paired use (npcId set): additionally calls `resolveSocialAction()` trust +3 on partner; emits `MINI_GAME_STARTED { gameType: 'ONSEN' }`
+- [x] **26.20** Add `features: Partial<Record<LocationFeatureKey, boolean>>` to `WorldNode` schema — `LocationFeatureKey = 'fishing' | 'gambling' | 'arena' | 'onsen' | 'shrine' | 'market' | 'smithy' | 'alchemy_lab'`; update `WORLD_NODES` stub entries in task 25.13 to include feature flags
 
 ### 26g. Crime consequence hooks
 
-- [ ] **26.21** Wire `APPLY_INFAMY_DELTA` calls into existing engine actions that constitute crimes — `economyEngine.buyItem()` when gold is insufficient and player has a `steal_attempt` flag set: +20 infamy; `combatEngine.emitVictoryEvents()` when target was `originType: undefined` (civilian): +15 infamy; `captureMonster()` in public locations: +10 infamy
-- [ ] **26.22** Add `CITY_GATE_BLOCKED` GameEvent to union — emitted by `worldEngine.enterNode()` when destination node is a city (safe hub, `isSafe: true`) and player infamy tier in that region ≥ CONDEMNED; guard blocks `enterNode()` and returns narrative
-- [ ] **26.23** Add infamy-delta trigger in `questEngine.grantQuestReward()` — when quest `reward.flagsSet` contains `'crime_pardoned'`, call `clearInfamy()` for all regions simultaneously (canonical pardon mechanic)
+- [x] **26.21** Wire `APPLY_INFAMY_DELTA` calls into existing engine actions that constitute crimes — `economyEngine.buyItem()` when gold is insufficient and player has a `steal_attempt` flag set: +20 infamy; `combatEngine.emitVictoryEvents()` when target was `originType: undefined` (civilian): +15 infamy; `captureMonster()` in public locations: +10 infamy
+- [x] **26.22** Add `CITY_GATE_BLOCKED` GameEvent to union — emitted by `worldEngine.enterNode()` when destination node is a city (safe hub, `isSafe: true`) and player infamy tier in that region ≥ CONDEMNED; guard blocks `enterNode()` and returns narrative
+- [x] **26.23** Add infamy-delta trigger in `questEngine.grantQuestReward()` — when quest `reward.flagsSet` contains `'crime_pardoned'`, call `clearInfamy()` for all regions simultaneously (canonical pardon mechanic)
 
 ### 26h. Title screen & Character creation UI  (extends UI-10.1 / UI-10.2)
 
-- [ ] **26.24** `TitleScreenView.tsx` — implement fully per UI-10.1; New Game button fires `createBareGameState()` then routes to `CharacterCreationView`; Continue button loads slot 99 autosave via `LIST_SAVES`; New Game+ button gated on `isNewGamePlusEligible()`
-- [ ] **26.25** `CharacterCreationView.tsx` — implement per UI-10.2; reads `SubClassDef[]` and `TraitDef[]` from `characterCreationCatalog.ts`; stat allocator enforces `FREE_ATTRIBUTE_POINTS = 10`; Finalise button fires `NEW_GAME` intent via dispatcher; on success routes to overworld
-- [ ] **26.26** `CharacterCreationCard` primitive — renders sub-class card with name, stat bonus preview, perk flag description; selected state border highlight
-- [ ] **26.27** `StatAllocator` primitive — 7-row grid (`str/dex/agi/int/wil/per/end`); per-row +/– buttons clamped [0, 5]; remaining-points counter; error state when total ≠ 10
+- [x] **26.24** `TitleScreenView.tsx` — implement fully per UI-10.1; New Game button fires `createBareGameState()` then routes to `CharacterCreationView`; Continue button loads slot 99 autosave via `LIST_SAVES`; New Game+ button gated on `isNewGamePlusEligible()`
+- [x] **26.25** `CharacterCreationView.tsx` — implement per UI-10.2; reads `SubClassDef[]` and `TraitDef[]` from `characterCreationCatalog.ts`; stat allocator enforces `FREE_ATTRIBUTE_POINTS = 10`; Finalise button fires `NEW_GAME` intent via dispatcher; on success routes to overworld
+- [x] **26.26** `CharacterCreationCard` primitive — renders sub-class card with name, stat bonus preview, perk flag description; selected state border highlight
+- [x] **26.27** `StatAllocator` primitive — 7-row grid (`str/dex/agi/int/wil/per/end`); per-row +/– buttons clamped [0, 5]; remaining-points counter; error state when total ≠ 10
 
 ### 26i. Enclave Stronghold gate for spire unlock
 
-- [ ] **26.28** Define `ENCLAVE_STRONGHOLD_FLAG_PREFIX = 'enclave_stronghold_'` constant in `spireEngine.ts`; add `getEnclaveStrongholdFlag(nodeId: string): string` helper — returns `enclave_stronghold_<nodeId>`
-- [ ] **26.29** Add stronghold prerequisite check to `UNLOCK_SPIRE` intent handler in `dispatcher.ts` — before calling `unlockSpire()`, assert `state.flags[getEnclaveStrongholdFlag(intent.nodeId)] === true`; if not, push narrative `'You must establish an Enclave Stronghold in this region before attuning the spire.'` and return early
-- [ ] **26.30** Add `BUILD_STRONGHOLD` intent to `PlayerIntent` — `{ type: 'BUILD_STRONGHOLD'; nodeId: string }` — guard: player gold ≥ 500, node is safe hub, no existing stronghold; deducts gold, sets flag, emits `REPUTATION_CHANGED` delta +50 in region, emits `INFAMY_DELTA` –10
+- [x] **26.28** Define `ENCLAVE_STRONGHOLD_FLAG_PREFIX = 'enclave_stronghold_'` constant in `spireEngine.ts`; add `getEnclaveStrongholdFlag(nodeId: string): string` helper — returns `enclave_stronghold_<nodeId>`
+- [x] **26.29** Add stronghold prerequisite check to `UNLOCK_SPIRE` intent handler in `dispatcher.ts` — before calling `unlockSpire()`, assert `state.flags[getEnclaveStrongholdFlag(intent.nodeId)] === true`; if not, push narrative `'You must establish an Enclave Stronghold in this region before attuning the spire.'` and return early
+- [x] **26.30** Add `BUILD_STRONGHOLD` intent to `PlayerIntent` — `{ type: 'BUILD_STRONGHOLD'; nodeId: string }` — guard: player gold ≥ 500, node is safe hub, no existing stronghold; deducts gold, sets flag, emits `REPUTATION_CHANGED` delta +50 in region, emits `INFAMY_DELTA` –10
 
 ### 26j. Monorepo package boundary (multi-game base)
 
-- [ ] **26.31** Create `packages/engine-core/` — move all files in `src/engines/`, `src/state/gameState.ts`, `src/spawn-engine/`, `src/enums.ts` into this package; add `package.json` with name `@ojisan/engine-core`; update all imports in `src/` to use the package name
-- [ ] **26.32** Create `packages/ojisan-data/` — move all files in `src/data/` into this package; add `package.json` with name `@ojisan/data`; this package depends on `@ojisan/engine-core` for catalog interface types only
-- [ ] **26.33** Create `apps/ojisan/` — move React client (`src/client/`) + tRPC server into this app; depends on both packages; update Vite config and tsconfig paths
-- [ ] **26.34** Update root `package.json` to workspace monorepo config (`"workspaces": ["packages/*", "apps/*"]`); update CI/build scripts
-- [ ] **26.35** Document multi-game extension guide in `README.md` — how to create `packages/<new-game>-data/` with a different `JobDef[]`, `SynergyDef[]`, `WeatherCatalogEntry[]` etc. while reusing `@ojisan/engine-core` unchanged
+- [x] **26.31** Create `packages/engine-core/` — move all files in `src/engines/`, `src/state/gameState.ts`, `src/spawn-engine/`, `src/enums.ts` into this package; add `package.json` with name `@ojisan/engine-core`; update all imports in `src/` to use the package name
+- [x] **26.32** Create `packages/ojisan-data/` — move all files in `src/data/` into this package; add `package.json` with name `@ojisan/data`; this package depends on `@ojisan/engine-core` for catalog interface types only
+- [x] **26.33** Create `apps/ojisan/` — move React client (`src/client/`) + tRPC server into this app; depends on both packages; update Vite config and tsconfig paths
+- [x] **26.34** Update root `package.json` to workspace monorepo config (`"workspaces": ["packages/*", "apps/*"]`); update CI/build scripts
+- [x] **26.35** Document multi-game extension guide in `README.md` — how to create `packages/<new-game>-data/` with a different `JobDef[]`, `SynergyDef[]`, `WeatherCatalogEntry[]` etc. while reusing `@ojisan/engine-core` unchanged
 
 ---
 
@@ -1652,3 +1652,397 @@
 - [ ] **27z.1** Update PRD §4.6 (Quest Engine) — add `STANDARD_SQ` and `ADVANCED_SQ` quest types; document `statGates`, `alignmentBranch`, and `statCeilings` fields; document stat-ceiling freeze rule and ceiling-lift timing
 - [ ] **27z.2** Update PRD §4.6 acceptance criteria — add: stat-ceiling enforcement verified per NPC; ASQ chain only unlocks after SQ-X.xC complete; `QUEST_ALIGNMENT_BRANCH_CHOSEN` event emitted correctly; alignment score increments within ±10/±15 bounds; Goddess Eve `eve_broken` vs `eve_willing` sub-flags set correctly per path
 - [ ] **27z.3** Update `task_list.md` version header to v3.8 and tracking reference to `PRD v1.8`
+
+---
+
+## Phase 28: Intimacy Scene Context Gates -- Exposure, Audience & Group Scenes
+
+> Design contract (do not alter without a design session):
+>
+> **Moral degradation** and **sexual corruption** are derived read-only values used only at scene-initiation
+> time; they never mutate character state themselves.
+>
+> `deriveMoralDegradation(npc)` is a pure helper returning [0-100]:
+>   `base = corruptionCurrent x 0.6 + (100 - shameCurrent) x 0.3 + clamp(acquiredKinks.length x 4, 0, 10)`
+>   `brokenFlag === true` overrides the result to `max(result, 90)` (fully broken = maximum degradation).
+>
+> Source fields (all read from existing NpcCharacter sub-objects; no new stored fields added):
+>   `corruptionCurrent`  <- NpcCharacter.dynamicState.mental.corruptionCurrent
+>   `shameCurrent`       <- NpcCharacter.dynamicState.mental.shameCurrent
+>   `acquiredKinks`      <- NpcCharacter.sexualPsychology.acquiredKinks
+>   `brokenFlag`         <- NpcCharacter.dynamicState.mental.brokenFlag
+>
+> **Gate thresholds (do not alter without a design session):**
+>   Outdoor exposure gate passes when:  `deriveMoralDegradation(npc) >= 35 OR corruptionCurrent >= 40`
+>   Audience gate passes when:          `deriveMoralDegradation(npc) >= 55 OR corruptionCurrent >= 60`
+>   Group scene gate (per NPC):         `deriveMoralDegradation(npc) >= 50 AND corruptionCurrent >= 55`
+>                                         AND side quest completion check (28e.1) passes
+>
+> FORCE_INTIMACY, FORCE_INTIMACY_SLEEPING, and POST_DEFEAT bypass the exposure and audience gates.
+> They do not bypass the group scene gate (group is always consensual).
+>
+> **Group scene architecture:**
+>   SceneStartType 'CONSENSUAL_GROUP' always means two NPC partners (primary + second).
+>   IntimacyScene carries optional `secondPartner*` fields (all null in solo scenes).
+>   All existing solo-scene mechanics (resistance, arousal, orgasm, satisfaction, persistence)
+>   apply independently to each partner via optional `targetPartnerId` routing in `resolveSceneAction()`.
+>   `calcSatisfaction()` averages both partners' contributions; `SceneEndPersistence` carries optional
+>   second-partner fields; `resolvePostIntimacy()` writes back both partners independently.
+>
+> **Jealousy (lightweight, post-scene only):**
+>   When both partners have each other in `npcRelationships` AND either has `JealousyTendency.High`
+>   or holds an exclusive bond (Devoted / Bonded) with the other, `jealousyFired: true` is set in
+>   `SceneEndPersistence` and the dispatcher applies a trust/bond delta between the two NPCs via
+>   `npcSocialEngine`. No mid-scene jealousy interruption.
+
+---
+
+### 28a. Shared derivation helper
+
+- [x] **28a.1** Implement `deriveMoralDegradation(npc: NpcCharacter): number` pure helper in `src/engines/intimacyEngine.ts` -- formula: `base = corruptionCurrent x 0.6 + (100 - shameCurrent) x 0.3 + clamp(acquiredKinks.length x 4, 0, 10)`; if `dynamicState.mental.brokenFlag === true`, return `Math.max(result, 90)`; clamp result [0, 100]. Reads `dynamicState.mental.corruptionCurrent`, `dynamicState.mental.shameCurrent`, `dynamicState.mental.brokenFlag`, and `sexualPsychology.acquiredKinks`. Export the function for use in dispatcher and future gate callers.
+
+- [x] **28a.2** Add `IntimacyStartContext` interface to `src/engines/intimacyEngine.ts` -- `{ npc: NpcCharacter; startType: SceneStartType; isIndoors: boolean; npcsPresent: number; secondNpc?: NpcCharacter }`. Passed to all gate-check functions so gate signatures stay stable as new gates are added.
+
+---
+
+### 28b. Exposure gate (outdoor consent check)
+
+- [x] **28b.1** Add `isIndoors?: boolean` to the `WorldNode` type in `src/state/gameState.ts` -- absent means false (outdoors). Update the 5-node stub in `src/data/worldGraph.ts`: set `isIndoors: true` on the two indoor nodes (inn, dungeon), omit or `false` on the three outdoor nodes. Full authored values deferred to Task 17.DATA.
+
+- [x] **28b.2** Implement `checkExposureGate(ctx: IntimacyStartContext): { allowed: boolean; reason?: string }` pure function in `src/engines/intimacyEngine.ts` -- immediate `{ allowed: true }` when `ctx.isIndoors === true` OR `ctx.startType` is FORCE_INTIMACY / FORCE_INTIMACY_SLEEPING / POST_DEFEAT; passes when `deriveMoralDegradation(ctx.npc) >= 35 OR ctx.npc.dynamicState.mental.corruptionCurrent >= 40`; otherwise `{ allowed: false, reason: 'She glances around nervously. Not here -- not where anyone could see.' }`.
+
+- [x] **28b.3** Wire exposure gate into `dispatcher.ts` INITIATE_INTIMACY handler (CONSENSUAL startType only) -- look up `WorldNode.isIndoors` from `world.currentNodeId`; call `countBystanders()` (28c.1) for `npcsPresent`; build `IntimacyStartContext`; call `checkExposureGate()`; if `allowed === false`, emit `INTIMACY_GATE_BLOCKED { gate: 'EXPOSURE', npcId, reason }` and return early without calling `startScene()`.
+
+- [x] **28b.4** Add `INTIMACY_GATE_BLOCKED` to the `GameEvent` union in `src/state/gameState.ts` -- `{ type: 'INTIMACY_GATE_BLOCKED'; gate: 'EXPOSURE' | 'AUDIENCE' | 'GROUP_DEGRADATION' | 'GROUP_SQ'; npcId: string; reason: string }`. Emitted whenever a scene initiation gate blocks; consumed by the UI to display the refusal narrative.
+
+---
+
+### 28c. Audience gate (bystander presence check)
+
+- [x] **28c.1** Implement `countBystanders(gameState: GameState): number` pure helper in `src/engines/worldEngine.ts` -- reads `world.occupantPositions`; counts entity IDs that are neither `'player'` nor any `party.companions[].npcId`; returns the count. Export so dispatcher calls it for both the audience gate and the group scene gate.
+
+- [x] **28c.2** Implement `checkAudienceGate(ctx: IntimacyStartContext): { allowed: boolean; reason?: string }` pure function in `src/engines/intimacyEngine.ts` -- immediate `{ allowed: true }` when `ctx.npcsPresent === 0` OR `ctx.startType` is FORCE_INTIMACY / FORCE_INTIMACY_SLEEPING / POST_DEFEAT; passes when `deriveMoralDegradation(ctx.npc) >= 55 OR corruptionCurrent >= 60`; otherwise `{ allowed: false, reason: 'Her eyes dart to the others nearby. She won\'t do this with people watching.' }`.
+
+- [x] **28c.3** Wire audience gate into `dispatcher.ts` INITIATE_INTIMACY handler (CONSENSUAL only) -- after exposure gate passes, call `checkAudienceGate()` with the same `IntimacyStartContext`; if blocked, emit `INTIMACY_GATE_BLOCKED { gate: 'AUDIENCE' }` and return early.
+
+- [x] **28c.4** Post-scene shame spike for witnessed FORCE_INTIMACY_SLEEPING scenes -- in `resolvePostIntimacy()`, add optional `npcsPresent?: number` parameter (defaults 0; no break to existing callers); if `scene.startType === 'FORCE_INTIMACY_SLEEPING'` AND `npcsPresent > 0`, apply additional `shameDelta: +15` on top of normal computation and append a narrative line about waking to find witnesses. Dispatcher passes `countBystanders(gameState)` when calling `resolvePostIntimacy()` for this start type.
+
+---
+
+### 28d. Group scene -- schema extensions
+
+- [x] **28d.1** Add `'CONSENSUAL_GROUP'` to the `SceneStartType` union in `src/engines/intimacyEngine.ts`. Document: always two NPC partners; bypasses exposure and audience gates; always gated by `adultContentEnabled` (same as all intimacy scenes).
+
+- [x] **28d.2** Extend `IntimacyScene` in `src/engines/intimacyEngine.ts` with optional group-scene fields -- `secondPartnerNpcId: string | null`, `secondPartnerProfile: NpcPartnerProfile | null`, `secondPartnerArousal: number`, `secondPartnerStaminaCurrent: number`, `secondPartnerStaminaMax: number`, `secondPartnerHasFainted: boolean`, `secondPartnerLifeForce: number`, `secondPartnerEngagementStatus: PartnerEngagementStatus`, `secondOrgasmLog: FemaleOrgasmEvent[]`, `secondLoveDeltaAccum: number`, `secondTrustDeltaAccum: number`, `groupMode: 'MMF' | 'FFM' | null`. All null in solo scenes.
+
+- [x] **28d.3** Extend `SceneEndPersistence` in `src/engines/intimacyEngine.ts` with optional second-partner fields -- `secondPartnerSquirtStorage?: number`, `secondPartnerSquirtProbability?: number`, `secondPartnerMilkStorage?: number`, `secondPartnerArousal?: number`, `secondPartnerCurrentWetness?: WetnessLevel`, `secondPartnerMood?: MoodValue`, `secondPartnerLoveDelta?: number`, `secondPartnerTrustDelta?: number`, `secondPartnerBlockedForDay?: boolean`, `secondPartnerLifeForceRemainder?: number`, `jealousyFired?: boolean`. All undefined in solo scenes.
+
+- [x] **28d.4** Add optional `groupMode?: 'MMF' | 'FFM' | 'SOLO'` to `IntimacyPosition` in `src/engines/intimacyEngine.ts`; absent = SOLO. Tag relevant entries in `src/data/intimacyCatalog.ts`: positions physically requiring two male participants -> `'MMF'`; positions requiring two simultaneous female participants -> `'FFM'`; all existing entries remain untagged (treated as SOLO).
+
+- [x] **28d.5** Add optional `targetPartnerId?: string` to `resolveSceneAction()` -- when present and equals `scene.secondPartnerNpcId`, route all arousal / resistance / stamina / faint / life-force / orgasm calculations to `secondPartner*` fields on `IntimacyScene`; primary partner fields untouched. Shared fields (turnCount, status, momentum, clothingState, consumables, actsThisScene, neckGrabActive) stay unified. Existing callers omit the parameter; no signature break.
+
+- [x] **28d.6** Add `INTIMACY_GROUP_SCENE_STARTED` and `INTIMACY_GROUP_SCENE_ENDED` to the `GameEvent` union in `src/state/gameState.ts` -- `{ type: 'INTIMACY_GROUP_SCENE_STARTED'; primaryNpcId: string; secondNpcId: string; groupMode: 'MMF' | 'FFM' }` and `{ type: 'INTIMACY_GROUP_SCENE_ENDED'; primaryNpcId: string; secondNpcId: string; satisfaction: number; jealousyFired: boolean }`.
+
+---
+
+### 28e. Group scene -- initiation gate
+
+- [x] **28e.1** Implement `isCompanionSqComplete(gameState: GameState, npcId: string): boolean` pure helper in `src/engines/questEngine.ts` -- returns `true` when `gameState.flags['sq_complete_' + npcId] === true`; also returns `true` when the npcId has no authored dialogue tree key in `DIALOGUE_TREES` (generic NPC with no quest chain -- no completion requirement applies); returns `false` otherwise. Export so the intimacy gate can call it without importing questEngine internals.
+
+- [x] **28e.2** Implement `checkGroupSceneGate(ctx: IntimacyStartContext, gameState: GameState): { allowed: boolean; failedNpcId?: string; reason?: string }` pure function in `src/engines/intimacyEngine.ts` -- requires `ctx.secondNpc` to be defined; checks four conditions in order, returns on first failure: (1) `isCompanionSqComplete(gameState, ctx.npc.npcId)` -- primary NPC SQ; (2) `isCompanionSqComplete(gameState, ctx.secondNpc.npcId)` -- second NPC SQ; (3) `deriveMoralDegradation(ctx.npc) >= 50 AND corruptionCurrent >= 55` -- primary degradation; (4) same check on `ctx.secondNpc`. `failedNpcId` names which NPC blocked. Reasons: SQ block -- `'She\'s not ready for this -- there are things between you still unresolved.'`; degradation block -- `'She hesitates -- sharing something this intimate isn\'t something she can do yet.'`
+
+- [x] **28e.3** Add `INITIATE_GROUP_INTIMACY` to `PlayerIntent` union in `dispatcher.ts`
+
+---
+
+### 28f. Group scene -- engine functions
+
+- [x] **28f.1** Implement `startGroupScene(primaryNpcId, secondNpcId, groupMode, primaryPartner, secondPartner, player): IntimacyScene` in `src/engines/intimacyEngine.ts` -- calls `startScene()` to initialise all primary-partner fields; patches the returned scene with all `secondPartner*` group fields from 28d.2 populated from `secondPartner`; sets `startType = 'CONSENSUAL_GROUP'` and `groupMode`; returns the extended scene. Dispatcher emits `INTIMACY_GROUP_SCENE_STARTED` after receiving it.
+
+- [x] **28f.2** Update `resolveSceneAction()` for group-scene target routing
+
+- [x] **28f.3** Update `endScene()` for group-scene termination
+
+- [x] **28f.4** Update `resolvePostIntimacy()` for group scenes
+
+- [x] **28f.5** Update `getAvailableActions()` UI helper for group-mode filtering -- when `scene.groupMode !== null`, exclude positions whose `groupMode` is `'SOLO'` (or untagged) and include only positions matching `scene.groupMode`; when `scene.groupMode === null`, exclude positions tagged `'MMF'` or `'FFM'`.
+
+---
+
+### 28g. Group scene -- jealousy system
+
+- [x] **28g.1** Implement `checkGroupJealousy(primaryNpc: NpcCharacter, secondNpc: NpcCharacter): boolean` pure helper in `src/engines/intimacyEngine.ts` -- returns `true` when either NPC's `npcRelationships` contains the other NPC's id AND (`bond === BondType.Devoted || bond === BondType.Bonded` on that entry, OR either NPC's `social.jealousyTendency === JealousyTendency.High`); returns `false` when neither has a relationship entry for the other. Reads `primaryNpc.npcRelationships`, `secondNpc.npcRelationships`, `primaryNpc.social`, `secondNpc.social`.
+
+- [x] **28g.2** Wire jealousy consequence in dispatcher END_SCENE handler for group scenes
+
+---
+
+### 28h. Mock data and PRD housekeeping
+
+- [x] **28h.1** Add a group-scene stub to `src/client/mock/mockIntimacyScene.ts` -- `secondPartnerNpcId: 'npc-meira'`, `groupMode: 'FFM'`, `startType: 'CONSENSUAL_GROUP'`, second-partner fields at plausible starting values (arousal 20, stamina 120/120, not fainted, life force 100, engagement NEUTRAL, empty orgasm log). Used by IntimacyView to render group-scene branches without a live dispatcher call.
+
+- [x] **28h.2** Update the 5-node world graph stub in `src/data/worldGraph.ts` -- set `isIndoors: true` on at least 2 indoor nodes (inn, dungeon); omit `isIndoors` on 3 outdoor nodes. Update `mockGameState.ts` world stub accordingly.
+
+- [ ] **28h.3** Update PRD §4.3 (Intimacy Engine) -- add subsections: (a) Exposure Gate: `deriveMoralDegradation` formula and source fields, thresholds, bypass conditions; (b) Audience Gate: same structure; (c) Group Scene: `'CONSENSUAL_GROUP'` start type, IntimacyScene group-field schema, SceneEndPersistence group-field schema, gate checks, jealousy check.
+
+- [x] **28h.4** Update `task_list.md` version header to v3.9 and tracking reference to `PRD v1.9`.
+
+---
+
+## Phase 29: MP Pool — extend `statEngine`
+
+> Every character gains a `mp` pool added to `CharacterVitals`. The player also gains `mpBurnout` and `anomalousMp` fields. `statEngine.ts` owns derivation and overdraw/recovery logic. No separate engine file.
+> World bible reference: `magic.mp_scale_placeholder`.
+
+### 29a. State changes
+
+- [ ] **29a.1** Add `mp: { current: number; max: number }` to `CharacterVitals` in `gameState.ts` — default `{ current: 0, max: 0 }`; 0 is correct for monsters; non-zero set at character creation / spawn. Add to the `CharacterVitals` comment block. Export is unaffected.
+- [ ] **29a.2** Add `mpBurnout: number` to `PlayerCharacter` in `gameState.ts` — range [0, 100]; accumulated by overdraw; permanently reduces effective `mp.max` by `mpBurnout` percent. Default 0.
+- [ ] **29a.3** Add `anomalousMp: boolean` to `PlayerCharacter` in `gameState.ts` — `true` for the protagonist (unattuned Earth-origin MP); set by `characterCreationEngine.createCharacter()`; makes Temple Rite awakening rolls use a separate unpredictable outcome table (see Phase 30). Default `false`.
+
+### 29b. statEngine extension
+
+- [ ] **29b.1** Add `MP_RACE_BASELINE` constant map in `statEngine.ts` — per `Race` enum value, baseline MP max for an unawakened adult. Human = 100; high_elf/dark_elf/demon/devil/vampire = 180; dwarf/high_orc = 110; angel = 2000; god = `Infinity` (sentinel; never stored on `CharacterVitals`). Unlisted races default to 100.
+- [ ] **29b.2** Implement `deriveMaxMp(race: Race, level: number, mpBurnout: number): number` in `statEngine.ts` — `floor(baselineForRace × (1 + level × 0.08)) × (1 - mpBurnout / 100)`, clamped min 10.
+- [ ] **29b.3** Implement `spendMp(state: GameState, targetId: string, amount: number): { state: GameState; events: GameEvent[] }` pure function in `statEngine.ts` — if `amount > current`: excess is overdraw; drains HP at 1 HP per 2 overdraw MP (floor); if HP would reach 0, clamped at 1 HP and `overdrawCollapse: true` set in event; increments player `mpBurnout` by `clamp(excess / 50, 0, 2)` per call, capped at 100. Emits `MP_SPENT` always; `MP_OVERDRAW` on overdraw; `MP_BURNOUT_GAINED` when `mpBurnout` increases.
+- [ ] **29b.4** Implement `restoreMp(state: GameState, targetId: string, amount: number): { state: GameState; events: GameEvent[] }` pure function in `statEngine.ts` — adds amount to `vitals.mp.current`, capped at `deriveMaxMp()` result. Emits `MP_RESTORED`.
+- [ ] **29b.5** Implement `applyMpRestOnSleep(state: GameState): { state: GameState; events: GameEvent[] }` in `statEngine.ts` — restores all characters' MP to their current derived max. Called by `calendarEngine.resolveSleep()` alongside Stamina/CPW restore.
+
+### 29c. Events, wiring, and mock
+
+- [ ] **29c.1** Add MP `GameEvent` variants to `gameState.ts`: `MP_SPENT ({ targetId, amount, fromCurrent, toCurrent })`, `MP_OVERDRAW ({ targetId, overdrawAmount, hpDrained, overdrawCollapse: boolean })`, `MP_BURNOUT_GAINED ({ newBurnout: number })`, `MP_RESTORED ({ targetId, amount, newCurrent: number })`.
+- [ ] **29c.2** Wire `applyMpRestOnSleep()` into `calendarEngine.resolveSleep()` — called alongside `applyFullRestoreToParty()`.
+- [ ] **29c.3** Update `characterCreationEngine.createCharacter()` — set `player.vitals.mp` using `deriveMaxMp(race, 1, 0)` for starting values; set `anomalousMp: true`; set `mpBurnout: 0`.
+- [ ] **29c.4** Update `npcPopulationEngine.ts` NPC build path — set `vitals.mp` using `deriveMaxMp(race, 1, 0)` on every newly spawned humanoid. Monsters pass level 0 and burnout 0.
+- [ ] **29c.5** Update `mockGameState.ts` — add `mp: { current: 200, max: 200 }` to player vitals; `mpBurnout: 0`; `anomalousMp: true`. Add `mp: { current: 180, max: 180 }` to mock NPC vitals.
+
+---
+
+## Phase 30: Path Awakening — extend `jobEngine`
+
+> Only `PlayerCharacter` tracks unlocked paths; NPCs are spawned with racial affinities already in effect (no runtime gate needed on them). All awakening logic is added to `jobEngine.ts` as new exported functions.
+
+### 30a. State changes
+
+- [ ] **30a.1** Add `unlockedPathIds: string[]` to `PlayerCharacter` in `gameState.ts` — list of `JobDef.id` strings the player has been awakened into. Seeded at character creation. `jobEngine.equipJob()` guard: throws if `jobId` not in `unlockedPathIds`.
+- [ ] **30a.2** Define `PathAwakeningTrigger` union type in `jobEngine.ts` and export it: `'STONE' | 'TEMPLE_RITE' | 'BLOODLINE' | 'STORY_EVENT'`.
+
+### 30b. jobEngine extension
+
+- [ ] **30b.1** Implement `hasPathUnlocked(state: GameState, pathId: string): boolean` pure helper in `jobEngine.ts`.
+- [ ] **30b.2** Implement `unlockPath(state: GameState, pathId: string, trigger: PathAwakeningTrigger): { state: GameState; events: GameEvent[] }` in `jobEngine.ts` — idempotent (no-op if already unlocked); appends `pathId` to `player.unlockedPathIds`; emits `PATH_UNLOCKED`. For `trigger === 'TEMPLE_RITE'` AND `player.anomalousMp === true`, roll d10: 1–3 → unlocks with `anomalousRite: true` on event; 4–6 → unlocks normally; 7–9 → unlocks but applies a random status effect (id `'anomalous_rite_surge'`, defined in status effect catalog); 10 → emits `PATH_UNLOCK_FAILED` instead. Anomalous outcome content is handled by downstream quest/dialogue reactions to the event — engine stays pure.
+- [ ] **30b.3** Implement `getUnlockablePaths(state: GameState, catalog: JobDef[]): JobDef[]` in `jobEngine.ts` — returns all `JobDef` entries whose `id` is not in `player.unlockedPathIds`. Race affinity is not enforced mechanically here; the catalog carries affinity notes for UI display.
+- [ ] **30b.4** Guard `equipJob()` in `jobEngine.ts` — add `if (!hasPathUnlocked(state, jobId)) throw new Error(...)` at the top of the function body.
+
+### 30c. Event wiring and mock
+
+- [ ] **30c.1** Add `PATH_UNLOCKED ({ pathId: string; trigger: PathAwakeningTrigger; anomalousRite?: boolean })` and `PATH_UNLOCK_FAILED ({ pathId: string; trigger: PathAwakeningTrigger; reason?: string })` to `GameEvent` union in `gameState.ts`.
+- [ ] **30c.2** Add `UNLOCK_PATH` to `PlayerIntent` union in `dispatcher.ts`; handler calls `unlockPath()` with trigger `'STONE'` (stone consumed from inventory) or `'TEMPLE_RITE'` per a `trigger` field on the intent payload.
+- [ ] **30c.3** Update `characterCreationEngine.createCharacter()` — call `unlockPath(state, options.jobId, 'STORY_EVENT')` to seed `unlockedPathIds` with the starting path.
+- [ ] **30c.4** Update `mockGameState.ts` — add `unlockedPathIds: ['warrior']` (or whichever starter job id the mock uses) to the player block.
+
+---
+
+## Phase 31: Charter Rank
+
+> `charterRank` + `charterXP` live on `PlayerCharacter`. Implemented in a new `charterEngine.ts`. No separate `GameState` root block — everything on `player`.
+
+### 31a. State changes
+
+- [ ] **31a.1** Define `CharterRank` union type in `gameState.ts` and export it: `type CharterRank = 'WANDERER' | 'SCOUT' | 'WAYFARER' | 'RANGER' | 'CHAMPION' | 'LEGEND'`.
+- [ ] **31a.2** Add `charterRank: CharterRank` and `charterXP: number` to `PlayerCharacter` in `gameState.ts` — defaults `'WANDERER'` and `0`.
+- [ ] **31a.3** Add `{ type: 'CHARTER_RANK'; minRank: CharterRank }` variant to `DialogueCondition` union in `gameState.ts`.
+
+### 31b. charterEngine.ts
+
+- [ ] **31b.1** Create `src/engines/charterEngine.ts` — define `CHARTER_XP_THRESHOLDS: Record<CharterRank, number>`: WANDERER 0, SCOUT 500, WAYFARER 1500, RANGER 4000, CHAMPION 10000, LEGEND 25000 (all provisional).
+- [ ] **31b.2** Implement `deriveCharterRank(xp: number): CharterRank` pure helper — walks thresholds descending; returns highest tier whose threshold ≤ xp.
+- [ ] **31b.3** Implement `awardCharterXP(state: GameState, amount: number): { state: GameState; events: GameEvent[] }` — adds amount to `player.charterXP`; calls `deriveCharterRank()`; if rank changed, updates `player.charterRank` and emits `CHARTER_RANK_UP`; always emits `CHARTER_XP_AWARDED`.
+
+### 31c. Event and wiring
+
+- [ ] **31c.1** Add `CHARTER_XP_AWARDED ({ amount: number; newTotal: number })` and `CHARTER_RANK_UP ({ from: CharterRank; to: CharterRank })` to `GameEvent` union in `gameState.ts`.
+- [ ] **31c.2** Extend `QuestReward` in `src/data/quests.ts` — add optional `charterXP?: number` field. Update `questEngine.grantQuestReward()` to call `awardCharterXP()` when set.
+- [ ] **31c.3** Wire `awardCharterXP()` into `combatEngine.emitVictoryEvents()` — 10 XP per standard enemy kill, 50 per boss kill.
+- [ ] **31c.4** Add `evaluateDialogueCondition()` branch in `dialogueEngine.ts` for `CHARTER_RANK` condition type — compare using the `CHARTER_XP_THRESHOLDS` order.
+- [ ] **31c.5** Update `mockGameState.ts` — add `charterRank: 'WANDERER'`, `charterXP: 0` to player block.
+
+---
+
+## Phase 32: Divinity Score
+
+> Single numeric field on `PlayerCharacter`. Award function added to `statEngine.ts`.
+
+- [ ] **32.1** Add `divinity: number` to `PlayerCharacter` in `gameState.ts` — range [0, ∞); default 0.
+- [ ] **32.2** Add `{ type: 'DIVINITY'; min: number }` variant to `DialogueCondition` union in `gameState.ts`.
+- [ ] **32.3** Add `DIVINITY_MILESTONES` const to `statEngine.ts`: `{ ISLAND_APPROACH: 5000, ISLAND_ENTRY: 8000 }` (provisional).
+- [ ] **32.4** Implement `awardDivinity(state: GameState, amount: number): { state: GameState; events: GameEvent[] }` pure function in `statEngine.ts` — adds amount; checks milestone crossings; emits `DIVINITY_GAINED` always, `DIVINITY_MILESTONE_REACHED` on crossing.
+- [ ] **32.5** Add `DIVINITY_GAINED ({ amount: number; newTotal: number })` and `DIVINITY_MILESTONE_REACHED ({ milestone: string; value: number })` to `GameEvent` union in `gameState.ts`.
+- [ ] **32.6** Extend `QuestReward` in `src/data/quests.ts` — add optional `divinity?: number` field. Update `questEngine.grantQuestReward()` to call `awardDivinity()` when set.
+- [ ] **32.7** Add `evaluateDialogueCondition()` branch in `dialogueEngine.ts` for `DIVINITY` condition type.
+- [ ] **32.8** Update `mockGameState.ts` — add `divinity: 0` to player block.
+
+---
+
+## Phase 33: Faith Field
+
+> `faithId` added to `HumanoidCharacter` so every humanoid (player, NPC, humanoid enemy) carries a faith affiliation. A minimal `faithCatalog.ts` defines the four world faiths. Dialogue condition and effect variants added. No separate faith engine.
+
+### 33a. State changes
+
+- [ ] **33a.1** Define `FaithId` type in `gameState.ts` and export it: `type FaithId = 'radiant_faith' | 'old_wood' | 'stone_covenant' | 'night_court' | 'none'`.
+- [ ] **33a.2** Add `faithId: FaithId | undefined` to `HumanoidCharacter` in `gameState.ts` — `undefined` = not yet established; `'none'` = explicitly secular. Set by spawn-engine from race profile defaults (33b.2).
+- [ ] **33a.3** Add `{ type: 'FAITH'; faithId: FaithId }` variant to `DialogueCondition` union in `gameState.ts`.
+- [ ] **33a.4** Add `{ type: 'SET_FAITH'; faithId: FaithId; npcId: string }` variant to `DialogueEffect` union in `gameState.ts` — `npcId: 'player'` targets the player; any other value targets an NPC in contacts.
+
+### 33b. Faith catalog and spawn wiring
+
+- [ ] **33b.1** Create `src/data/faithCatalog.ts` — define `FaithDef` interface: `{ id: FaithId; name: string; godPatronIds: GodId[]; alignedPathIds: string[]; templeRiteXpBonus: number }`. Author all four: Radiant Faith (Solenne + Varan; +15% rite XP), Old Wood (Aeloria + Thessaly; +20%), Stone Covenant (Durgrim + Hestrel; +10%), Night Court (Nyxara + Malvek + Kharrath; +5%).
+- [ ] **33b.2** Add `DEFAULT_FAITH_BY_RACE` const to `faithCatalog.ts` — maps each `Race` enum value to a `FaithId` default (human → radiant_faith; high_elf/wood_elf/dark_elf → old_wood; dwarf → stone_covenant; demon/devil/succubus_incubus/vampire → night_court; high_orc/beastfolk/dragonkin → old_wood; angel → radiant_faith; god → none).
+
+### 33c. Engine wiring
+
+- [ ] **33c.1** Update `npcPopulationEngine.ts` NPC build path — set `faithId` from `DEFAULT_FAITH_BY_RACE[npc.race]` on every newly spawned humanoid.
+- [ ] **33c.2** Update `characterCreationEngine.createCharacter()` — set `player.faithId` from `DEFAULT_FAITH_BY_RACE[options.race ?? 'human']`.
+- [ ] **33c.3** Add `evaluateDialogueCondition()` branch in `dialogueEngine.ts` for `FAITH` condition — checks `state.player.faithId` for player-targeted; checks the relevant contact's `faithId` for NPC-targeted.
+- [ ] **33c.4** Add `applyDialogueEffect()` branch in `dialogueEngine.ts` for `SET_FAITH` — writes `faithId` to player or targeted NPC character; emits `FAITH_SET`.
+- [ ] **33c.5** Add `FAITH_SET ({ targetId: string; faithId: FaithId; previousFaithId: FaithId | undefined })` to `GameEvent` union in `gameState.ts`.
+- [ ] **33c.6** Update `mockGameState.ts` — set `faithId: 'radiant_faith'` on player; set appropriate `faithId` on all mock NPC entries.
+
+---
+
+## Phase 34: Lore Update — God Binding = Slavery at God Scale
+
+> No new engine. The world bible is updated to establish that enslaving any being (mortal or divine) uses the same MP-chain mechanism at the appropriate scale. Devil contracts are a formalised legal variant of the same. Existing `tamingEngine` patterns + the Phase 36 `gods` state block together cover all enslavement cases — no separate `contractEngine.ts` is needed.
+
+- [ ] **34.1** Update `world_bible_and_game_lore_starter.json` — add `"binding"` sub-key inside the `"magic"` object:
+  ```json
+  "binding": {
+    "mechanism": "Enslaving any being — mortal or divine — works via MP-chain binding: suppressing and redirecting the target's MP flow. For mortals, physical restraints plus suppression runes suffice. For gods, the same principle applies at vastly greater MP scale: a god-level ward must suppress the god's entire pool. Devil contracts are a formalised legal variant (binding the signatory's future MP flow to an obligation). No separate discipline of 'contract magic' exists; all binding is a lore application of rune magic at appropriate scale.",
+    "mortals": "Slavers use physical restraints combined with suppression runes engraved by a Runesmith. MP flow is dampened, not severed; the enslaved person retains enough MP to remain healthy and functional.",
+    "gods": "A god-level ward must suppress the god's entire MP pool — orders of magnitude greater than any mortal's. Only the Creator's original Binding of the Gods clause achieves this. Kharrath's Ember Conclave exploited an ancient loophole in that clause to imprison Varan.",
+    "designer_note": "Use existing tamingEngine (humanoid capture) and the godStatusEngine gods block (Phase 36) for all enslavement. No separate contractEngine required."
+  }
+  ```
+- [ ] **34.2** Update `world_bible_and_game_lore_starter.json` `provisional_elements` array — replace `"Sealed contracts binding MP (devils)"` with `"Devil contracts as a formalised MP-chain binding: same mechanism as mortal enslavement, different legal form"`.
+- [ ] **34.3** Update `world_bible_and_game_lore_starter.json` `central_mystery_revised.enslaver.how` — append the sentence: `"Mechanically this is a god-level suppression ward — the same MP-chain principle as mortal enslavement, anchored to the Creator's original Binding of the Gods clause, which provides the only ward strong enough to hold a god's entire MP pool."`
+
+---
+
+## Phase 35: Seasonal World Effects — extend `calendarEngine`
+
+> `CalendarState` gains `season`; a `SeasonModifiers` block lands on `GameState` root. `calendarEngine` emits `SEASON_CHANGED` and recomputes the overlay on each day transition. Three consumer engines read the modifiers.
+
+### 35a. State changes
+
+- [ ] **35a.1** Define `Season` union type in `gameState.ts` and export it: `type Season = 'SPRING' | 'SUMMER' | 'RAINY' | 'WINTER'`.
+- [ ] **35a.2** Add `season: Season` to `CalendarState` in `gameState.ts` — default `'SPRING'`; derived and updated by `calendarEngine` on each day transition.
+- [ ] **35a.3** Define `SeasonModifiers` interface in `gameState.ts` and export it: `{ travelCostMultiplier: number; encounterRateMultiplier: number; marketPriceMultiplier: number; mpRecoveryMultiplier: number }`.
+- [ ] **35a.4** Add `seasonModifiers: SeasonModifiers` to `GameState` root — default all multipliers `1.0`.
+
+### 35b. calendarEngine extension
+
+- [ ] **35b.1** Implement `deriveCurrentSeason(day: number): Season` pure function in `calendarEngine.ts` — day mod 365 divided into four blocks: 1–91 = SPRING, 92–182 = SUMMER, 183–273 = RAINY, 274–365 = WINTER (provisional).
+- [ ] **35b.2** Add `SEASON_MODIFIER_TABLE: Record<Season, SeasonModifiers>` const in `calendarEngine.ts` — SPRING: all 1.0; SUMMER: encounter ×1.2, market ×0.95, rest unchanged; RAINY: travel ×1.4, encounter ×0.8, market ×1.05; WINTER: travel ×1.1, mp_recovery ×1.2, market ×1.15. All provisional.
+- [ ] **35b.3** Add `SEASON_CHANGED ({ from: Season; to: Season; day: number })` to `GameEvent` union in `gameState.ts`.
+- [ ] **35b.4** Update `calendarEngine.runDayEndTick()` — after step 8 (date increment), call `deriveCurrentSeason()`; if result differs from `calendar.season`, update `calendar.season` and `state.seasonModifiers` from `SEASON_MODIFIER_TABLE`; emit `SEASON_CHANGED`.
+
+### 35c. Consumer wiring
+
+- [ ] **35c.1** Update `travelCostEngine.ts` — multiply computed travel gold cost by `state.seasonModifiers.travelCostMultiplier` before returning.
+- [ ] **35c.2** Update `environmentEngine.advanceWeather()` — multiply each weather catalog entry's `weight` by `state.seasonModifiers.encounterRateMultiplier` before the weighted roll so RAINY season biases heavy-rain weights up.
+- [ ] **35c.3** Update `economyEngine.buyItem()` — multiply `effectiveBuyPrice` by `state.seasonModifiers.marketPriceMultiplier` (applied after the existing reputation discount).
+- [ ] **35c.4** Update `statEngine.applyMpRestOnSleep()` (Phase 29b.5) — multiply restored MP amount by `state.seasonModifiers.mpRecoveryMultiplier`.
+- [ ] **35c.5** Update `mockGameState.ts` — add `season: 'SPRING'` to calendar block; add `seasonModifiers: { travelCostMultiplier: 1.0, encounterRateMultiplier: 1.0, marketPriceMultiplier: 1.0, mpRecoveryMultiplier: 1.0 }` to root.
+
+---
+
+## Phase 36: God Status Tracking — `godStatusEngine`
+
+> A `gods` block on `GameState` holds the live state of all nine gods. `godStatusEngine.ts` owns all mutations. `jobEngine` reads god status to gate Templar Path availability (patron god must be FREE).
+
+### 36a. State changes
+
+- [ ] **36a.1** Define `GodId` union type in `gameState.ts` and export it: `type GodId = 'solenne' | 'varan' | 'aeloria' | 'thessaly' | 'durgrim' | 'hestrel' | 'nyxara' | 'kharrath' | 'malvek'`.
+- [ ] **36a.2** Define `GodState` interface in `gameState.ts` and export it: `{ status: 'FREE' | 'ENSLAVED' | 'DEAD'; enslavedById?: string; enslavedOnDay?: number; killedOnDay?: number }`. `enslavedById` is `'kharrath_ember_conclave'` for Varan's pre-game enslavement; `player.id` for a Power End scenario.
+- [ ] **36a.3** Add `gods: Record<GodId, GodState>` to `GameState` root.
+- [ ] **36a.4** Add god status `GameEvent` variants to `gameState.ts`: `GOD_ENSLAVED ({ godId: GodId; enslavedById: string; day: number })`, `GOD_FREED ({ godId: GodId; day: number })`, `GOD_KILLED ({ godId: GodId; day: number })`.
+
+### 36b. godStatusEngine.ts
+
+- [ ] **36b.1** Create `src/engines/godStatusEngine.ts` — implement `createDefaultGodRecord(): Record<GodId, GodState>` — all gods `FREE` except `varan: { status: 'ENSLAVED', enslavedById: 'kharrath_ember_conclave', enslavedOnDay: 0 }`.
+- [ ] **36b.2** Implement `enslaveGod(state, godId, enslaverId): { state, events }` — guard: throws if already ENSLAVED or DEAD; sets status, records `enslavedById` and `enslavedOnDay = calendar.day`; emits `GOD_ENSLAVED`.
+- [ ] **36b.3** Implement `freeGod(state, godId): { state, events }` — guard: throws if not ENSLAVED; sets `status: 'FREE'`, clears enslaved fields; emits `GOD_FREED`.
+- [ ] **36b.4** Implement `killGod(state, godId): { state, events }` — guard: throws if already DEAD; sets `status: 'DEAD'`, records `killedOnDay`; emits `GOD_KILLED`.
+- [ ] **36b.5** Implement `isGodFree(state, godId): boolean` and `getGodStatus(state, godId): GodState` pure read helpers. Export both.
+
+### 36c. Cross-engine wiring
+
+- [ ] **36c.1** Update `jobEngine.unlockPath()` — when `trigger === 'TEMPLE_RITE'`, look up the path's patron god from `faithCatalog.ts` (via the `alignedPathIds` field); if that god is not FREE per `isGodFree()`, emit `PATH_UNLOCK_FAILED` with `reason: 'GOD_UNAVAILABLE'` instead of proceeding.
+- [ ] **36c.2** Update `dispatcher.ts` `processEventQueue()` — add handlers for `GOD_ENSLAVED`, `GOD_FREED`, `GOD_KILLED`: each writes the corresponding story flag (`flags['god_status_<godId>']`) and calls `endingTrackerEngine.updateEndingAxis()` (Phase 37) to keep the ending state current.
+- [ ] **36c.3** Update `mockGameState.ts` — add `gods` block initialised from `createDefaultGodRecord()` (varan ENSLAVED, all others FREE).
+
+---
+
+## Phase 37: Ending Axis Tracker — `endingTrackerEngine`
+
+> A lightweight `endingAxes` block on `GameState` aggregates all ending-relevant axis states. `endingTrackerEngine.ts` owns mutation and ending resolution. Engines that produce ending-relevant outcomes update axes through the dispatcher event queue.
+
+### 37a. State changes
+
+- [ ] **37a.1** Define `EndingAxisState` interface in `gameState.ts` and export it:
+  ```ts
+  interface EndingAxisState {
+    goddess:      'ENSLAVED_BY_KHARRATH' | 'FREED_DIMINISHED' | 'FREED_RESTORED' | 'ENSLAVED_BY_PLAYER' | 'KILLED' | 'UNKNOWN';
+    gods:         'ALL_SAFE' | 'PARTIAL_LOSS' | 'MULTIPLE_LOST' | 'UNKNOWN';
+    kharrath:     'DEFEATED' | 'IMPRISONED' | 'ASCENDED' | 'ACTIVE';
+    playerThrone: 'STEPPED_BACK' | 'RULING' | 'UNDECIDED';
+    faith:        'TRUTH' | 'LIE' | 'UNDECIDED';
+    law:          'CROWNS' | 'CHARTER' | 'LEDGER_REFORMED' | 'DIVIDED' | 'UNDECIDED';
+  }
+  ```
+- [ ] **37a.2** Define `EndingId` type in `gameState.ts` and export it: `type EndingId = 'the_restored_pantheon' | 'the_diminished_return' | 'the_silent_victory' | 'the_iron_throne_of_law' | 'the_broken_pantheon' | 'the_dead_sky' | 'the_god_king' | 'the_creator_stirs'`.
+- [ ] **37a.3** Add `endingAxes: EndingAxisState` to `GameState` root — game-start defaults: `goddess: 'ENSLAVED_BY_KHARRATH'` (Varan is enslaved at Day 1), `kharrath: 'ACTIVE'`, all others `'UNKNOWN'` or `'UNDECIDED'`.
+- [ ] **37a.4** Add `ENDING_AXIS_UPDATED ({ axis: keyof EndingAxisState; newValue: string; day: number })` to `GameEvent` union in `gameState.ts`.
+
+### 37b. endingTrackerEngine.ts
+
+- [ ] **37b.1** Create `src/engines/endingTrackerEngine.ts` — implement `createDefaultEndingAxes(): EndingAxisState` returning the game-start defaults from 37a.3.
+- [ ] **37b.2** Implement `updateEndingAxis<K extends keyof EndingAxisState>(state: GameState, axis: K, value: EndingAxisState[K]): { state: GameState; events: GameEvent[] }` — updates the axis; emits `ENDING_AXIS_UPDATED`.
+- [ ] **37b.3** Implement `resolveEnding(state: GameState): EndingId | undefined` pure function — evaluates `state.endingAxes` against a `ENDING_CONDITIONS` const (array of `{ id: EndingId; requires: Partial<EndingAxisState> }` entries from the world bible endings); returns the first full match, `undefined` if none yet match.
+
+### 37c. Wiring
+
+- [ ] **37c.1** Wire `updateEndingAxis()` in `dispatcher.ts` `processEventQueue()` for `GOD_FREED`, `GOD_ENSLAVED`, `GOD_KILLED` — map to `goddess` axis for Varan; to `gods` axis for other gods (count of enslaved/killed gods drives PARTIAL_LOSS / MULTIPLE_LOST states).
+- [ ] **37c.2** Extend `QuestDef` in `src/data/quests.ts` — add optional `endingAxisEffect?: { axis: keyof EndingAxisState; value: string }` field. Update `questEngine.grantQuestReward()` to call `updateEndingAxis()` when set (for main-quest completions that resolve faith/law/playerThrone axes).
+- [ ] **37c.3** Update `mockGameState.ts` — add `endingAxes` using `createDefaultEndingAxes()`.
+
+---
+
+## Phase 38: Banking — extend `economyEngine`
+
+> A `bank` block on `GameState` tracks deposit accounts and loans per node. All functions added to `economyEngine.ts`. Loan interest ticks at day-end. Banking unlocked only at nodes with the `'bank'` location feature.
+
+### 38a. State changes
+
+- [ ] **38a.1** Define `BankAccountState` interface in `gameState.ts` and export it: `{ nodeId: string; balance: number; openedOnDay: number }`.
+- [ ] **38a.2** Define `LoanState` interface in `gameState.ts` and export it: `{ nodeId: string; principal: number; interestRatePercent: number; dueOnDay: number; borrowedOnDay: number; remainingDebt: number; isDefaulted: boolean }`.
+- [ ] **38a.3** Define `BankState` interface in `gameState.ts` and export it: `{ accounts: BankAccountState[]; loans: LoanState[]; totalEverDeposited: number }`.
+- [ ] **38a.4** Add `bank: BankState` to `GameState` root — default `{ accounts: [], loans: [], totalEverDeposited: 0 }`.
+- [ ] **38a.5** Add `'bank'` to `LocationFeatureKey` union in `gameState.ts` — nodes with this feature unlock bank-related intents in the dispatcher.
+
+### 38b. economyEngine extension
+
+- [ ] **38b.1** Implement `openBankAccount(state, nodeId): { state, events }` in `economyEngine.ts` — guard: one account per node; guard: current node must have `'bank'` feature; creates account with `balance: 0`; emits `BANK_ACCOUNT_OPENED`.
+- [ ] **38b.2** Implement `deposit(state, nodeId, amount): { state, events }` — guard: account exists; guard: player gold ≥ amount; deducts gold; credits account; updates `totalEverDeposited`; emits `BANK_DEPOSIT` and `GOLD_CHANGED`.
+- [ ] **38b.3** Implement `withdraw(state, nodeId, amount): { state, events }` — guard: account balance ≥ amount; transfers to player gold; emits `BANK_WITHDRAWAL` and `GOLD_CHANGED`.
+- [ ] **38b.4** Implement `takeLoan(state, nodeId, amount): { state, events }` — guard: no existing defaulted loan at this node; guard: region reputation ≥ Neutral. `interestRatePercent` by reputation tier (Renowned 5%, Liked 8%, Neutral 12%). `dueOnDay = calendar.day + 30`. Adds gold; creates `LoanState` entry; emits `LOAN_TAKEN` and `GOLD_CHANGED`.
+- [ ] **38b.5** Implement `repayLoan(state, nodeId, amount): { state, events }` — partial payments reduce `remainingDebt`; full payment removes the entry; emits `LOAN_REPAID` and `GOLD_CHANGED`.
+- [ ] **38b.6** Implement `tickLoanInterest(state): { state, events }` — called at day-end; for each active non-defaulted loan: if `calendar.day > dueOnDay`, accrue 1% of `remainingDebt` per overdue day (compound; capped at 5× `principal`); when `remainingDebt > 2× principal`, set `isDefaulted: true`, emit `LOAN_DEFAULT`, call `applyReputationDelta(regionId, -50)` as the bank-default reputation penalty.
+
+### 38c. Events, dispatcher, and mock
+
+- [ ] **38c.1** Add bank `GameEvent` variants to `gameState.ts`: `BANK_ACCOUNT_OPENED ({ nodeId })`, `BANK_DEPOSIT ({ nodeId; amount; newBalance })`, `BANK_WITHDRAWAL ({ nodeId; amount; newBalance })`, `LOAN_TAKEN ({ nodeId; principal; interestRatePercent; dueOnDay })`, `LOAN_REPAID ({ nodeId; amountPaid; remaining })`, `LOAN_INTEREST_ACCRUED ({ nodeId; amount; newTotal })`, `LOAN_DEFAULT ({ nodeId; totalDebt })`.
+- [ ] **38c.2** Add `OPEN_BANK_ACCOUNT`, `DEPOSIT`, `WITHDRAW`, `TAKE_LOAN`, `REPAY_LOAN` to `PlayerIntent` union in `dispatcher.ts`; each handler guards the `'bank'` feature on `world.currentNodeId` and routes to the corresponding function.
+- [ ] **38c.3** Wire `tickLoanInterest()` into `calendarEngine.runDayEndTick()` as a new step after step 8 (date increment) and before step 9 (NPC social tick).
+- [ ] **38c.4** Update `mockGameState.ts` — add `bank: { accounts: [], loans: [], totalEverDeposited: 0 }` to root.

@@ -421,4 +421,11 @@ export const mockGameState: GameState = {
   } satisfies SynergyState,
 
   characterCreation: undefined,  // set during new-game character creation flow
+
+  // Phase 26: tithe system — inactive at game start
+  tithe: {
+    lastPaidDay:      0,
+    quotaGoldPerWeek: 0,  // 0 = inactive until Enclave quest fires
+    overdueBy:        0,
+  },
 };

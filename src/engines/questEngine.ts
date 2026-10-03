@@ -425,3 +425,33 @@ function _resolveCurrentRegion(state: GameState): RegionId | null {
   }
   return null;
 }
+
+// ─── isCompanionSqComplete (Phase 28 — 28e.1) ────────────────────────────────
+
+/**
+ * Returns true when the NPC's companion side-quest chain is complete (or when
+ * the NPC has no authored quest chain at all — generic NPCs with no dialogue
+ * tree have no completion requirement and are therefore always eligible).
+ *
+ * Completion is recorded by the dispatcher as gameState.flags['sq_complete_<npcId>']
+ * at the point the final SQ node resolves. This helper is the single authoritative
+ * read site so the intimacy gate never needs to inspect the quest log directly.
+ *
+ * Lazy-requires DIALOGUE_TREES to avoid a circular import with dialogueEngine.
+ * The import is cached by the Node module system after the first call.
+ */
+export function isCompanionSqComplete(gameState: GameState, npcId: string): boolean {
+  // If the completion flag is already set, short-circuit immediately.
+  const flagKey = `sq_complete_${npcId}`;
+  if (gameState.flags[flagKey] === true) return true;
+
+  // Generic NPCs with no authored dialogue tree have no SQ chain to complete.
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { DIALOGUE_TREES } = require('../data/dialogueTrees') as {
+    DIALOGUE_TREES: Record<string, unknown>;
+  };
+  const hasTree = Object.prototype.hasOwnProperty.call(DIALOGUE_TREES, npcId);
+  if (!hasTree) return true;  // no authored SQ → no gate
+
+  return false;
+}

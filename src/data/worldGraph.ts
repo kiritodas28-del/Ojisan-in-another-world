@@ -39,7 +39,8 @@ export const WORLD_NODES: WorldNode[] = [
     regionId:       'region_start',
     isSafe:         true,
     safetyTier:     'SAFE',
-    fastTravelCost: 0,   // 0 = use constant (same/cross-region baseline from worldEngine)
+    fastTravelCost: 0,
+    isIndoors:      false,   // open plaza; exposure gate active
   },
   {
     id:             'forest_entrance',
@@ -48,6 +49,7 @@ export const WORLD_NODES: WorldNode[] = [
     isSafe:         false,
     safetyTier:     'UNSAFE',
     fastTravelCost: 0,
+    isIndoors:      false,   // outdoors; exposure gate active
   },
   {
     id:             'old_mill',
@@ -56,6 +58,7 @@ export const WORLD_NODES: WorldNode[] = [
     isSafe:         false,
     safetyTier:     'HUMANOID_ONLY',
     fastTravelCost: 0,
+    isIndoors:      true,    // interior building; exposure gate bypassed
   },
   {
     id:             'crossroads',
@@ -64,6 +67,7 @@ export const WORLD_NODES: WorldNode[] = [
     isSafe:         false,
     safetyTier:     'UNSAFE',
     fastTravelCost: 0,
+    isIndoors:      false,   // open road junction; exposure gate active
   },
   {
     id:             'manor_grounds',
@@ -72,6 +76,7 @@ export const WORLD_NODES: WorldNode[] = [
     isSafe:         true,
     safetyTier:     'SAFE',
     fastTravelCost: 0,
+    isIndoors:      true,    // walled private estate; exposure gate bypassed
   },
 ];
 

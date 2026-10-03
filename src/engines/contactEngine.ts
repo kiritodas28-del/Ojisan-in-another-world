@@ -172,6 +172,15 @@ export function assembleProfileView(
 
   const lactationActive = npc.lactationActive ?? false;
 
+  // ── Tab 3 ──────────────────────────────────────────────────────────────────
+
+  // Corruption / shame live on dynamicState.mental.
+  // dynamicState may be Partial<CharacterDynamicState> on stubs, so probe safely.
+  const mental = (npc.dynamicState as { mental?: { corruptionCurrent?: number; shameCurrent?: number; brokenFlag?: boolean } } | null | undefined)?.mental;
+  const corruption  = mental?.corruptionCurrent;
+  const shame       = mental?.shameCurrent;
+  const brokenFlag  = mental?.brokenFlag;
+
   // ── Assemble ──────────────────────────────────────────────────────────────
 
   return {
@@ -205,5 +214,10 @@ export function assembleProfileView(
     // Tab 3 — personality + sexualPsychology carry kinks + resistance profile
     personality:        npc.personality,
     sexualPsychology:   npc.sexualPsychology,
+
+    // Corruption & moral degradation
+    corruption,
+    shame,
+    brokenFlag,
   };
 }

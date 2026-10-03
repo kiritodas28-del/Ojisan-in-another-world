@@ -57,6 +57,7 @@ import type { WeatherCatalogEntry } from './environmentEngine';
 import { tickInfamyDecay } from './infamyEngine';
 import { resetSynergyDailyCounts } from './synergyEngine';
 import { resetCaptiveDailyInteractions } from './tamingEngine';
+import { tickTithe } from './titheEngine';
 
 // ─── Phase ordering ───────────────────────────────────────────────────────────
 
@@ -517,6 +518,13 @@ export function runDayEndTick(
     const durabilityResult = tickEquipmentDurability(state);
     state = durabilityResult.state;
     events.push(...durabilityResult.events);
+  }
+  // Step 8d: Tithe overdue check (Task 26.5)
+  // No-op when tithe.quotaGoldPerWeek === 0 (system inactive).
+  {
+    const titheResult = tickTithe(state);
+    state = titheResult.state;
+    events.push(...titheResult.events);
   }
 
   // Step 9: NPC-NPC social tick

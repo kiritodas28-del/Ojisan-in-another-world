@@ -1,7 +1,7 @@
 # Ojisan in Another World — Product Requirements Document (PRD)
 
-**Version:** 1.7
-**Date:** 2026-09-20
+**Version:** 1.9
+**Date:** 2026-09-30
 **Status:** Draft for review
 
 ---
@@ -378,7 +378,7 @@ Enemies and monsters are characters in the same sense as NPCs — they use the s
 
 Full intimate encounter scenes with turn-by-turn interaction. The intimacy engine is fully server-authoritative; the client sends action intents and renders the returned scene state.
 
-- **Scene start types:** CONSENSUAL, FORCE_INTIMACY, FORCE_INTIMACY_SLEEPING, POST_DEFEAT
+- **Scene start types:** CONSENSUAL, CONSENSUAL_GROUP, FORCE_INTIMACY, FORCE_INTIMACY_SLEEPING, POST_DEFEAT
 - **Scene end conditions:** STAMINA_EXHAUSTED (player stamina hits 0), PLAYER_ENDED, ORGASM_LIMIT_REACHED (3 partner orgasms), PARTNER_DECEASED (partner life force reaches 0 — terminal; see §4.3.11)
 - **Single source of truth:** all character physiology/psychology types are imported from spawn-engine; no duplicate definitions exist in the intimacy engine
 
@@ -667,6 +667,111 @@ When a partner's stamina reaches 0, she **faints** — she does not immediately 
 - Humanoid monsters (Succubus, Incubus, YukiOnna, Oni, KitsuneCorrupted, Lamia, Harpy) can be taken into a POST_DEFEAT intimacy scene after combat defeat.
 - If their life force reaches 0 during the scene, this is equivalent to killing them in combat: XP and loot are awarded via `ENEMY_KILLED_IN_INTIMACY`, and no reputation penalty is applied.
 - `NpcPartnerProfile.lootTableId` and `xpReward` are populated by the caller when building the profile from an `EnemyHumanoidCharacter`.
+
+#### 4.3.12 Exposure Gate (Phase 28)
+
+Outdoor locations carry a social inhibition check that must pass before any CONSENSUAL scene can begin. The check runs in the dispatcher's `INITIATE_INTIMACY` handling and blocks `startScene()` on failure.
+
+**Derivation — `deriveMoralDegradation(npc): number` [0–100]:**
+
+This is a read-only value computed fresh at gate-check time. It never mutates any field.
+
+```
+base = corruptionCurrent × 0.6
+     + (100 − shameCurrent) × 0.3
+     + clamp(acquiredKinks.length × 4, 0, 10)
+result = clamp(base, 0, 100)
+if npc.dynamicState.mental.brokenFlag → result = max(result, 90)
+```
+
+Source fields (all existing `NpcCharacter` sub-objects — no new stored fields):
+- `corruptionCurrent` ← `NpcCharacter.dynamicState.mental.corruptionCurrent`
+- `shameCurrent` ← `NpcCharacter.dynamicState.mental.shameCurrent`
+- `brokenFlag` ← `NpcCharacter.dynamicState.mental.brokenFlag`
+- `acquiredKinks` ← `NpcCharacter.sexualPsychology.acquiredKinks`
+
+**Gate threshold:** passes when `deriveMoralDegradation(npc) >= 35 OR corruptionCurrent >= 40`. Below both values the NPC refuses with a narrative line. The threshold is deliberately lenient — moderate corruption is enough to make someone indifferent to being seen outdoors.
+
+**Bypass:** FORCE_INTIMACY, FORCE_INTIMACY_SLEEPING, and POST_DEFEAT scene types skip this check entirely.
+
+**Location tagging:** `WorldNode.isIndoors?: boolean` (absent = false). Indoor nodes bypass the gate without running the degradation formula. Full authored values deferred to Task 17.DATA; the 5-node stub in `worldGraph.ts` carries the correct initial tags.
+
+**Side effect — `INTIMACY_GATE_BLOCKED` event:** `{ type: 'INTIMACY_GATE_BLOCKED'; gate: 'EXPOSURE'; npcId: string; reason: string }` emitted when the gate blocks. The UI renders `reason` as the NPC's refusal line.
+
+#### 4.3.13 Audience Gate (Phase 28)
+
+Bystander presence in the same location tile-area is a second check that runs in series after the exposure gate for CONSENSUAL scenes.
+
+**Bystander count:** `countBystanders(gameState): number` in `worldEngine.ts` counts occupant IDs in `world.occupantPositions` that are neither `'player'` nor any `party.companions[].npcId`. Dispatcher calls this to populate `IntimacyStartContext.npcsPresent`.
+
+**Gate threshold:** passes when `deriveMoralDegradation(npc) >= 55 OR corruptionCurrent >= 60`. Stricter than the outdoor threshold because being watched by someone is a stronger inhibitor than just being outside.
+
+**Bypass:** same bypass conditions as the exposure gate. Additionally, the gate short-circuits immediately when `npcsPresent === 0`.
+
+**Witnessed sleeping scene (28c.4):** when `scene.startType === 'FORCE_INTIMACY_SLEEPING'` and `npcsPresent > 0` at scene end, the dispatcher applies an additional `shameDelta: +15` to the NPC's `shameCurrent` inline, on top of normal post-scene computation. This is the only case where witnesses produce a mechanical consequence after rather than before the scene.
+
+**`INTIMACY_GATE_BLOCKED` gate field:** `'AUDIENCE'` when this check fires.
+
+#### 4.3.14 Group Scenes — MMF and FFM (Phase 28)
+
+Group scenes involve the player and two NPC partners simultaneously. They use the start type `CONSENSUAL_GROUP` and are always gated behind the most restrictive threshold in the system.
+
+**Group scene gate (`checkGroupSceneGate`):** four conditions in order; first failure blocks and names `failedNpcId`:
+1. Primary NPC's companion SQ chain complete (`isCompanionSqComplete(gameState, npc.npcId)` — true when `flags['sq_complete_<npcId>'] === true`, or when the NPC has no authored dialogue tree at all).
+2. Second NPC's companion SQ chain complete (same check).
+3. Primary NPC: `deriveMoralDegradation >= 50 AND corruptionCurrent >= 55`.
+4. Second NPC: same degradation and corruption check.
+
+The gate does not run the exposure or audience checks — group scenes bypass those two gates.
+
+**Intents:**
+- `INITIATE_GROUP_INTIMACY: { primaryNpcId, secondNpcId, groupMode: 'MMF' | 'FFM' }` — sent by client to initiate; dispatcher runs the group gate and emits `INTIMACY_GROUP_SCENE_STARTED` on pass.
+- `END_SCENE` carries `persistence.secondPartnerNpcId` and optional second-partner fields when ending a group scene.
+
+**`IntimacyScene` group extensions:**
+
+All fields are null/empty in solo scenes. Populated by `startGroupScene()` for `CONSENSUAL_GROUP`:
+
+```typescript
+// Added to IntimacyScene (Phase 28):
+secondPartnerNpcId:            string | null;
+secondPartnerProfile:          NpcPartnerProfile | null;
+secondPartnerArousal:          number;
+secondPartnerStaminaCurrent:   number;
+secondPartnerStaminaMax:       number;
+secondPartnerHasFainted:       boolean;
+secondPartnerLifeForce:        number;
+secondPartnerEngagementStatus: PartnerEngagementStatus;
+secondOrgasmLog:               FemaleOrgasmEvent[];
+secondLoveDeltaAccum:          number;
+secondTrustDeltaAccum:         number;
+groupMode:                     'MMF' | 'FFM' | null;
+```
+
+**Action routing:** `resolveSceneAction()` accepts an optional `targetPartnerId?: string`. When present and matching `scene.secondPartnerNpcId`, all arousal/resistance/stamina/faint/life-force/orgasm calculations are applied to the `secondPartner*` fields. Shared scene fields (turnCount, status, momentum, clothingState, consumables, actsThisScene, neckGrabActive) remain unified across both partners.
+
+**Position filtering:** `IntimacyPosition.groupMode?: 'MMF' | 'FFM' | 'SOLO'` (absent = SOLO). `getAvailableActions()` excludes SOLO positions in group scenes and MMF/FFM positions in solo scenes.
+
+**`SceneEndPersistence` group extensions:** optional second-partner fields (`secondPartner*` mirroring the primary partner fields) plus `jealousyFired?: boolean`. All undefined in solo scenes.
+
+**Satisfaction in group scenes:** `(primarySatisfaction + secondSatisfaction) / 2`, clamped [0, 100]. Each partner's satisfaction is computed independently by the same formula as solo scenes.
+
+**Post-scene persistence:** `resolvePostIntimacy()` calls `resolvePostEncounter()` for each partner independently when `persistence.secondPartnerSquirtStorage !== undefined`. Both NPC contact records are updated independently by the dispatcher.
+
+**Events:**
+- `INTIMACY_GROUP_SCENE_STARTED: { primaryNpcId, secondNpcId, groupMode }` — emitted by dispatcher on gate pass.
+- `INTIMACY_GROUP_SCENE_ENDED: { primaryNpcId, secondNpcId, satisfaction, jealousyFired }` — emitted by dispatcher in END_SCENE handler.
+- `NPC_JEALOUSY_SPIKE: { subjectId, targetId, rivalId: 'player' }` — emitted when jealousy fires.
+
+#### 4.3.15 Group Scene Jealousy (Phase 28)
+
+Jealousy is evaluated post-scene only — there is no mid-scene interruption.
+
+**`checkGroupJealousy(primaryNpc, secondNpc): boolean`** returns true when:
+- Either NPC's `npcRelationships` array contains the other NPC's id, AND
+- On that relationship entry: `bond === BondType.Devoted || bond === BondType.Owned` (exclusive bonds), OR either NPC's `social.jealousyTendency === JealousyTendency.High`.
+
+When true, the dispatcher applies a synthetic NPC-NPC interaction delta between the two partners: `trustDelta: -8, loveDelta: -5, bondStrengthDelta: -10`. Applied inline to `npcRelationships` entries in `contacts[]`. The `NPC_JEALOUSY_SPIKE` event is emitted and the `processEventQueue` handler sets `flags['jealousy_<subjectId>_<targetId>'] = true` for the UI indicator.
 
 ### 4.4 Relationships & Trust/Love
 

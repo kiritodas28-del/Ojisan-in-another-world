@@ -1,0 +1,17 @@
+{
+  "compilerOptions": {
+    "target":           "ES2020",
+    "module":           "CommonJS",
+    "moduleResolution": "node",
+    "strict":           true,
+    "declaration":      true,
+    "outDir":           "dist",
+    "rootDir":          "src",
+    "paths": {
+      "@ojisan/engine-core": ["../engine-core/src/index.ts"],
+      "@ojisan/engine-core/*": ["../engine-core/src/*"]
+    }
+  },
+  "include": ["src/**/*"],
+  "exclude": ["dist", "node_modules"]
+}

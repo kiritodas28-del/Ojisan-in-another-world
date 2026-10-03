@@ -615,3 +615,27 @@ export function checkEncounterProximity(
   }
   return { triggered: false, enemyInitiated: false };
 }
+
+// ─── countBystanders (Phase 28 — 28c.1) ────────────────────────────────────
+
+/**
+ * Pure helper — counts occupants that are neither the player nor any active
+ * party companion. Used by the dispatcher to populate IntimacyStartContext.npcsPresent
+ * before calling the audience and group scene gates.
+ *
+ * Returns 0 when the player is alone or with only party members.
+ * The count is the raw number of foreign entity IDs in world.occupantPositions;
+ * it does NOT require them to be in visual range of the player tile.
+ */
+export function countBystanders(gameState: GameState): number {
+  const partyIds = new Set<string>(
+    gameState.party.companions.map(c => c.npcId)
+  );
+  partyIds.add(gameState.player.id);
+
+  let count = 0;
+  for (const entityId of Object.keys(gameState.world.occupantPositions)) {
+    if (!partyIds.has(entityId)) count++;
+  }
+  return count;
+}

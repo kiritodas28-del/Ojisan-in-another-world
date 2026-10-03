@@ -3,9 +3,6 @@
  * Central engine dispatcher — routes player intents to the correct engine(s)
  * and processes the resulting event queue.
  *
- * Phase 10 wires the event handlers for combat-defeat and intimacy-death events.
- * Full intent routing (task 3c.4 / 3c.5) is deferred to later phases.
- *
  * Intent → Engine routing table (from PRD §2.2):
  *
  *   MOVE                → World/Pathing  → (encounter roll) → Combat
@@ -14,8 +11,8 @@
  *   INTIMACY_ACTION     → Intimacy       → Relationship, Pregnancy
  *   USE_ITEM            → Economy/Inventory
  *   GIVE_GIFT           → Economy, Relationship
- *   SLEEP               → Calendar       → HP/Stamina/CPW restore
- *   ADVANCE_PHASE       → Calendar       → Status tick, NPC refresh
+ *   SLEEP               → Calendar       → HP/Stamina/CPW restore  [Task 3c.4 / 8.8]
+ *   ADVANCE_PHASE       → Calendar       → Status tick, NPC refresh [Task 3c.4 / 8.8]
  *   CRAFT               → Crafting
  *   BUILD               → Manor
  *   SAVE                → Save/Load
@@ -59,6 +56,17 @@ import {
   collectPassiveResources,
 } from './manorEngine';
 import type { SceneEndPersistence } from './intimacyEngine';
+import {
+  checkExposureGate,
+  checkAudienceGate,
+  checkGroupSceneGate,
+  checkGroupJealousy,
+  startGroupScene,
+  resolvePostIntimacy,
+  type IntimacyStartContext,
+} from './intimacyEngine';
+import { countBystanders } from './worldEngine';
+import { isCompanionSqComplete } from './questEngine';
 import { checkAchievements } from './achievementEngine';
 import {
   unlockSkill,
@@ -95,6 +103,8 @@ import {
   resolveCaptiveAction,
   type CaptiveActionType,
 } from './tamingEngine';
+import { startScene } from './intimacyEngine';
+import type { NpcPartnerProfile } from './intimacyEngine';
 import type { EnemyHumanoidCharacter } from '../state/gameState';
 import {
   applyAlignmentDelta,
@@ -128,11 +138,25 @@ import {
   type SynergyDef,
   type SynergyEffectPayload,
 } from './synergyEngine';
+import { payTithe } from './titheEngine';
+import { socketItem } from './socketEngine';
+import { startMiniGame, resolveMiniGame } from './miniGameEngine';
+import {
+  commitCrime,
+  checkCityGate,
+  grantPardon,
+  type CrimeType,
+} from './crimeEngine';
+import { estimateTravelTime, hireCarriage } from './travelCostEngine';
 import {
   createCharacter,
   type SubClassDef,
   type TraitDef,
 } from './characterCreationEngine';
+// Task 3c.4 / 8.8 — calendar engine wired for ADVANCE_PHASE and SLEEP intents
+import { advancePhase, resolveSleep } from './calendarEngine';
+// Task 9.1 — relationship engine wired for social-action sub-intents under TALK
+import { resolveSocialAction, type SocialAction } from './relationshipEngine';
 
 // ─── Intent union type ────────────────────────────────────────────────────────
 export type PlayerIntent =
@@ -177,6 +201,10 @@ export type PlayerIntent =
   // npcId: the NPC partner's npcId.
   // persistence: the SceneEndPersistence bundle returned by endScene().
   | { type: 'END_SCENE'; npcId: string; persistence: SceneEndPersistence }
+  // Phase 28 (28e.3): INITIATE_GROUP_INTIMACY — start an MMF or FFM group scene.
+  // The dispatcher runs the full group gate (SQ + degradation) before calling
+  // startGroupScene(). Both NPC ids must be present in contacts[].
+  | { type: 'INITIATE_GROUP_INTIMACY'; primaryNpcId: string; secondNpcId: string; groupMode: 'MMF' | 'FFM' }
   // ── Save/load intents (Phase 22, Tasks 22.6-22.9 / 22.12-22.13) ──────────
   // SAVE_GAME:           Write current state to a manual slot (0-9).
   // LOAD_GAME:           Read state from a slot; returned in DispatchResult.loadedState.
@@ -236,7 +264,25 @@ export type PlayerIntent =
       traitDef:    TraitDef;
       jobDef:      JobDef;
       classDef:    ClassDef;
-    };
+    }
+  // ── Phase 26: Loose-ends intents ─────────────────────────────────────────
+  // PAY_TITHE:       player pays their Aether Tithe at an Enclave Altar.
+  // OPEN_SOCKET:     insert an Aether Crystal into an equipment slot socket.
+  // HIRE_CARRIAGE:   hire a carriage to skip travel phases between nodes.
+  // FISH / GAMBLE / ARENA / ONSEN: mini-game intents.
+  // COMMIT_CRIME:    dispatcher hook for steal/kill; routes to crimeEngine.
+  // GRANT_PARDON:    quest engine hook; clears infamy via crimeEngine.grantPardon.
+  // BUILD_STRONGHOLD: establish an Enclave Stronghold in the current region.
+  | { type: 'PAY_TITHE';       regionId: string }
+  | { type: 'OPEN_SOCKET';     itemId: string; socketId: string; materialId: string }
+  | { type: 'HIRE_CARRIAGE';   targetNodeId: string }
+  | { type: 'FISH' }
+  | { type: 'GAMBLE' }
+  | { type: 'ARENA' }
+  | { type: 'ONSEN' }
+  | { type: 'COMMIT_CRIME';    crimeType: CrimeType }
+  | { type: 'GRANT_PARDON';    regionId: string; questId: string }
+  | { type: 'BUILD_STRONGHOLD' };
 
 // ─── Dispatch result ──────────────────────────────────────────────────────────
 export interface DispatchResult {
@@ -265,12 +311,64 @@ export interface DispatchResult {
   divergenceMultiplier?: number;
   // Populated after ACTIVATE_SYNERGY: the combo effect payload for combatEngine.
   synergyPayload?: SynergyEffectPayload;
+  // Populated after a CAPTIVE_ACTION INTIMATE when the gate passes.
+  // Client uses this to render the IntimacyView with the captive as partner.
+  captiveScene?: import('./intimacyEngine').IntimacyScene;
+  // Populated after HIRE_CARRIAGE: estimated phases the carriage trip takes.
+  carriaeTravelPhases?: number;
+  // Populated after MINI_GAME_ENDED.
+  miniGameOutcome?: import('./miniGameEngine').MiniGameOutcome;
 }
+
+// ─── Task 3c.5 — Dispatch pipeline type (event bus contract) ─────────────────
+/**
+ * DispatchPipeline is the formal event-bus contract:
+ *   1. An intent arrives from the client.
+ *   2. dispatch() calls the primary engine and collects an initial event list.
+ *   3. processEventQueue() iterates the events, applying cross-engine side effects
+ *      and expanding the state immutably at each step.
+ *   4. Achievement check runs once after the full queue drains.
+ *   5. The fully-resolved state + accumulated events are returned to the caller.
+ *
+ * Every engine function called inside dispatch() must return
+ * { state: GameState; events: GameEvent[] } — this is the pipeline unit.
+ * No engine calls another engine directly; they emit events and return.
+ */
+export type DispatchPipeline = (
+  state:  GameState,
+  intent: PlayerIntent,
+) => DispatchResult;
 
 // ─── Main dispatcher ──────────────────────────────────────────────────────────
 export function dispatch(state: GameState, intent: PlayerIntent): DispatchResult {
   const narrative: string[] = [];
   let events: GameEvent[]   = [];
+
+  // ── ADVANCE_PHASE (Task 3c.4 / 8.8) ─────────────────────────────────────
+  // Routes to calendarEngine.advancePhase().
+  // locationDefs and schedules are deferred data (Phase 25); empty maps are safe
+  // because advancePhase() / runDayEndTick() guard with Object.keys().length > 0.
+  if (intent.type === 'ADVANCE_PHASE') {
+    const result = advancePhase(state, {}, {});
+    state  = result.state;
+    events = result.events;
+    state  = processEventQueue(state, events);
+    narrative.push(`The ${state.calendar.phase} settles in.`);
+    return { state, events, narrative };
+  }
+
+  // ── SLEEP (Task 3c.4 / 8.8) ──────────────────────────────────────────────
+  // Routes to calendarEngine.resolveSleep(), which guards phase + safety tier,
+  // applies full restore, and drives the Midnight→Morning transition.
+  // locationDefs / schedules: deferred — empty maps are safe no-ops.
+  if (intent.type === 'SLEEP') {
+    const result = resolveSleep(state, {}, {});
+    state  = result.state;
+    events = result.events;
+    state  = processEventQueue(state, events);
+    narrative.push(...result.narrative);
+    return { state, events, narrative };
+  }
 
   // ── USE_ITEM (Task 12.16) ─────────────────────────────────────────────────
   // Routes to consumeItem(). QUEST items and non-consumable types are rejected
@@ -468,21 +566,161 @@ export function dispatch(state: GameState, intent: PlayerIntent): DispatchResult
     return { state, events, narrative };
   }
 
-  // ── END_SCENE (Phase 18, Task 18.8) ──────────────────────────────────────────
-  // Applies post-scene pregnancy risk flagging.
-  // Client sends this after receiving SceneEndPersistence from endScene().
-  // pregnancyCheck===true means a creampie occurred this scene;
-  // condom is tracked inside SceneEndPersistence via the intimacy engine's
-  // consumable state (condom active = no risk even if pregnancyCheck=true).
+  // ── INTIMACY_ACTION (Phase 28 — 28b.3 / 28c.3) ───────────────────────────────
+  // Routes in-scene turn actions to the narrative fragment assembler.
+  // Exposure and audience gates fire at scene initiation (INITIATE_GROUP_INTIMACY
+  // or the UI layer initiating a CONSENSUAL scene), not per-action turn.
+  if (intent.type === 'INTIMACY_ACTION') {
+    const npc = state.contacts.find(c => c.character.npcId === intent.targetNpcId)?.character;
+    if (!npc) {
+      narrative.push(`No NPC found with id ${intent.targetNpcId}.`);
+      return { state, events, narrative };
+    }
+    const mental = (npc.dynamicState as import('../spawn-engine/character/dynamicState').CharacterDynamicState)?.mental;
+    const corruptionCurrent = mental?.corruptionCurrent ?? 0;
+    const shameCurrent      = mental?.shameCurrent      ?? 100;
+    const arousalBand  = deriveArousalBand(npc.vitals?.arousal ?? 0);
+    const shameTier    = deriveShameTier(corruptionCurrent, shameCurrent);
+    const intimateResp = assembleIntimateResponse(intent.actionId, arousalBand, shameTier);
+    state = processEventQueue(state, events);
+    return { state, events, narrative, intimateResponse: intimateResp ?? undefined };
+  }
+
+  // ── INITIATE_GROUP_INTIMACY (Phase 28 — 28e.3) ───────────────────────────────
+  // Runs the group scene gate (SQ + degradation for both NPCs) then emits
+  // INTIMACY_GROUP_SCENE_STARTED. The client then calls startGroupScene() with
+  // resolved NpcPartnerProfile objects to receive the IntimacyScene.
+  if (intent.type === 'INITIATE_GROUP_INTIMACY') {
+    if (!state.settings.adultContentEnabled) {
+      narrative.push(`Adult content is disabled.`);
+      return { state, events, narrative };
+    }
+    const primaryNpc = state.contacts.find(c => c.character.npcId === intent.primaryNpcId)?.character;
+    const secondNpc  = state.contacts.find(c => c.character.npcId === intent.secondNpcId)?.character;
+    if (!primaryNpc || !secondNpc) {
+      narrative.push(`One or both NPCs not found in contacts.`);
+      return { state, events, narrative };
+    }
+    // Resolve current node indoor status for context (group scenes bypass solo
+    // exposure/audience gates but context is still built for gate internals).
+    const { WORLD_NODES } = require('../data/worldGraph') as {
+      WORLD_NODES: import('../state/gameState').WorldNode[];
+    };
+    const currentNode = WORLD_NODES.find(n => n.id === state.world.currentNodeId);
+    const npcsPresent = countBystanders(state);
+    const ctx: IntimacyStartContext = {
+      npc:         primaryNpc,
+      startType:   'CONSENSUAL_GROUP',
+      isIndoors:   currentNode?.isIndoors ?? false,
+      npcsPresent,
+      secondNpc,
+    };
+    const gateResult = checkGroupSceneGate(ctx, state);
+    if (!gateResult.allowed) {
+      const gate = gateResult.reason?.includes('unresolved') ? 'GROUP_SQ' as const : 'GROUP_DEGRADATION' as const;
+      events.push({
+        type:   'INTIMACY_GATE_BLOCKED',
+        gate,
+        npcId:  gateResult.failedNpcId ?? intent.primaryNpcId,
+        reason: gateResult.reason ?? 'She refuses.',
+      });
+      narrative.push(gateResult.reason ?? 'She refuses.');
+      state = processEventQueue(state, events);
+      return { state, events, narrative };
+    }
+    events.push({
+      type:         'INTIMACY_GROUP_SCENE_STARTED',
+      primaryNpcId: intent.primaryNpcId,
+      secondNpcId:  intent.secondNpcId,
+      groupMode:    intent.groupMode,
+    });
+    narrative.push(`The moment hangs in the air between all three of you.`);
+    state = processEventQueue(state, events);
+    return { state, events, narrative };
+  }
+
+  // ── END_SCENE (Phase 18 / Phase 28 — 18.8 / 28c.4 / 28g.2) ─────────────────
+  // Applies all post-scene side effects:
+  //   • Primary pregnancy risk (solo and group)
+  //   • FORCE_INTIMACY_SLEEPING witnessed: +15 shame spike on NPC (28c.4)
+  //   • Group jealousy consequence: trust/bond delta between partners (28g.2)
+  //   • INTIMACY_GROUP_SCENE_ENDED event for group scenes
   if (intent.type === 'END_SCENE') {
     const { npcId, persistence } = intent;
-    // Flag pregnancy risk only when the engine says a check is needed.
-    // condom gate: if a condom consumable was active, the intimacy engine
-    // already sets pregnancyCheck=false; we don't need to re-check here.
+
+    // Primary pregnancy risk
     if (persistence.pregnancyCheck) {
       state = flagPregnancyRisk(state, npcId);
       narrative.push(`The risk of pregnancy lingers.`);
     }
+
+    // 28c.4 — witnessed FORCE_INTIMACY_SLEEPING shame spike
+    if (persistence.sceneStartType === 'FORCE_INTIMACY_SLEEPING') {
+      const npcsPresent = countBystanders(state);
+      if (npcsPresent > 0) {
+        const contactIdx = state.contacts.findIndex(c => c.character.npcId === npcId);
+        if (contactIdx !== -1) {
+          const npc    = state.contacts[contactIdx].character;
+          const mental = (npc.dynamicState as import('../spawn-engine/character/dynamicState').CharacterDynamicState)?.mental;
+          if (mental) {
+            const newShame     = Math.min(100, (mental.shameCurrent ?? 0) + 15);
+            const updContacts  = [...state.contacts];
+            updContacts[contactIdx] = {
+              character: {
+                ...npc,
+                dynamicState: { ...npc.dynamicState, mental: { ...mental, shameCurrent: newShame } },
+              } as import('../state/gameState').NpcCharacter,
+            };
+            state = { ...state, contacts: updContacts };
+            narrative.push(`She wakes to find herself watched. The shame is overwhelming.`);
+          }
+        }
+      }
+    }
+
+    // 28g.2 — group jealousy consequence
+    if (persistence.jealousyFired === true && persistence.secondPartnerNpcId) {
+      const secondNpcId = persistence.secondPartnerNpcId;
+      const primIdx     = state.contacts.findIndex(c => c.character.npcId === npcId);
+      const secIdx      = state.contacts.findIndex(c => c.character.npcId === secondNpcId);
+      if (primIdx !== -1 && secIdx !== -1) {
+        const applyJealousyDelta = (
+          subject:  import('../state/gameState').NpcCharacter,
+          targetId: string,
+        ): import('../state/gameState').NpcCharacter => {
+          const relIdx = subject.npcRelationships.findIndex(r => r.targetNpcId === targetId);
+          if (relIdx === -1) return subject;
+          const rel = subject.npcRelationships[relIdx];
+          const updRel = {
+            ...rel,
+            trust:        Math.max(-100, rel.trust - 8),
+            love:         Math.max(-100, rel.love  - 5),
+            bondStrength: Math.max(0,    rel.bondStrength - 10),
+          };
+          const updRels = [...subject.npcRelationships];
+          updRels[relIdx] = updRel;
+          return { ...subject, npcRelationships: updRels };
+        };
+        const updContacts = [...state.contacts];
+        updContacts[primIdx] = { character: applyJealousyDelta(state.contacts[primIdx].character, secondNpcId) };
+        updContacts[secIdx]  = { character: applyJealousyDelta(state.contacts[secIdx].character,  npcId) };
+        state = { ...state, contacts: updContacts };
+        events.push({ type: 'NPC_JEALOUSY_SPIKE', subjectId: npcId, targetId: secondNpcId, rivalId: 'player' });
+        narrative.push(`A cold tension settles between them. Something has shifted.`);
+      }
+    }
+
+    // Group scene end event
+    if (persistence.secondPartnerNpcId) {
+      events.push({
+        type:          'INTIMACY_GROUP_SCENE_ENDED',
+        primaryNpcId:  npcId,
+        secondNpcId:   persistence.secondPartnerNpcId,
+        satisfaction:  persistence.satisfaction ?? 0,
+        jealousyFired: persistence.jealousyFired ?? false,
+      });
+    }
+
     state = processEventQueue(state, events);
     return { state, events, narrative };
   }
@@ -629,17 +867,41 @@ export function dispatch(state: GameState, intent: PlayerIntent): DispatchResult
     return { state, events, narrative };
   }
 
-  // ── TALK (Task 13.19) ────────────────────────────────────────────────────
-  // Resolves the dialogue tree ID for the target NPC: companion-specific tree
-  // keyed by '<npcId>_ch1' wins; falls back to generic class tree derived from
-  // the NPC's occupation; final fallback is 'generic_intro' (always present).
-  // Returns the root node in dialogueNode for immediate render.
+  // ── TALK (Tasks 9.1 / 13.19) ─────────────────────────────────────────────
+  // Without choiceId: opens a dialogue tree with the target NPC (Task 13.19).
+  // With choiceId 'FLIRT' or 'TOUCH': routes to resolveSocialAction() (Task 9.1)
+  // to apply the trust/love delta and return a narrative line before any dialogue.
+  //
+  // The choiceId sub-action path is intentionally separate from the dialogue tree
+  // path: social actions cost an action count but do not advance the dialogue
+  // tree state. They can co-occur within a single TALK intent so the UI can chain
+  // a flirt before entering the dialogue without a round-trip.
   if (intent.type === 'TALK') {
     const contactRecord = state.contacts.find(c => c.character.npcId === intent.npcId);
     if (!contactRecord) {
       narrative.push('Nobody by that name is here.');
       return { state, events, narrative };
     }
+
+    // ── Task 9.1: social sub-action (FLIRT / TOUCH) ───────────────────────
+    // Resolved before dialogue so the relationship delta applies immediately.
+    // The social action result events (RELATIONSHIP_STATUS_CHANGED) are pushed
+    // into the running event list and processed by processEventQueue below.
+    if (intent.choiceId === 'FLIRT' || intent.choiceId === 'TOUCH') {
+      const socialResult = resolveSocialAction(
+        state,
+        intent.npcId,
+        intent.choiceId as SocialAction,
+      );
+      state  = socialResult.state;
+      events = [...events, ...socialResult.events];
+      narrative.push(socialResult.narrative);
+      state = processEventQueue(state, events);
+      // Social-only TALK: no dialogue tree opened. Return immediately.
+      return { state, events, narrative };
+    }
+
+    // ── Task 13.19: open dialogue tree ────────────────────────────────────
     const companionTreeId = `${intent.npcId}_ch1`;
     const npcClass        = (contactRecord.character.background as Record<string, unknown>)?.occupation as string | undefined ?? 'civilian';
     const genericTreeId   = getGenericDialogueTreeId(npcClass);
@@ -708,11 +970,6 @@ export function dispatch(state: GameState, intent: PlayerIntent): DispatchResult
     return { state, events, narrative };
   }
 
-  // TODO (Task 3c.4 / 3c.5): Route remaining intents to their engines.
-  // Note: INTIMACY_ACTION will be wired here when intimacy engine is fully integrated
-  // (Task 13.21). The dispatcher will call resolveSceneAction() and then
-  // assembleIntimateResponse(ctx) to build the fragment-based narrative response.
-  // assembleIntimateResponse and deriveArousalBand/deriveShameTier are already imported.
   // ── CAPTIVE_ACTION (Phase 23, Task 23.7) ────────────────────────────────
   // Specific sub-action on a captive: TALK / TOUCH / FLIRT / GIVE_GIFT /
   // FIGHT / INTIMATE / RELEASE.  Social variants accumulate trust/love on the
@@ -730,10 +987,112 @@ export function dispatch(state: GameState, intent: PlayerIntent): DispatchResult
       state  = result.state;
       events = [...events, ...result.events];
       state  = processEventQueue(state, events);
+
       if (result.intimateReady) {
-        // TODO (Task 3c.4): hand off to intimacyEngine.startScene() seeded with
-        // the captive's character snapshot (sceneStartType = 'CAPTIVE').
-        narrative.push(`[INTIMATE scene pending Task 3c.4 wiring]`);
+        // Task 23.21 — INTIMATE handoff: build NpcPartnerProfile from the captive
+        // snapshot and call startScene() with sceneStartType = 'CAPTIVE' (maps to POST_DEFEAT).
+        // The captive lives in the holding cell; we read it back after tamingEngine mutations.
+        const cell = state.manor.holdingCells.find(c => c.cellId === intent.cellId);
+        if (cell) {
+          const captive = cell.capturedCharacter;
+          // Build a minimal NpcPartnerProfile from the enemy snapshot.
+          // Any field not present on EnemyHumanoidCharacter falls back to a safe default.
+          const psych = captive.sexualPsychology as {
+            resistanceProfile?: import('./intimacyEngine').NpcPartnerProfile['resistanceProfile'];
+            corruptionShame?:   import('./intimacyEngine').NpcPartnerProfile['corruptionShame'];
+            orgasmProfile?:     import('./intimacyEngine').NpcPartnerProfile['orgasmProfile'];
+            acquiredKinks?:     import('./intimacyEngine').NpcPartnerProfile['acquiredKinks'];
+            sexualLean?:        import('./intimacyEngine').NpcPartnerProfile['sexualLean'];
+          } | null | undefined;
+          const phys = captive.sexualPhysiology as {
+            arousalSpeed?:      import('./intimacyEngine').NpcPartnerProfile['arousalSpeed'];
+            lubricationSpeed?:  import('./intimacyEngine').NpcPartnerProfile['lubricationSpeed'];
+            elasticity?:        import('./intimacyEngine').NpcPartnerProfile['elasticity'];
+            sensitivity?:       import('./intimacyEngine').NpcPartnerProfile['sensitivity'];
+            wetnessTrack?:      import('./intimacyEngine').NpcPartnerProfile['wetnessTrack'];
+            squirtStorage?:     number;
+            squirtStorageMax?:  number;
+            squirtProbability?: number;
+            milkStorage?:       number;
+            milkStorageMax?:    number;
+          } | null | undefined;
+
+          // eslint-disable-next-line @typescript-eslint/no-require-imports
+          const { ArousalSpeed, LubricationSpeed, VaginaElasticity, SexualLean } =
+            require('../spawn-engine/types/enums') as typeof import('../spawn-engine/types/enums');
+
+          const captiveProfile: NpcPartnerProfile = {
+            npcId:       captive.id,
+            entityType:  'ENEMY_HUMANOID',
+            lootTableId: undefined,
+            xpReward:    0,
+            dominantTrait:         (captive.personality as { dominantTrait?: string } | null)?.dominantTrait ?? 'Reserved',
+            emotionalStability:    (captive.personality as { emotionalStability?: string } | null)?.emotionalStability ?? 'Stable',
+            sexualLean:            psych?.sexualLean ?? SexualLean.Vanilla,
+            acquiredKinks:         psych?.acquiredKinks ?? [],
+            resistanceProfile:     psych?.resistanceProfile ?? {
+              profileType:        'FREEZE' as import('../spawn-engine/types/enums').ResistanceProfileType,
+              baselineResistance: 60,
+              currentResistance:  Math.max(0, 80 - cell.relationshipTrust),
+              traumaModifier:     0,
+            },
+            corruptionShame:       psych?.corruptionShame ?? {
+              corruption:                  0,
+              shame:                       80,
+              corruptionRatePerEncounter: 2,
+            },
+            orgasmProfile:         psych?.orgasmProfile ?? {
+              ease:             'Difficult' as import('../spawn-engine/types/enums').OrgasmEase,
+              dominantType:     'Vaginal'  as import('../spawn-engine/types/enums').OrgasmType,
+              acquiredTypes:    [],
+              multipleCapacity: false,
+              squirtCapacity:   false,
+              postSensitivity:  'Normal'   as import('../spawn-engine/types/enums').PostOrgasmSensitivity,
+            },
+            arousalSpeed:          phys?.arousalSpeed      ?? ArousalSpeed.Moderate,
+            lubricationSpeed:      phys?.lubricationSpeed  ?? LubricationSpeed.Moderate,
+            elasticity:            phys?.elasticity         ?? VaginaElasticity.Moderate,
+            sensitivity:           phys?.sensitivity        ?? {} as NpcPartnerProfile['sensitivity'],
+            wetnessTrack:          phys?.wetnessTrack       ?? {} as NpcPartnerProfile['wetnessTrack'],
+            arousalCurrent:        captive.vitals?.arousal ?? 0,
+            squirtStorage:         phys?.squirtStorage      ?? 0,
+            squirtStorageMax:      phys?.squirtStorageMax   ?? 100,
+            squirtProbability:     phys?.squirtProbability  ?? 0.2,
+            milkStorage:           phys?.milkStorage        ?? 0,
+            milkStorageMax:        phys?.milkStorageMax     ?? 0,
+            actsWithPlayer:        {} as NpcPartnerProfile['actsWithPlayer'],
+            encounterCountWithPlayer: 0,
+            trustWithPlayer:       cell.relationshipTrust,
+            attachmentWithPlayer:  cell.relationshipLove,
+            submissionToPlayer:    Math.min(100, cell.tamingProgress),
+            hiddenDesireAligned:   false,
+            intimacyLifeForce:     100,
+          };
+
+          const player = state.player;
+          const playerProfile = {
+            technique:      player.technique,
+            virility:       player.virility,
+            staminaCurrent: player.vitals.stamina.current,
+            staminaMax:     player.vitals.stamina.max,
+            cumStorage:     60,
+            cumStorageMax:  100,
+            arousalCurrent: player.vitals.arousal,
+            intimatePartnerHistory: [],
+          };
+
+          const captiveScene = startScene(
+            captive.id,
+            'POST_DEFEAT',   // CAPTIVE scenes are treated as POST_DEFEAT mechanically
+            captiveProfile,
+            playerProfile,
+          );
+
+          narrative.push(`The moment between you shifts. She stills, watching you.`);
+          return { state, events, narrative, captiveScene };
+        }
+
+        narrative.push(`[INTIMATE scene: captive no longer in cell]`);
       } else if (result.narrative) {
         narrative.push(result.narrative);
       }
@@ -928,23 +1287,160 @@ export function dispatch(state: GameState, intent: PlayerIntent): DispatchResult
     return { state, events, narrative };
   }
 
+  // ── PAY_TITHE (Task 26.6) ────────────────────────────────────────────────────────
+  if (intent.type === 'PAY_TITHE') {
+    try {
+      const result = payTithe(state, intent.regionId);
+      state  = result.state;
+      events = [...events, ...result.events];
+      state  = processEventQueue(state, events);
+      narrative.push(result.narrative);
+    } catch (err) {
+      narrative.push((err as Error).message);
+    }
+    return { state, events, narrative };
+  }
+
+  // ── OPEN_SOCKET (Task 26.12) ────────────────────────────────────────────────────
+  if (intent.type === 'OPEN_SOCKET') {
+    try {
+      const result = socketItem(state, intent.itemId, intent.socketId, intent.materialId);
+      state  = result.state;
+      events = [...events, ...result.events];
+      state  = processEventQueue(state, events);
+      narrative.push(result.narrative);
+    } catch (err) {
+      narrative.push((err as Error).message);
+    }
+    return { state, events, narrative };
+  }
+
+  // ── HIRE_CARRIAGE (Task 26.14) ───────────────────────────────────────────────────
+  if (intent.type === 'HIRE_CARRIAGE') {
+    try {
+      const result = hireCarriage(state, intent.targetNodeId);
+      state  = result.state;
+      events = [...events, ...result.events];
+      state  = processEventQueue(state, events);
+      narrative.push(result.narrative);
+      return { state, events, narrative, carriaeTravelPhases: result.phasesSkipped };
+    } catch (err) {
+      narrative.push((err as Error).message);
+    }
+    return { state, events, narrative };
+  }
+
+  // ── Mini-game intents (Tasks 26.16–26.19) ──────────────────────────────────────
+  // FISH, GAMBLE, ARENA, ONSEN all route through the same stub resolver.
+  if (
+    intent.type === 'FISH'   ||
+    intent.type === 'GAMBLE' ||
+    intent.type === 'ARENA'  ||
+    intent.type === 'ONSEN'
+  ) {
+    const featureKey = intent.type.toLowerCase() as import('../state/gameState').LocationFeatureKey;
+    try {
+      const startResult = startMiniGame(state, featureKey);
+      state  = startResult.state;
+      events = [...events, ...startResult.events];
+      narrative.push(startResult.narrative);
+
+      const resolveResult = resolveMiniGame(state, featureKey);
+      state  = resolveResult.state;
+      events = [...events, ...resolveResult.events];
+      state  = processEventQueue(state, events);
+      narrative.push(resolveResult.narrative);
+      return { state, events, narrative, miniGameOutcome: resolveResult.outcome };
+    } catch (err) {
+      narrative.push((err as Error).message);
+    }
+    return { state, events, narrative };
+  }
+
+  // ── COMMIT_CRIME (Task 26.21) ────────────────────────────────────────────────────
+  if (intent.type === 'COMMIT_CRIME') {
+    const result = commitCrime(state, intent.crimeType as CrimeType);
+    state  = result.state;
+    events = [...events, ...result.events];
+    state  = processEventQueue(state, events);
+    narrative.push(result.narrative);
+    return { state, events, narrative };
+  }
+
+  // ── GRANT_PARDON (Task 26.23) ───────────────────────────────────────────────────
+  if (intent.type === 'GRANT_PARDON') {
+    const result = grantPardon(
+      state,
+      intent.regionId as import('../state/gameState').RegionId,
+      intent.questId,
+    );
+    state  = result.state;
+    events = [...events, ...result.events];
+    state  = processEventQueue(state, events);
+    narrative.push(result.narrative);
+    return { state, events, narrative };
+  }
+
+  // ── BUILD_STRONGHOLD (Task 26.28) ───────────────────────────────────────────────
+  // Requires the player to have established the Enclave Stronghold flag in the
+  // current region. Gate: flags['enclave_stronghold_' + regionId] must be true.
+  // Building a stronghold is a prerequisite for unlocking spires in that region.
+  if (intent.type === 'BUILD_STRONGHOLD') {
+    const regionId = _resolveCurrentRegion(state);
+    if (!regionId) {
+      narrative.push(`You can't build a stronghold here — location not recognised.`);
+      return { state, events, narrative };
+    }
+    const flagKey = `enclave_stronghold_${regionId}`;
+    if (state.flags[flagKey]) {
+      narrative.push(`You've already established an Enclave Stronghold in this region.`);
+      return { state, events, narrative };
+    }
+    // Deduct a gold cost for construction (flat for now; upgradeable via quest reward later).
+    const STRONGHOLD_COST = 500;
+    if (state.player.gold < STRONGHOLD_COST) {
+      narrative.push(`Building a Stronghold requires ${STRONGHOLD_COST}g. You have ${state.player.gold}g.`);
+      return { state, events, narrative };
+    }
+    state = {
+      ...state,
+      player: { ...state.player, gold: state.player.gold - STRONGHOLD_COST },
+      flags:  { ...state.flags, [flagKey]: true },
+    };
+    events.push({ type: 'GOLD_CHANGED', delta: -STRONGHOLD_COST, newAmount: state.player.gold });
+    events.push({ type: 'STRONGHOLD_BUILT', regionId });
+    state = processEventQueue(state, events);
+    narrative.push(`The Enclave Stronghold rises in ${regionId}. Spire attunement is now possible here.`);
+    return { state, events, narrative };
+  }
+
   throw new Error(`dispatch() not yet implemented for intent type: ${(intent as { type: string }).type}`);
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// EVENT QUEUE PROCESSOR  (Phase 10 — Tasks 10.9–10.11)
+// EVENT QUEUE PROCESSOR  (Task 3c.5 — DispatchPipeline step 3)
 // ═══════════════════════════════════════════════════════════════════════════════
 
 /**
  * After each primary engine resolves, the dispatcher processes all emitted
  * GameEvents in order, applying cross-engine side effects.
  *
- * Phase 10 wires three event handlers:
- *   COMBAT_DEFEAT_OUTCOME    — routes to defeat outcome selection (Task 10.9)
- *   ENEMY_KILLED_IN_INTIMACY — awards XP + loot (Task 10.10)
- *   NPC_DIED_IN_INTIMACY     — removes NPC, applies reputation penalty (Task 10.11)
+ * Wired event handlers (in phase order):
+ *   COMBAT_DEFEAT_OUTCOME        — defeat outcome + reputation (Task 10.9)
+ *   ENEMY_KILLED_IN_INTIMACY     — XP + loot + reputation (Task 10.10)
+ *   NPC_DIED_IN_INTIMACY         — remove NPC, reputation penalty (Task 10.11)
+ *   ENEMY_KILLED                 — quest KILL objectives (Task 11.14)
+ *   ITEM_COLLECTED               — quest COLLECT objectives (Task 11.15)
+ *   DIALOGUE_COMPLETED           — quest TALK objectives (Task 11.16)
+ *   TRAVEL_NODE_REACHED          — quest TRAVEL objectives + weather sync (Task 11.17 / 24.33)
+ *   RELATIONSHIP_STATUS_CHANGED  — narrative hook for future dialogue unlocks (Task 9.1)
+ *   SPIRE_UNLOCKED               — integrity audit hook (Task 24.33)
+ *   INFAMY_DELTA                 — re-run infamy engine for combat-sourced deltas (Task 24.29)
+ *   MONSTER_TAMED                — increment tamed_monster_count flag (Phase 23)
+ *   INTIMACY_GROUP_SCENE_ENDED   — satisfaction flag + jealousy spike (Phase 28)
+ *   NPC_JEALOUSY_SPIKE           — flag key for UI jealousy indicator (Phase 28)
  *
- * All other event types pass through unchanged until their phase wires them.
+ * All other event types pass through as no-ops until their phase wires them.
  */
 export function processEventQueue(state: GameState, events: GameEvent[]): GameState {
   for (const event of events) {
@@ -1123,6 +1619,27 @@ export function processEventQueue(state: GameState, events: GameEvent[]): GameSt
         break;
       }
 
+      // ── Task 9.1 ─────────────────────────────────────────────────────────────
+      // RELATIONSHIP_STATUS_CHANGED: emitted by resolveSocialAction(),
+      // applyPostSceneRelationshipDelta(), giveGift(), and the day-end NPC social tick
+      // whenever a trust/love delta moves an NPC across a 16-cell band boundary.
+      //
+      // Current handler: narrative hook only. Future wiring (Phase 13 / companion
+      // quest system) will use this to unlock specific dialogue trees and scene
+      // eligibility gates. For now we set a per-NPC flag in state.flags so other
+      // engines can detect the transition without re-computing the band.
+      //
+      // Flag key pattern: 'rel_status_<npcId>' → RelationshipStatus label string.
+      // Overwritten on every status change; the previous value is not kept.
+      case 'RELATIONSHIP_STATUS_CHANGED': {
+        const flagKey = `rel_status_${event.npcId}`;
+        state = {
+          ...state,
+          flags: { ...state.flags, [flagKey]: event.to },
+        };
+        break;
+      }
+
       // ── Task 24.33: SPIRE_UNLOCKED prerequisite audit ────────────────────
       // The dispatcher handler (UNLOCK_SPIRE intent) already checks the
       // Enclave Stronghold flag before calling unlockSpire(). If an event
@@ -1154,6 +1671,36 @@ export function processEventQueue(state: GameState, events: GameEvent[]): GameSt
         state = {
           ...state,
           flags: { ...state.flags, tamed_monster_count: tamedCount },
+        };
+        break;
+      }
+
+      // ── Phase 28: INTIMACY_GROUP_SCENE_ENDED (28g.2 consequence hook) ──────────
+      // Emitted by dispatcher END_SCENE handler. Records group scene satisfaction
+      // in a per-NPC pair flag so UI can surface the memory, and marks that a
+      // group scene occurred today (used by day-end NPC social tick).
+      case 'INTIMACY_GROUP_SCENE_ENDED': {
+        const pairKey = `group_scene_${event.primaryNpcId}_${event.secondNpcId}`;
+        state = {
+          ...state,
+          flags: {
+            ...state.flags,
+            [pairKey]: event.satisfaction,
+            group_scene_today: true,
+          },
+        };
+        break;
+      }
+
+      // ── Phase 28: NPC_JEALOUSY_SPIKE ───────────────────────────────────────
+      // Emitted by END_SCENE jealousy branch. The trust/bond delta is already
+      // applied directly to contacts[] above; this event sets a UI flag so the
+      // IntimacyView can show a jealousy indicator on the next interaction.
+      case 'NPC_JEALOUSY_SPIKE': {
+        const jealousyKey = `jealousy_${event.subjectId}_${event.targetId}`;
+        state = {
+          ...state,
+          flags: { ...state.flags, [jealousyKey]: true },
         };
         break;
       }

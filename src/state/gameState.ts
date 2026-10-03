@@ -14,10 +14,25 @@
  *     │     └── EnemyHumanoidCharacter  (+ combat overlay: AI/loot/mana)
  *     └── MonsterCharacter    (simplified profile + combat overlay)
  *
- * Spawn engine types are imported by reference only (string ids) until the
- * spawn-engine barrel is wired in. Replace `unknown` stubs with real types as
- * each spawn-engine submodule is finalised.
+ * Tasks 3a.8–3a.10: all `unknown` spawn-engine stubs replaced with real types.
  */
+
+// ─── Spawn-engine type imports (Tasks 3a.8–3a.10) ────────────────────────────
+// All HumanoidCharacter fields that were `unknown` are now typed via these imports.
+import type { Gender, Race, FemaleBodyType, MaleBodyType } from '../spawn-engine/types/enums';
+import type {
+  RacePhysicalFeatures,
+  SkinProfile, FaceProfile, HairProfile,
+  FemaleMeasurements, MaleMeasurements,
+  FemalePhysicalDetail, MalePhysicalDetail,
+} from '../spawn-engine/character/physicalCore';
+import type {
+  FemaleSexualPhysiology, MaleSexualPhysiology,
+} from '../spawn-engine/character/sexualPhysiology';
+import type { ExpandedPersonalityCore } from '../spawn-engine/generator/personality';
+import type { SexualPsychology, VoiceProfile, SocialProfile } from '../spawn-engine/character/psychologyCore';
+import type { BackgroundProfile, ExperienceHistory } from '../spawn-engine/character/historyProfile';
+import type { CharacterDynamicState } from '../spawn-engine/character/dynamicState';
 
 // ─── Re-exported primitives ───────────────────────────────────────────────────
 // These are the only types engines need to import from this file.
@@ -45,6 +60,8 @@ export type { SpireNetwork, SpireState };
 export type { JobArchetypeState, JobResourceSystem, ClassProgressionState };
 export type { SynergyState, SynergyPairState };
 export type { CharacterCreationOptions };
+// Phase 26 schema types
+export type { TitheState, AetherSocket, LocationFeatureKey, CoreStatKey };
 // SaveMeta is defined in saveEngine.ts; re-exported here so UI layers
 // can import it from the central state module without a direct engine import.
 export type { SaveMeta } from '../engines/saveEngine';
@@ -111,11 +128,73 @@ export interface InventorySlot {
   // Equipment upgrade tier (0-3). Undefined = +0 (no upgrade applied).
   // Lives on the slot (runtime state), not on ItemDef (static catalog).
   upgradeLevel?: number;
+  // Aether socket slots (Task 26.10).
+  // Max sockets = Math.floor(upgradeLevel / 5). Unlocks at +5.
+  // Only meaningful on WEAPON and ARMOR items; undefined = no sockets.
+  sockets?: AetherSocket[];
 }
 
-// Six equipment slots the player and companions can fill.
-// OFF_HAND accepts WEAPON or TOOL; all others accept their respective item type.
-export type EquipmentSlot = 'WEAPON' | 'OFF_HAND' | 'HEAD' | 'CHEST' | 'HANDS' | 'LEGS';
+// ─── 7-stat CoreStatKey (Task 26.1) ──────────────────────────────────────────
+// Re-exported from statEngine.ts; duplicated here so all engine imports from
+// the central state module work without a separate statEngine import.
+export type CoreStatKey = 'str' | 'dex' | 'agi' | 'int' | 'wil' | 'per' | 'end';
+
+// ─── Tithe / weekly quota system (Task 26.4) ──────────────────────────────────
+// Tracks mandatory Aether Tithe payments to the Enclave.
+// Introduced when the relevant main quest first activates the system.
+export interface TitheState {
+  lastPaidDay:       number;  // calendar.day of the most recent payment (0 = never paid)
+  quotaGoldPerWeek:  number;  // weekly obligation; set by the activating quest (0 = inactive)
+  overdueBy:         number;  // days since quota was due (increments each day unpaid)
+}
+
+// ─── Item socket system (Task 26.10) ──────────────────────────────────────────
+// Each socket accepts one Aether Crystal material and grants a passive effect.
+// Sockets unlock at upgrade tiers that are multiples of 5: +5 → 1 socket, +10 → 2 sockets.
+export interface AetherSocket {
+  socketId:        string;   // e.g. 'slot_0', 'slot_1'
+  inlaidMaterialId?: string; // itemId of the Aether Crystal inserted; undefined = empty
+  passiveEffect?:  string;   // derived label from material metadata; e.g. 'fire_damage_bonus_5'
+}
+
+// ─── Location features (Task 26.20) ───────────────────────────────────────────
+// Flags that a WorldNode may carry to unlock mini-game intents.
+export type LocationFeatureKey =
+  | 'fishing'
+  | 'gambling'
+  | 'arena'
+  | 'onsen'
+  | 'shrine'
+  | 'market'
+  | 'smithy'
+  | 'alchemy_lab';
+
+// ─── Inventory slot (updated) ─────────────────────────────────────────────────
+
+// ─── 18-slot equipment schema (Task 26.7) ─────────────────────────────────────
+// Expands the original 6-slot schema.
+// PAIRED slots: RING_L + RING_R, EARRING_L + EARRING_R.
+// RELIC is a unique-item slot (one legendary per build).
+// OFF_HAND still accepts WEAPON or TOOL.
+export type EquipmentSlot =
+  | 'WEAPON'     // main hand
+  | 'OFF_HAND'   // shield, second weapon, or tool
+  | 'HEAD'
+  | 'FACE'       // mask, goggles, visor
+  | 'NECK'       // amulet / choker
+  | 'SHOULDER'
+  | 'CHEST'
+  | 'BACK'       // cloak / cape
+  | 'WRIST'      // bracers
+  | 'HANDS'
+  | 'WAIST'      // belt
+  | 'LEGS'
+  | 'FEET'
+  | 'RING_L'
+  | 'RING_R'
+  | 'EARRING_L'
+  | 'EARRING_R'
+  | 'RELIC';     // legendary-only; one per build
 
 // ─── Crafting queue (Phase 15) ────────────────────────────────────────────────
 // One job per recipe in progress; multiple jobs only when manor tier allows it.
@@ -152,37 +231,48 @@ type Character = {
 // ─── Humanoid Character ───────────────────────────────────────────────────────
 // Any character with a full spawn-engine profile (produced by spawnEngine.ts).
 // Player, NPCs, companions, and humanoid enemies all satisfy this.
-// Spawn-engine sub-types are typed as `unknown` here until the barrel is wired;
-// replace with real imports when implementing Task 3.1.
+// Tasks 3a.8–3a.10: all previously-unknown fields now carry real spawn-engine types.
+// Partial<> variants allow service-NPC stubs and enemy partial profiles to satisfy
+// the interface without a full spawn pass.
 type HumanoidCharacter = Character & {
   characterType: 'PLAYER' | 'NPC' | 'ENEMY_HUMANOID';
 
   // ── Physical ──────────────────────────────────────────────────────────────
-  gender:           unknown; // Gender enum
-  race:             unknown; // Race enum
-  raceFeatures:     unknown; // RacePhysicalFeatures
-  bodyType:         unknown; // FemaleBodyType | MaleBodyType
-  skin:             unknown; // SkinProfile
-  face:             unknown; // FaceProfile
-  hair:             unknown; // HairProfile
-  measurements:     unknown; // FemaleMeasurements | MaleMeasurements
-  physicalDetail:   unknown; // FemalePhysicalDetail | MalePhysicalDetail
+  gender:           Gender;
+  race:             Race;
+  raceFeatures:     RacePhysicalFeatures | Partial<RacePhysicalFeatures>;
+  bodyType:         FemaleBodyType | MaleBodyType;
+  skin:             SkinProfile | Partial<SkinProfile>;
+  face:             FaceProfile | Partial<FaceProfile>;
+  hair:             HairProfile | Partial<HairProfile>;
+  measurements:     FemaleMeasurements | MaleMeasurements | Partial<FemaleMeasurements> | Partial<MaleMeasurements>;
+  physicalDetail:   FemalePhysicalDetail | MalePhysicalDetail | Partial<FemalePhysicalDetail> | Partial<MalePhysicalDetail>;
 
   // ── Sexual physiology ─────────────────────────────────────────────────────
-  sexualPhysiology: unknown; // FemaleSexualPhysiology | MaleSexualPhysiology
+  // Partial<> covers enemy/captive stubs that only fill the relevant sex fields.
+  sexualPhysiology: FemaleSexualPhysiology | MaleSexualPhysiology | Partial<FemaleSexualPhysiology> | Partial<MaleSexualPhysiology>;
 
   // ── Psychology ────────────────────────────────────────────────────────────
-  personality:      unknown; // PersonalityCore & ExpandedPersonality
-  sexualPsychology: unknown; // SexualPsychology
-  voice:            unknown; // VoiceProfile
-  social:           unknown; // SocialProfile
+  // ExpandedPersonalityCore is the superset returned by generateExpandedPersonality().
+  // Service NPC stubs and enemy stubs carry Partial<>; fully-spawned chars the full type.
+  personality:      ExpandedPersonalityCore | Partial<ExpandedPersonalityCore>;
+  sexualPsychology: SexualPsychology | Partial<SexualPsychology>;
+  voice:            VoiceProfile | Partial<VoiceProfile>;
+  social:           SocialProfile | Partial<SocialProfile>;
 
   // ── Background & history ─────────────────────────────────────────────────
-  background:       unknown; // BackgroundProfile
-  history:          unknown; // ExperienceHistory
+  background:       BackgroundProfile | Partial<BackgroundProfile>;
+  history:          ExperienceHistory | Partial<ExperienceHistory>;
 
   // ── Runtime dynamic state ─────────────────────────────────────────────────
-  dynamicState:     unknown; // CharacterDynamicState (from dynamicState.ts)
+  // Partial<> covers service NPC stubs where dynamic state is lazy-initialised.
+  dynamicState:     CharacterDynamicState | Partial<CharacterDynamicState>;
+
+  // ── 7-stat CoreStatKey record (Task 26.2) ────────────────────────────────
+  // Full 7-stat allocation; deriveCombatStatsFromCoreStats() maps this to
+  // CombatStats for engine consumption. Partial<> on stubs; full record after
+  // character creation.
+  coreStats?: Partial<Record<CoreStatKey, number>>;
 };
 
 // ─── Player Character ─────────────────────────────────────────────────────────
@@ -307,8 +397,8 @@ type NpcCharacter = HumanoidCharacter & {
   // undefined = not pregnant and not pending a check.
   pregnancyState?: PregnancyState;
 
-  // Lactation active flag — set to true on birth; not tied to sexualPhysiology
-  // (which is typed unknown until Task 3a.8).  Cleared only by explicit story event.
+  // Lactation active flag — set to true on birth; not tied to sexualPhysiology.
+  // Cleared only by explicit story event.
   lactationActive?: boolean;
 
   // Per-NPC move-in override thresholds (Task 9.5).
@@ -325,17 +415,30 @@ type NpcCharacter = HumanoidCharacter & {
 
 // ─── Enemy Humanoid Character ─────────────────────────────────────────────────
 // Humanoid enemies. Same full spawn-engine profile as NPCs; combat overlay added.
+// Task 3a.9: lootTable, purificationReward, defeatOutcomeOptions use inline structural
+// types to avoid a circular dep (enemySpawnEngine imports HumanoidCharacter from here).
+// These mirror the enemySpawnEngine interfaces exactly and are checked by the compiler.
 type EnemyHumanoidCharacter = HumanoidCharacter & {
   readonly characterType: 'ENEMY_HUMANOID';
   aiPattern:           'Aggressive' | 'Defensive' | 'SupportCaster' | 'BossScripted';
   manaReserve:         number;   // does not regenerate mid-fight
-  lootTable:           unknown;  // LootTable
-  purificationReward:  unknown;  // { xp: number; gold: number; itemIds: string[] }
-  defeatOutcomeOptions: unknown[]; // DefeatOutcome[]
+  lootTable: {
+    guaranteed: { itemId: string; minQty: number; maxQty: number; dropChance: number }[];
+    random:     { itemId: string; minQty: number; maxQty: number; dropChance: number }[];
+    goldMin:    number;
+    goldMax:    number;
+  };
+  purificationReward: { xp: number; gold: number; itemIds: string[] };
+  defeatOutcomeOptions: {
+    type:       'Kill' | 'StripAndLoot' | 'Interrogate' | 'Intimate' | 'Purify' | 'Capture';
+    available:  boolean;
+    condition?: string;
+  }[];
 };
 
 // ─── Monster Character ────────────────────────────────────────────────────────
 // Non-humanoid enemies. Simplified physical profile (or none); combat overlay.
+// Task 3a.10: same inline structural types as EnemyHumanoidCharacter above.
 type MonsterCharacter = Character & {
   readonly characterType: 'MONSTER';
   monsterType:          'Beast' | 'Undead' | 'Elemental' | 'Demon' | 'MiasmaCorrupted';
@@ -343,9 +446,18 @@ type MonsterCharacter = Character & {
   miasmaReserve:        number;  // does not regenerate mid-fight
   sexualAttackEligible: boolean;
   monsterSex:           'Male' | 'Female' | 'None' | 'Ambiguous';
-  lootTable:            unknown;  // LootTable
-  purificationReward:   unknown;
-  defeatOutcomeOptions: unknown[];
+  lootTable: {
+    guaranteed: { itemId: string; minQty: number; maxQty: number; dropChance: number }[];
+    random:     { itemId: string; minQty: number; maxQty: number; dropChance: number }[];
+    goldMin:    number;
+    goldMax:    number;
+  };
+  purificationReward: { xp: number; gold: number; itemIds: string[] };
+  defeatOutcomeOptions: {
+    type:       'Kill' | 'StripAndLoot' | 'Interrogate' | 'Intimate' | 'Purify' | 'Capture';
+    available:  boolean;
+    condition?: string;
+  }[];
 };
 
 // ─── Union for engine function signatures ─────────────────────────────────────
@@ -402,6 +514,13 @@ type WorldNode = {
   // Same-region travel uses FAST_TRAVEL_SAME_REGION_COST constant instead;
   // this field is the cross-region override when authored (0 = use constant).
   readonly fastTravelCost: number;
+  // Phase 28 (28b.1): whether this node is indoors.
+  // Absent / undefined = outdoors (false). Indoor nodes bypass the exposure gate.
+  // Full authored values deferred to Task 17.DATA; stub nodes tagged below.
+  readonly isIndoors?:     boolean;
+  // Task 26.19: mini-game and location-feature keys present at this node.
+  // Engines check this array before allowing FISH / GAMBLE / ARENA / ONSEN intents.
+  readonly features?:      LocationFeatureKey[];
 };
 
 type WorldEdge = {
@@ -598,8 +717,7 @@ export interface AchievementEntry {
 // ─── Contact profile view model (Phase 21 / Task 21.6) ──────────────────────
 // Flat DTO assembled by contactEngine.assembleProfileView().
 // Never stored in GameState — built on demand for the ContactsView UI.
-// Fields are typed as unknown where the underlying spawn-engine type is still
-// an unknown stub (Task 3a.8 will replace these).
+// Task 3a.8: all previously-unknown fields now carry real spawn-engine types.
 type ContactProfileView = {
   // Identity
   npcId:              string;
@@ -611,30 +729,33 @@ type ContactProfileView = {
   love:               number;
   relationshipStatus: string;   // RelationshipStatus label from 16-cell matrix
   playerBondType:     string | undefined;  // BondType label or undefined
-  occupation:         string | undefined;  // background.occupation (may be unknown)
+  occupation:         string | undefined;  // background.occupation
   regionOfOrigin:     string | undefined;  // background.regionOfOrigin
-  // Parent names from history (undefined if history is still typed unknown)
   motherName:         string | undefined;
   fatherName:         string | undefined;
   companionLevel:     number;  // 0 = not a companion
 
   // ── Tab 2: Physical / Physiology ────────────────────────────────────────
-  // Measurements and physical detail are still typed unknown until Task 3a.8;
-  // we carry them as unknown so the UI can cast when the type is resolved.
-  measurements:       unknown;  // FemaleMeasurements | MaleMeasurements
-  physicalDetail:     unknown;  // FemalePhysicalDetail | MalePhysicalDetail
-  gender:             unknown;  // Gender enum
-  race:               unknown;  // Race enum
-  bodyType:           unknown;  // FemaleBodyType | MaleBodyType
-  // Derived flags readable without resolving spawn-engine types
+  measurements:       FemaleMeasurements | MaleMeasurements | undefined;
+  physicalDetail:     FemalePhysicalDetail | MalePhysicalDetail | undefined;
+  gender:             Gender | undefined;
+  race:               Race   | undefined;
+  bodyType:           FemaleBodyType | MaleBodyType | undefined;
+  // Derived flags readable without deep inspection of spawn-engine fields
   isVirgin:           boolean;  // history.totalEncounterCount === 0
   isPregnant:         boolean;
   pregnancyStage:     string | undefined;   // PregnancyStage label or undefined
   lactationActive:    boolean;
 
   // ── Tab 3: Psychology ───────────────────────────────────────────────────
-  personality:        unknown;  // PersonalityCore + ExpandedPersonality
-  sexualPsychology:   unknown;  // SexualPsychology (includes acquiredKinks, resistanceProfile)
+  personality:        ExpandedPersonalityCore | Partial<ExpandedPersonalityCore> | undefined;
+  sexualPsychology:   SexualPsychology | Partial<SexualPsychology> | undefined;
+
+  // ── Corruption & moral degradation (dynamicState.mental) ─────────────────
+  // All three are undefined when dynamicState is absent or not yet initialised.
+  corruption:   number | undefined;   // 0–100; corruptionCurrent
+  shame:        number | undefined;   // 0–100; shameCurrent (inverse purity proxy)
+  brokenFlag:   boolean | undefined;  // true when corruption>85 && shame<10
 };
 
 // ─── Dialogue system (Phase 13) ─────────────────────────────────────────────
@@ -903,6 +1024,9 @@ export interface GameState {
   classProgress: ClassProgressionState; // SP spent + unlocked nodes per class
   synergies:   SynergyState;          // companion synergy pair unlock state
   characterCreation: CharacterCreationOptions | undefined; // origin snapshot (undefined pre-creation)
+
+  // ── Phase 26: loose-ends schema fields ──────────────────────────────────────────
+  tithe: TitheState;  // Task 26.5 — Aether Tithe weekly quota system
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -1113,4 +1237,36 @@ export type GameEvent =
   // DARK_FACTION_UNLOCKED: darkReputation crossed >= 40; shadow faction now accessible.
   | { type: 'ALIGNMENT_SHIFTED';       delta: number; newScore: number; dominantAlignment: 'PURIFIER' | 'PRAGMATIST' | 'SOVEREIGN' }
   | { type: 'DARK_REPUTATION_CHANGED'; regionId: RegionId; delta: number; newScore: number }
-  | { type: 'DARK_FACTION_UNLOCKED';   regionId: RegionId };
+  | { type: 'DARK_FACTION_UNLOCKED';   regionId: RegionId }
+  // Phase 28 — Intimacy context gates (28b.4, 28d.6, 28g.2)
+  // INTIMACY_GATE_BLOCKED: emitted by dispatcher when any initiation gate blocks a scene.
+  //   gate identifies which check failed; reason is the NPC's refusal line for UI display.
+  | { type: 'INTIMACY_GATE_BLOCKED';       gate: 'EXPOSURE' | 'AUDIENCE' | 'GROUP_DEGRADATION' | 'GROUP_SQ'; npcId: string; reason: string }
+  // INTIMACY_GROUP_SCENE_STARTED / ENDED: emitted by dispatcher around group scenes.
+  | { type: 'INTIMACY_GROUP_SCENE_STARTED'; primaryNpcId: string; secondNpcId: string; groupMode: 'MMF' | 'FFM' }
+  | { type: 'INTIMACY_GROUP_SCENE_ENDED';   primaryNpcId: string; secondNpcId: string; satisfaction: number; jealousyFired: boolean }
+  // NPC_JEALOUSY_SPIKE: fired by dispatcher post-group-scene when jealousyFired === true.
+  //   Already in union above for NPC-NPC social engine; variant here is a typed alias kept
+  //   for clarity — the existing { subjectId, targetId, rivalId } shape is reused.
+  // Phase 26 — Loose ends
+  // TITHE_PAID:           player paid their weekly Aether Tithe at an Enclave Altar.
+  // TITHE_OVERDUE:        day-end tick found tithe unpaid more than 7 days; reputation penalty.
+  // ITEM_SOCKETED:        Aether Crystal inserted into an equipment slot socket.
+  // CARRIAGE_HIRED:       player hired a carriage for inter-node travel.
+  // MINI_GAME_STARTED:    player entered a mini-game (fishing, gambling, arena, onsen).
+  // MINI_GAME_ENDED:      mini-game resolved with a result.
+  // CRIME_COMMITTED:      player performed a crimnal act; infamy delta and gate event follow.
+  // CITY_GATE_BLOCKED:    wanted player barred from entering a gated settlement.
+  // PARDON_GRANTED:       infamy cleared via quest reward.
+  // STRONGHOLD_BUILT:     player built an Enclave Stronghold in a region.
+  | { type: 'TITHE_PAID';         regionId: string; goldPaid: number }
+  | { type: 'TITHE_OVERDUE';      regionId: string; daysOverdue: number; reputationPenalty: number }
+  | { type: 'ITEM_SOCKETED';      itemId: string; socketId: string; materialId: string; passiveEffect: string }
+  | { type: 'CARRIAGE_HIRED';     fromNodeId: string; toNodeId: string; goldCost: number; phasesSkipped: number }
+  | { type: 'MINI_GAME_STARTED';  featureKey: LocationFeatureKey; nodeId: string }
+  | { type: 'MINI_GAME_ENDED';    featureKey: LocationFeatureKey; outcome: 'WIN' | 'LOSE' | 'DRAW'; goldDelta: number }
+  | { type: 'CRIME_COMMITTED';    crimeType: 'THEFT' | 'ASSAULT' | 'MURDER'; regionId: string; infamyDelta: number }
+  | { type: 'CITY_GATE_BLOCKED';  nodeId: string; regionId: string; bountyTier: string }
+  | { type: 'PARDON_GRANTED';     regionId: string; questId: string }
+  | { type: 'STRONGHOLD_BUILT';   regionId: string }
+  ;

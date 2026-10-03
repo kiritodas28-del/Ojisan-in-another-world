@@ -95,4 +95,44 @@ export const mockIntimacyScene: IntimacyScene = {
   faintedAtTurn:           null,
   partnerLifeForce:        100,
   partnerEngagementStatus: 'Aroused',
+
+  // Phase 28 (28d.2): solo-scene nulls for group-scene fields
+  secondPartnerNpcId:            null,
+  secondPartnerProfile:          null,
+  secondPartnerArousal:          0,
+  secondPartnerStaminaCurrent:   0,
+  secondPartnerStaminaMax:       0,
+  secondPartnerHasFainted:       false,
+  secondPartnerLifeForce:        0,
+  secondPartnerEngagementStatus: 'Neutral',
+  secondOrgasmLog:               [],
+  secondLoveDeltaAccum:          0,
+  secondTrustDeltaAccum:         0,
+  groupMode:                     null,
+};
+
+/**
+ * mockGroupIntimacyScene (28h.1)
+ * Minimal FFM group-scene stub for verifying group-scene rendering branches
+ * in IntimacyView without a live dispatcher call.
+ * secondPartnerNpcId = 'npc-meira'; groupMode = 'FFM'.
+ */
+export const mockGroupIntimacyScene = {
+  ...mockIntimacyScene,
+
+  startType:    'CONSENSUAL_GROUP' as const,
+  groupMode:    'FFM'  as const,
+
+  // Second partner: 'npc-meira' — plausible starting values
+  secondPartnerNpcId:            'npc-meira',
+  secondPartnerProfile:          null,   // profile resolved from contacts[] at runtime
+  secondPartnerArousal:          20,
+  secondPartnerStaminaCurrent:   120,
+  secondPartnerStaminaMax:       120,
+  secondPartnerHasFainted:       false,
+  secondPartnerLifeForce:        100,
+  secondPartnerEngagementStatus: 'Neutral' as const,
+  secondOrgasmLog:               [],
+  secondLoveDeltaAccum:          0,
+  secondTrustDeltaAccum:         0,
 };

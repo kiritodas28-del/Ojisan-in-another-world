@@ -1,0 +1,18 @@
+{
+  "compilerOptions": {
+    "target":           "ES2020",
+    "module":           "ESNext",
+    "moduleResolution": "bundler",
+    "jsx":              "react-jsx",
+    "strict":           true,
+    "noEmit":           true,
+    "paths": {
+      "@ojisan/engine-core":   ["../../packages/engine-core/src/index.ts"],
+      "@ojisan/engine-core/*": ["../../packages/engine-core/src/*"],
+      "@ojisan/data":          ["../../packages/ojisan-data/src/index.ts"],
+      "@ojisan/data/*":        ["../../packages/ojisan-data/src/*"]
+    }
+  },
+  "include": ["src/**/*"],
+  "exclude": ["node_modules"]
+}

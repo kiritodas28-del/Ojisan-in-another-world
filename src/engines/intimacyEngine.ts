@@ -27,6 +27,10 @@
 import type { GameEvent, GameState } from '../state/gameState';
 import { derivePassiveArousalBonus } from './skillEngine';
 
+// Phase 28 gate function imports
+import type { NpcCharacter } from '../state/gameState';
+import { BondType, JealousyTendency } from '../spawn-engine/types/enums';
+
 // ── Spawn-engine type imports (single source of truth) ──────────────────────
 import {
   ArousalSpeed, LubricationSpeed, VaginaElasticity,
@@ -68,6 +72,7 @@ const POST_ORGASM_OVERWHELMED_PAIN = 8;     // pain spike per turn when postSens
 
 export type SceneStartType =
   | 'CONSENSUAL'
+  | 'CONSENSUAL_GROUP'    // two NPC partners (MMF or FFM); bypasses exposure + audience gates
   | 'FORCE_INTIMACY'
   | 'FORCE_INTIMACY_SLEEPING'
   | 'POST_DEFEAT';
@@ -294,6 +299,10 @@ export interface IntimacyPosition {
   allowedStartTypes?:      SceneStartType[];
   transitionCost?:         number;
   description:             string;
+  // Phase 28 (28d.4): group-mode filter. Absent = 'SOLO' (works in solo scenes only).
+  // MMF positions require two male participants; FFM require two female participants.
+  // getAvailableActions() filters by scene.groupMode so only matching positions surface.
+  groupMode?:              'MMF' | 'FFM' | 'SOLO';
 }
 
 export interface IntimacyAction {
@@ -428,6 +437,22 @@ export interface IntimacyScene {
   // partnerEngagementStatus: derived each turn from arousal, resistance, shame,
   //   and hasFainted. Stored for serialisation and UI consumption.
   partnerEngagementStatus: PartnerEngagementStatus;
+
+  // ── Phase 28: Group scene fields (28d.2) ─────────────────────────────────
+  // All null in solo scenes. Populated by startGroupScene() for CONSENSUAL_GROUP.
+  secondPartnerNpcId:          string | null;
+  secondPartnerProfile:        NpcPartnerProfile | null;
+  secondPartnerArousal:        number;
+  secondPartnerStaminaCurrent: number;
+  secondPartnerStaminaMax:     number;
+  secondPartnerHasFainted:     boolean;
+  secondPartnerLifeForce:      number;
+  secondPartnerEngagementStatus: PartnerEngagementStatus;
+  secondOrgasmLog:             FemaleOrgasmEvent[];
+  secondLoveDeltaAccum:        number;
+  secondTrustDeltaAccum:       number;
+  // 'MMF' | 'FFM' | null. null = solo scene.
+  groupMode:                   'MMF' | 'FFM' | null;
 }
 
 // ============================================================
@@ -478,6 +503,22 @@ export interface SceneEndPersistence {
   //   NPC           → apply reputationPenalty, remove from contacts, flag intimacy_death_count
   //   ENEMY_HUMANOID → award XP + resolve loot (same path as combat kill), no reputation cost
   partnerEntityType:        'NPC' | 'ENEMY_HUMANOID';
+
+  // ── Phase 28 (28d.3): optional second-partner persistence ────────────────────
+  // All undefined in solo scenes. Set by endScene() for CONSENSUAL_GROUP.
+  secondPartnerSquirtStorage?:     number;
+  secondPartnerSquirtProbability?: number;
+  secondPartnerMilkStorage?:       number;
+  secondPartnerArousal?:           number;
+  secondPartnerCurrentWetness?:    WetnessLevel;
+  secondPartnerMood?:              MoodValue;
+  secondPartnerLoveDelta?:         number;
+  secondPartnerTrustDelta?:        number;
+  secondPartnerBlockedForDay?:     boolean;
+  secondPartnerLifeForceRemainder?: number;
+  // True when post-scene jealousy check fires between the two group-scene partners.
+  // Dispatcher applies trust/bond penalty between them via npcSocialEngine.
+  jealousyFired?:                  boolean;
 }
 
 export interface SceneEndResult {
@@ -1836,5 +1877,306 @@ export function getAvailableActions(scene: IntimacyScene, positionId: string): I
   return position.allowedActionIds
     .map((id: string) => ACTIONS[id])
     .filter((a: IntimacyAction | undefined): a is IntimacyAction => !!a)
-    .filter((a: IntimacyAction) => !checkPenetrationConflict(scene, a));
+    .filter((a: IntimacyAction) => !checkPenetrationConflict(scene, a))
+    // Phase 28 (28f.5): filter by group mode
+    .filter((a: IntimacyAction) => {
+      const pos = POSITIONS[a.id] ?? position; // actions don't carry groupMode; position does
+      const posMode = position.groupMode ?? 'SOLO';
+      if (scene.groupMode === null) {
+        // Solo scene: exclude positions tagged MMF or FFM
+        return posMode === 'SOLO' || posMode === undefined;
+      } else {
+        // Group scene: include only matching group mode; exclude SOLO positions
+        return posMode === scene.groupMode;
+      }
+    });
+}
+
+// ============================================================
+// PHASE 28 — INTIMACY CONTEXT GATES
+// ============================================================
+
+/**
+ * IntimacyStartContext (28a.2)
+ * Single parameter struct passed to all gate-check functions.
+ * Built by the dispatcher before calling any initiation gate.
+ */
+export interface IntimacyStartContext {
+  npc:          NpcCharacter;
+  startType:    SceneStartType;
+  isIndoors:    boolean;     // WorldNode.isIndoors ?? false
+  npcsPresent:  number;      // countBystanders() from worldEngine
+  secondNpc?:   NpcCharacter; // only for CONSENSUAL_GROUP scenes
+}
+
+/** Bypass condition: force/defeat start types skip exposure and audience gates. */
+function isBypassStartType(startType: SceneStartType): boolean {
+  return (
+    startType === 'FORCE_INTIMACY' ||
+    startType === 'FORCE_INTIMACY_SLEEPING' ||
+    startType === 'POST_DEFEAT'
+  );
+}
+
+// ─── 28a.1 — deriveMoralDegradation ───────────────────────────────────────
+
+/**
+ * Derives a [0, 100] moral degradation score from existing NpcCharacter fields.
+ * This is a READ-ONLY derivation — it never mutates state.
+ *
+ * Formula:
+ *   base = corruptionCurrent × 0.6
+ *        + (100 − shameCurrent) × 0.3
+ *        + clamp(acquiredKinks.length × 4, 0, 10)
+ *
+ * brokenFlag override: if the NPC is fully broken (brokenFlag === true),
+ * the result is lifted to at least 90 regardless of the arithmetic.
+ *
+ * Source fields:
+ *   corruptionCurrent  ← NpcCharacter.dynamicState.mental.corruptionCurrent
+ *   shameCurrent       ← NpcCharacter.dynamicState.mental.shameCurrent
+ *   brokenFlag         ← NpcCharacter.dynamicState.mental.brokenFlag
+ *   acquiredKinks      ← NpcCharacter.sexualPsychology.acquiredKinks
+ */
+export function deriveMoralDegradation(npc: NpcCharacter): number {
+  const mental = (npc.dynamicState as import('../spawn-engine/character/dynamicState').CharacterDynamicState)?.mental;
+  const corruptionCurrent = mental?.corruptionCurrent ?? 0;
+  const shameCurrent      = mental?.shameCurrent      ?? 100;
+  const brokenFlag        = mental?.brokenFlag        ?? false;
+
+  const psychology = npc.sexualPsychology as import('../spawn-engine/character/psychologyCore').SexualPsychology | undefined;
+  const kinkCount  = psychology?.acquiredKinks?.length ?? 0;
+
+  const kinkBonus = Math.min(10, Math.max(0, kinkCount * 4));
+  const base      = corruptionCurrent * 0.6 + (100 - shameCurrent) * 0.3 + kinkBonus;
+  const result    = Math.min(100, Math.max(0, base));
+
+  return brokenFlag ? Math.max(result, 90) : result;
+}
+
+// ─── 28b.2 — checkExposureGate ────────────────────────────────────────────
+
+/**
+ * Checks whether a CONSENSUAL scene can begin at an outdoor location.
+ * Returns { allowed: true } when:
+ *   - The node is indoors (ctx.isIndoors === true), OR
+ *   - The start type bypasses the gate (FORCE / POST_DEFEAT), OR
+ *   - deriveMoralDegradation(npc) >= 35 OR corruptionCurrent >= 40.
+ *
+ * Threshold: lenient (35/40) — moderate corruption is enough to make
+ * someone indifferent to being seen.
+ */
+export function checkExposureGate(
+  ctx: IntimacyStartContext,
+): { allowed: boolean; reason?: string } {
+  if (ctx.isIndoors)              return { allowed: true };
+  if (isBypassStartType(ctx.startType)) return { allowed: true };
+
+  const mental = (ctx.npc.dynamicState as import('../spawn-engine/character/dynamicState').CharacterDynamicState)?.mental;
+  const corruption = mental?.corruptionCurrent ?? 0;
+
+  if (deriveMoralDegradation(ctx.npc) >= 35 || corruption >= 40) {
+    return { allowed: true };
+  }
+
+  return {
+    allowed: false,
+    reason:  'She glances around nervously. Not here — not where anyone could see.',
+  };
+}
+
+// ─── 28c.2 — checkAudienceGate ─────────────────────────────────────────────
+
+/**
+ * Checks whether a CONSENSUAL scene can begin with bystanders present.
+ * Returns { allowed: true } when:
+ *   - No bystanders (ctx.npcsPresent === 0), OR
+ *   - The start type bypasses the gate (FORCE / POST_DEFEAT), OR
+ *   - deriveMoralDegradation(npc) >= 55 OR corruptionCurrent >= 60.
+ *
+ * Threshold: stricter than exposure gate (55/60) because being watched by
+ * someone is a stronger inhibitor than just being outside.
+ */
+export function checkAudienceGate(
+  ctx: IntimacyStartContext,
+): { allowed: boolean; reason?: string } {
+  if (ctx.npcsPresent === 0)      return { allowed: true };
+  if (isBypassStartType(ctx.startType)) return { allowed: true };
+
+  const mental = (ctx.npc.dynamicState as import('../spawn-engine/character/dynamicState').CharacterDynamicState)?.mental;
+  const corruption = mental?.corruptionCurrent ?? 0;
+
+  if (deriveMoralDegradation(ctx.npc) >= 55 || corruption >= 60) {
+    return { allowed: true };
+  }
+
+  return {
+    allowed: false,
+    reason:  "Her eyes dart to the others nearby. She won't do this with people watching.",
+  };
+}
+
+// ─── 28e.2 — checkGroupSceneGate ───────────────────────────────────────────
+
+/**
+ * Checks whether a CONSENSUAL_GROUP scene can begin.
+ * ctx.secondNpc must be defined before calling this.
+ *
+ * Four conditions checked in order — returns on the first failure:
+ *   1. Primary NPC's SQ chain is complete (or has none).
+ *   2. Second NPC's SQ chain is complete (or has none).
+ *   3. Primary: deriveMoralDegradation >= 50 AND corruptionCurrent >= 55.
+ *   4. Second:  deriveMoralDegradation >= 50 AND corruptionCurrent >= 55.
+ *
+ * failedNpcId names the NPC that caused the block.
+ */
+export function checkGroupSceneGate(
+  ctx:       IntimacyStartContext,
+  gameState: GameState,
+): { allowed: boolean; failedNpcId?: string; reason?: string } {
+  const { secondNpc } = ctx;
+  if (!secondNpc) {
+    return { allowed: false, reason: 'No second partner provided for group scene.' };
+  }
+
+  // Lazy-import isCompanionSqComplete to avoid a circular dep with questEngine.
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { isCompanionSqComplete } = require('./questEngine') as {
+    isCompanionSqComplete: (gs: GameState, npcId: string) => boolean;
+  };
+
+  // 1. Primary NPC SQ check
+  if (!isCompanionSqComplete(gameState, ctx.npc.npcId)) {
+    return {
+      allowed:     false,
+      failedNpcId: ctx.npc.npcId,
+      reason:      "She's not ready for this — there are things between you still unresolved.",
+    };
+  }
+
+  // 2. Second NPC SQ check
+  if (!isCompanionSqComplete(gameState, secondNpc.npcId)) {
+    return {
+      allowed:     false,
+      failedNpcId: secondNpc.npcId,
+      reason:      "She's not ready for this — there are things between you still unresolved.",
+    };
+  }
+
+  // 3. Primary degradation check
+  const primaryMental = (ctx.npc.dynamicState as import('../spawn-engine/character/dynamicState').CharacterDynamicState)?.mental;
+  const primaryCorr   = primaryMental?.corruptionCurrent ?? 0;
+  if (deriveMoralDegradation(ctx.npc) < 50 || primaryCorr < 55) {
+    return {
+      allowed:     false,
+      failedNpcId: ctx.npc.npcId,
+      reason:      "She hesitates — sharing something this intimate isn't something she can do yet.",
+    };
+  }
+
+  // 4. Second NPC degradation check
+  const secondMental = (secondNpc.dynamicState as import('../spawn-engine/character/dynamicState').CharacterDynamicState)?.mental;
+  const secondCorr   = secondMental?.corruptionCurrent ?? 0;
+  if (deriveMoralDegradation(secondNpc) < 50 || secondCorr < 55) {
+    return {
+      allowed:     false,
+      failedNpcId: secondNpc.npcId,
+      reason:      "She hesitates — sharing something this intimate isn't something she can do yet.",
+    };
+  }
+
+  return { allowed: true };
+}
+
+// ─── 28g.1 — checkGroupJealousy ─────────────────────────────────────────────
+
+/**
+ * Post-scene check: determines whether sharing the group scene triggers a
+ * jealousy reaction between the two partners.
+ *
+ * Returns true when BOTH of the following hold:
+ *   A) Either NPC's npcRelationships array contains the other NPC's npcId.
+ *   B) On that relationship entry, bond === BondType.Devoted or BondType.Owned
+ *      (exclusive bonds), OR either NPC's social.jealousyTendency === High.
+ *
+ * Called by endScene() and dispatcher wires the consequence.
+ * This is a post-scene check only — no mid-scene interruption.
+ */
+export function checkGroupJealousy(
+  primaryNpc: NpcCharacter,
+  secondNpc:  NpcCharacter,
+): boolean {
+  // Find whether primaryNpc has a relationship entry for secondNpc.
+  const primRel = primaryNpc.npcRelationships.find(
+    r => r.targetNpcId === secondNpc.npcId
+  );
+  const secRel = secondNpc.npcRelationships.find(
+    r => r.targetNpcId === primaryNpc.npcId
+  );
+
+  // If neither knows the other, no jealousy can fire.
+  if (!primRel && !secRel) return false;
+
+  // Check exclusive bond: Devoted or Owned on either entry.
+  const exclusiveBonds: import('../spawn-engine/types/enums').BondType[] = [
+    BondType.Devoted,
+    BondType.Owned,
+  ];
+  const hasExclusiveBond =
+    (primRel && exclusiveBonds.includes(primRel.bond)) ||
+    (secRel  && exclusiveBonds.includes(secRel.bond));
+
+  if (hasExclusiveBond) return true;
+
+  // Check jealousy tendency: High on either NPC's social profile.
+  const primSocial = primaryNpc.social as import('../spawn-engine/character/psychologyCore').SocialProfile | undefined;
+  const secSocial  = secondNpc.social  as import('../spawn-engine/character/psychologyCore').SocialProfile | undefined;
+  const hasHighJealousy =
+    primSocial?.jealousyTendency === JealousyTendency.High ||
+    secSocial?.jealousyTendency  === JealousyTendency.High;
+
+  return hasHighJealousy;
+}
+
+// ─── 28f.1 — startGroupScene ───────────────────────────────────────────────
+
+/**
+ * Initialises a CONSENSUAL_GROUP scene.
+ * Calls startScene() for primary-partner fields, then patches in all
+ * secondPartner* fields and groupMode from the second partner's profile.
+ *
+ * The dispatcher emits INTIMACY_GROUP_SCENE_STARTED after receiving the
+ * returned IntimacyScene.
+ */
+export function startGroupScene(
+  primaryNpcId:   string,
+  secondNpcId:    string,
+  groupMode:      'MMF' | 'FFM',
+  primaryPartner: NpcPartnerProfile,
+  secondPartner:  NpcPartnerProfile,
+  player:         PlayerSnapshot,
+): IntimacyScene {
+  // Build the primary solo-scene base.
+  const base = startScene(primaryNpcId, 'CONSENSUAL', primaryPartner, player);
+
+  // Patch in group-scene fields.
+  const scene: IntimacyScene = {
+    ...base,
+    startType:    'CONSENSUAL_GROUP',
+    groupMode,
+    // ── Second partner initialisation ──
+    secondPartnerNpcId:            secondNpcId,
+    secondPartnerProfile:          secondPartner,
+    secondPartnerArousal:          secondPartner.arousalCurrent,
+    secondPartnerStaminaCurrent:   secondPartner.staminaMax,
+    secondPartnerStaminaMax:       secondPartner.staminaMax,
+    secondPartnerHasFainted:       false,
+    secondPartnerLifeForce:        secondPartner.intimacyLifeForce ?? 100,
+    secondPartnerEngagementStatus: PartnerEngagementStatus.Neutral,
+    secondOrgasmLog:               [],
+    secondLoveDeltaAccum:          0,
+    secondTrustDeltaAccum:         0,
+  };
+
+  return scene;
 }
