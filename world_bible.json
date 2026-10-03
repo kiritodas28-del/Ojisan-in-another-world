@@ -1,0 +1,2826 @@
+{
+  "meta": {
+    "title": "World Bible (working draft)",
+    "project": "Single-player fantasy RPG",
+    "scope": "World-building only. Game narrative, acts, quests, endings and central mystery are in game_lore.json.",
+    "version": "2.0",
+    "last_updated": "2026-10-03",
+    "world_name": "Verendel",
+    "notes_for_llm": [
+      "Treat everything in canon_key.user_decided as fixed canon. Do not contradict it.",
+      "Treat everything in canon_key.provisional_elements as proposals the author may change. Stay consistent with them unless told otherwise.",
+      "Anything in open_items is undecided. Offer options and ask the author instead of silently inventing.",
+      "Tone is a realistic medieval world that is not dark. Hardship exists but is not graphic or grim."
+    ],
+    "world_name_note": "Means the Made Land in the old tongue the gods taught (provisional). Alternatives considered: Solmara, Caelmere, Orvaine.",
+    "decision_tree_artifact": "https://claude.ai/artifact/XvY4T7X2Co3w1SHSUzu94n",
+    "companion_file": "game_lore.json"
+  },
+  "canon_key": {
+    "user_decided": [
+      "Realistic medieval world, not dark. No vague invented races.",
+      "Peoples: human, elf (high, wood, dark), dwarf, high orc, angel, demon, devil, succubus and incubus, vampire, gods and goddesses, their half-races (half-elf etc.), half-animal races with maximum human features (fox, wolf, bunny, lizard, dragon, bear, dog, cat), plus ordinary animals and animal monsters.",
+      "Four full societies: human, elf, dwarf, demon.",
+      "Different religions with gods and goddesses. No holy days system.",
+      "A medieval-style slave system exists: legal in some realms, frowned upon in others.",
+      "Several continents. Peoples mostly live separately, with a few big cosmopolitan cities.",
+      "An adventurer system exists.",
+      "A class/job system (Paths) that is optional, awakened by different means, with some Paths easier for certain races.",
+      "A reputation/infamy system and a bounty system.",
+      "A supreme non-physical creator god made the world and also made the current physical gods and goddesses.",
+      "Gods and angels live on floating islands above each of their major churches.",
+      "Demons have their own continent and society.",
+      "No separate planes: a two-tier world (ground and god islands). People with very high divinity and power can go to the god islands. No invitation or ascension mechanic.",
+      "After death there is nothing.",
+      "Every being has magic power (MP) and all magic comes from it.",
+      "Calendar: 365 days, 12 months, 7-day week, 4 seasons (summer, rainy, winter, spring).",
+      "Half-races are discriminated against, but not everywhere. Relations between races are very frowned upon.",
+      "One common currency worldwide. Each major city has its own banks. Various trade houses exist.",
+      "One common language worldwide.",
+      "Going with: everyone has MP as life-energy and Awakening shapes it into skills; each major people descends from or was shaped by a physical god; the creator is nameless with no temples or clergy; gods seldom descend and angels act as envoys; no resurrection, no ghosts or undead, vampires are living beings.",
+      "There is no such thing as interrace marriage anywhere. Half-races are generally born to eloped couples, captive or bonded couples, slave mothers and similar cases.",
+      "A god can be killed.",
+      "Angels were created by the supreme creator, not by the gods. There are 10 to 20 angels for each god.",
+      "Game premise: a man in his 30s from present-day Earth is transported into this world.",
+      "Teleportation is allowed. Areas guarded by magic runes (wards) make teleportation to or from them fail.",
+      "Mind control is possible, but very expensive and it also tolls the user.",
+      "Gunpowder is present. Basic technology like cannons exists, but magic far outperforms it. It is used when magic is expensive.",
+      "The game lore skeleton has 6 acts and 25 side characters.",
+      "Varan was not killed but enslaved: someone has enslaved the goddess.",
+      "Transport: the player simply wakes up in the world, no reason given at the start.",
+      "Only cannons, no crude hand firearms.",
+      "Protagonist: player chooses name, background, and class/job; skills follow the class.",
+      "Side character stories to be decided after main lore is finalised.",
+      "Relationship system: as per the game's standard system, no explicit requirement.",
+      "Varan is now a goddess named Varan. She was not killed but secretly enslaved and removed from her island 22 years ago. This is the central secret of the game.",
+      "The player simply wakes up in Verendel. No explanation is given at the start.",
+      "The player chooses their own name, background, and class/job. Skills follow the chosen class.",
+      "Only cannons exist. No hand firearms.",
+      "Endings are built around gods/goddesses, law, and the player's choice of power, not slavery/peoples axes.",
+      "A True Bad End exists where Varan is killed during a failed rescue.",
+      "A Power End exists where the player enslaves Varan himself.",
+      "A Secret End exists tied to fully resolving the Seekers thread.",
+      "Kharrath and his church (the Ember Conclave) enslaved Varan to drain her MP and feed it into Kharrath's power, with the goal of absorbing all gods and becoming the sole deity.",
+      "The six acts each protect one god/goddess per act (Acts 2-4), with Act 1 being the longest discovery act and Act 5 being the final confrontation.",
+      "Morvane and the Ledger Courts are operational tools of Kharrath's church, not the mastermind.",
+      "Malvek did not know about Varan's enslavement and turns ally when exposed.",
+      "Nyxara suspects something is wrong with Kharrath but cannot prove it.",
+      "Act 1 is the longest act covering Tessara and all of Aldermere.",
+      "Power End: the player enslaves all six goddesses and seals all three gods, then rules as the sole power above all of Verendel.",
+      "Hestrel and Solenne are also targeted by Kharrath, in Act 5.",
+      "Nyxara, after suspecting her bonded partner and confronting him directly at the start of Act 5, is enslaved by Kharrath. The player witnesses it or arrives too late.",
+      "Kharrath's full target order: Varan (Act 1 discovery), Aeloria (Act 2), Thessaly (Act 3), Durgrim (Act 4), then Hestrel, Nyxara and Solenne all in Act 5.",
+      "All 25 side characters are female.",
+      "Queen Maren II's husband King-Consort Aldus Kess is alive.",
+      "Queen Ilvariel's husband Lord-Consort Aendrel Vael (wood elf) is alive.",
+      "Sylvaris Orenn is a widow; her husband died in the Age of Crowns over 600 years ago.",
+      "Four supporting sub-quest characters added: Rina Brightbrush, Kessa Emberscale, Sera Ash, Lady Velura Lysmere.",
+      "These four have no act-progression role but are needed for individual character sub-quests.",
+      "9-act structure with 9-10 quests in Act 1 and 6-7 per other act.",
+      "Each character has an introduction quest before any story-gate quests.",
+      "Gate checks are marked as GATE with placeholder conditions to be defined later.",
+      "Act 8 has two player-choice tracks: rescue (Ashvault) or confrontation (Emberspire).",
+      "Act 9 is a short epilogue showing the world one season after Act 8, with scenes per character relationship.",
+      "No retries anywhere. Every failure is a consequence that reshapes the world. Player always moves forward.",
+      "Act 1 failures are silent long-game penalties, not immediate blockers.",
+      "Acts 2-5: each goddess lost triggers a specific world change and a salvage path in a later act, not an immediate terminus.",
+      "Act 6: Nyxara's enslavement is unavoidable. The act gate is Evara (rescue method) and Velindra's warning (coalition strength).",
+      "Act 8 difficulty is shaped by how many goddesses were saved across Acts 2-5 and 7. No retry on the final fight.",
+      "Narrative defeat sequence exists for players who lose the Act 8 fight after accumulating multiple goddess losses.",
+      "Quest details added: each quest has objective, outcome, failure consequence, and failure system link. Goddess target order corrected: Durgrim=Act3, Thessaly=Act4. Two salvage quests added in Act 5 for Aeloria and Thessaly failure paths.",
+      "The god-level rune-ward and devil contract mechanism for enslaving goddesses is removed entirely.",
+      "Kharrath uses the world's existing slavery system, scaled to divine levels using enormous MP drawn directly from himself.",
+      "Kharrath keeps enslaved goddesses compliant through binding and carnal pleasure.",
+      "The slavery mechanism is the same in kind as mortal slavery; only the scale (MP cost) and the target (divine beings) are extraordinary.",
+      "Character psychology layer added: each of the 25 main side characters has personality traits, humor style, baseline trust and loyalty, jealousy tendency, affection style, and sexual psychology (confidence, lean, resistance profile, hidden desire)."
+    ],
+    "provisional_elements": [
+      "All named rulers, cities, kingdoms, houses, clans and feuds",
+      "The eight gods' names, domains and details",
+      "Which god shaped which people (orcs under Thessaly, vampires from Nyxara)",
+      "Dragonkin as descendants of the First Wyrms",
+      "Eight islands, one per god",
+      "The behemoth migration as the trigger for the Charter",
+      "Concord Crown as the currency name",
+      "The Wayfarers' Charter, its ranks, and all tier names",
+      "Current year about 614 YC and the lengths of each age",
+      "The share of Awakened people (about one in ten)",
+      "Sarrakesh's legal slavery with protections",
+      "The monster tier list and sacred animals",
+      "All lifespans and adulthood ages",
+      "Child takes the mother's people and legal status unless the father acknowledges and frees them",
+      "Kin-right adoption of captives among high orcs",
+      "Sealed contracts binding MP (devils)",
+      "The Quiet Table (vampire elder council)",
+      "Dark elf registered indenture system",
+      "Realm-by-realm half-race stances",
+      "Coin system, all prices and wages",
+      "Market Day and Restday",
+      "All named factions, mercenary companies and academies",
+      "Literacy rates and naming conventions",
+      "World name Verendel",
+      "Aldermere, Sylvaren and Khardun as separate continents joined by two narrow land links (Tessara Neck, Stonebridge Spine)",
+      "All geography details, distances, diseases, MP numbers and magic limits",
+      "All bounty hunter archetypes",
+      "No new angels are created after the Making, so every angel death is permanent (provisional)",
+      "Exact rank breakdown inside each angel host",
+      "Varan enslaved in 592 YC and all consequences (the Silence, Templar Paths, coronations, Crownhost)",
+      "All named leaders below the rulers",
+      "All nation profiles: populations, military and wealth ratings, goals",
+      "All inter-nation relations",
+      "Everything inside game_lore except the premise (anomaly traits, Option A, Tessara start, acts, threads, endgame axes, the 25 character slots)",
+      "Teleportation details: who can do it, costs, destination rules, ward sites and upkeep",
+      "Mind control details: costs, backlash, who can do it, legal status",
+      "Gunpowder details: production sources, regulation, how cannons are used, and that no reliable hand firearms exist",
+      "All ending names, descriptions and axis states",
+      "The enslaver: Iskander Thorne, Grand Arbiter of the Ledger Courts",
+      "The binding mechanism: an ancient clause in the original Creator's contract",
+      "The second-god threat: Thessaly, detected in Act 4",
+      "All protagonist backgrounds and their bonuses",
+      "Malvek's knowledge of Thorne's act as an open ambiguity",
+      "Varan renamed from Varan throughout",
+      "House Morvane and Lady Cassiel Morvane as the perpetrator and their full motive",
+      "The Seekers as unwitting tools corrupted by Morvane",
+      "Aeloria as the second-god target revealed at the end of Act 4",
+      "All seven named endings and their axis conditions",
+      "The player's arrival as an accidental side effect of Morvane's corrupted ritual",
+      "All ending details, conditions, and flavour text",
+      "The Creator Stirs secret ending",
+      "Kharrath as Nyxara's bonded partner rather than Malvek",
+      "The Ember Conclave as Kharrath's inner church circle",
+      "A First Wyrm stirring in Act 4",
+      "All updated act beats, god threat order, and ending details",
+      "Exact MP cost for Kharrath to initiate and maintain divine slavery on each goddess",
+      "Physical form and nature of the binding used on enslaved goddesses",
+      "Whether enslaved goddesses retain consciousness and awareness (provisionally yes — they are aware but compliant)",
+      "How the carnal pleasure aspect works as a compliance mechanism rather than punishment",
+      "Whether freeing a goddess requires matching MP, a specific counter-act, or something else",
+      "Morvane's operational role without the ward mechanic — she managed logistics, agents, and the physical capture operation"
+    ]
+  },
+  "cosmology": {
+    "creator": "Non-physical supreme god. Made the world, the sky, the First Wyrms (great dragons), the wild beasts, the eight physical gods and the angels, then withdrew. Nameless, no temples or clergy. All faiths acknowledge it.",
+    "gods": {
+      "count": 9,
+      "nature": "Physical beings made by the creator, in four bonded pairs",
+      "involvement": "Seldom descend. Act through angels, blessings, omens and chosen followers.",
+      "see": "religion.gods",
+      "mortality": "Gods do not age but can be killed.",
+      "status": {
+        "free_at_game_start": [
+          "solenne (silent, grieving)",
+          "aeloria",
+          "thessaly",
+          "durgrim",
+          "hestrel",
+          "nyxara (suspects kharrath)",
+          "malvek",
+          "kharrath (villain, growing stronger)"
+        ],
+        "enslaved_at_game_start": [
+          {
+            "id": "varan",
+            "since": "592 YC",
+            "held_at": "rune-ward vault beneath Ashvault"
+          }
+        ],
+        "kharrath_target_order": [
+          {
+            "order": 1,
+            "goddess": "varan",
+            "act": "enslaved before game starts, discovered Act 1"
+          },
+          {
+            "order": 2,
+            "goddess": "aeloria",
+            "act": "Act 2 threat"
+          },
+          {
+            "order": 3,
+            "goddess": "durgrim",
+            "act": "Act 3 threat"
+          },
+          {
+            "order": 4,
+            "goddess": "thessaly",
+            "act": "Act 4 threat"
+          },
+          {
+            "order": 5,
+            "goddess": "hestrel",
+            "act": "Act 5 threat (ward half-built from Durgrim components)"
+          },
+          {
+            "order": 6,
+            "goddess": "nyxara",
+            "act": "Act 6, enslaved when she confronts Kharrath directly mid-act"
+          },
+          {
+            "order": 7,
+            "goddess": "solenne",
+            "act": "Act 7 threat, final target before the confrontation"
+          }
+        ],
+        "free_by_act_5_start": [
+          "aeloria (saved Act 2)",
+          "thessaly (saved Act 3)",
+          "durgrim (saved Act 4)",
+          "malvek (ally Act 3)"
+        ],
+        "note": "Only Malvek, Aeloria, Thessaly and Durgrim are free and available as allies in Act 5. Hestrel, Nyxara and Solenne are all at risk simultaneously.",
+        "enslaved": [
+          {
+            "id": "varan",
+            "since": "592 YC",
+            "held_at": "Ashvault, Vashkar — in physical captivity within the Ember Temple's deepest level",
+            "enslaver": "Kharrath, using the world's slavery system at divine scale",
+            "mechanism": "Enslaved using the same system as mortal slavery, but powered by Kharrath's own MP at an enormous cost. Binding and carnal pleasure keep her compliant rather than resistant.",
+            "note": "Alive and aware. Her MP has been draining into Kharrath for 22 years. She is conscious but does not fight the compliance."
+          }
+        ],
+        "nyxara_note": "Enslaved mid-Act 6 by the same method. Kharrath's bonded partner. Aware and compliant."
+      },
+      "pairs": [
+        {
+          "pair": 1,
+          "members": [
+            "solenne",
+            "varan"
+          ],
+          "shaped": "humans"
+        },
+        {
+          "pair": 2,
+          "members": [
+            "aeloria",
+            "thessaly"
+          ],
+          "shaped": "elves, beastfolk and orcs"
+        },
+        {
+          "pair": 3,
+          "members": [
+            "durgrim",
+            "hestrel"
+          ],
+          "shaped": "dwarves"
+        },
+        {
+          "pair": 4,
+          "members": [
+            "nyxara",
+            "kharrath",
+            "malvek"
+          ],
+          "shaped": "demons, succubi, incubi, vampires, devils",
+          "note": "A triple bonding. One of three pairs and one triple, the only such group."
+        }
+      ],
+      "sex_count": "6 goddesses (Solenne, Varan, Aeloria, Thessaly, Hestrel, Nyxara) and 3 gods (Durgrim, Malvek, Kharrath). The Creator made six goddesses and three gods; no one knows why."
+    },
+    "angels": {
+      "origin": "Created by the supreme creator, not by the gods, and assigned to serve the gods.",
+      "numbers": "10 to 20 angels for each god, so roughly 80 to 160 in total",
+      "role": "Live with their god on the island and act as envoys.",
+      "mortality": "Do not age but can be killed. Death is final and no new angels are created (provisional), so each loss is permanent."
+    },
+    "islands": "A floating island hangs above each god's major church. The city beneath it is a pilgrimage site.",
+    "planes": "None. Two-tier world: the ground and the god islands.",
+    "death": "Nothing follows death. No afterlife, no resurrection, no ghosts, no undead. Memory Halls keep names and deeds.",
+    "divinity": "Purity and strength of a being's MP, sharpened by faith, deeds and Path mastery. Very high divinity and power lets a being reach the god islands.",
+    "common_tongue": "A gift of the gods. One language worldwide. Accents, idioms, scripts and naming traditions still differ by people."
+  },
+  "calendar": {
+    "days_per_year": 365,
+    "months": 12,
+    "days_per_week": 7,
+    "seasons": [
+      "summer",
+      "rainy",
+      "winter",
+      "spring"
+    ],
+    "season_length": "3 months each (provisional)",
+    "reckoning": "YC = Year of the Charter. Year 0 is the founding of the Wayfarers' Charter. Current year about 614 YC (provisional).",
+    "holy_days": "Not used",
+    "week_rhythm": "Five work days, then Market Day, then Restday. Restday is a day off, not a holy day (provisional).",
+    "seasonal_life": {
+      "spring": "Planting and sailing season",
+      "summer": "Growth and war season",
+      "rainy": "Floods roads and slows travel",
+      "winter": "Guild work and indoor trade"
+    }
+  },
+  "magic": {
+    "source": "Every being has MP. All magic comes from MP.",
+    "baseline": "MP quietly powers strength, health and endurance for everyone (provisional).",
+    "awakening_meaning": "Awakening is the ability to shape MP into skills (provisional).",
+    "see_also": "paths",
+    "mp_scale_placeholder": {
+      "unawakened_adult_human": 100,
+      "awakened": "150 to 300",
+      "adept": "400 to 800",
+      "master": "1,000 to 3,000",
+      "legend": "5,000 and up",
+      "note": "Placeholder for game balance"
+    },
+    "pool_by_people": "Humans, orcs and dwarves around average. High elves, dark elves, demons, devils and vampires higher. Angels far above. Gods beyond measure.",
+    "recovery": "A night's rest and food restore most of a pool.",
+    "casting_types": [
+      "instant",
+      "sustained (drains MP each round)",
+      "ritual (slow, can be done by a group)"
+    ],
+    "overdraw": "Casting beyond your pool drains vitality and can cause collapse. Repeated overdraw causes burnout, a lasting loss of pool.",
+    "divine_magic": "Blessings are the god's will, but the cleric's own MP powers them.",
+    "limits": [
+      "No resurrection",
+      "No creating matter from nothing",
+      "No scrying beyond line of sight except limited Oracle visions"
+    ],
+    "disciplines": [
+      "elemental",
+      "body enhancement",
+      "healing",
+      "illusion",
+      "runes and enchanting",
+      "alchemy",
+      "divine",
+      "pact",
+      "primal",
+      "bloodline",
+      "spatial"
+    ],
+    "items": {
+      "grades": [
+        "mundane",
+        "fine",
+        "enchanted",
+        "relic"
+      ],
+      "rules": [
+        "Runes store MP",
+        "Anyone with MP can trigger an enchanted item, even without a Path",
+        "Monster parts retain MP, which makes them valuable to Runesmiths and Alchemists"
+      ]
+    },
+    "detection": "Awakened people can sense MP at close range.",
+    "regulation": "Kingdoms regulate battle magic inside cities. The Arcane Collegium licenses mages.",
+    "death": "MP dissipates at death. Nothing remains.",
+    "teleportation": {
+      "status": "Allowed (user decided)",
+      "wards": "Areas guarded by magic runes make teleportation to or from them fail (user decided).",
+      "who": "Awakened with a spatial Arcane ability, rare even among the Awakened (provisional)",
+      "cost": "Scales with distance and the number of people carried. Usually a large share of the caster's pool (provisional).",
+      "destination": "Must be a place the caster has visited or one marked by an anchor rune (provisional)",
+      "ward_sites": [
+        "prisons and courthouses",
+        "vaults and banks",
+        "castles and fortresses",
+        "temples and Memory Halls",
+        "Charter halls",
+        "dwarven holds",
+        "Ledger Courts halls"
+      ],
+      "ward_upkeep": "Wards are engraved by Runesmiths and powered by stored MP, so large wards are expensive and limited to key sites (provisional).",
+      "effects": "Ordinary travel still dominates because teleporting is costly and rare (provisional)."
+    },
+    "mind_control": {
+      "status": "Possible but very expensive, and it tolls the user too (user decided)",
+      "cost": "Extreme MP cost plus backlash on the caster: lost vitality and a risk of lasting burnout, growing with the target's resistance (provisional).",
+      "duration": "Short, and a target with a much larger pool can resist or break it (provisional).",
+      "who": "Rare, Adept tier or higher, usually Pact, Enchanter or Emissary Paths (provisional)",
+      "cheap_version": "Charm and persuasion only influence and cost little.",
+      "law": "A grave crime in most realms (provisional).",
+      "slavery_note": "Too costly to use as a basis for slavery or armies, but usable on single high-value targets (provisional)."
+    }
+  },
+  "peoples": [
+    {
+      "id": "human",
+      "origin": "Shaped by Solenne and Varan",
+      "homeland": "Aldermere",
+      "faith": "Radiant Faith",
+      "path_affinity": "Martial, Craft, any by training. Most flexible, no edge.",
+      "notes": "Most numerous, politically divided, short-lived compared to elves."
+    },
+    {
+      "id": "high_elf",
+      "origin": "Shaped by Aeloria",
+      "homeland": "Sylvaren (Sunlit Court)",
+      "faith": "Old Wood",
+      "path_affinity": "Arcane, Divine (Oracle), Bard",
+      "notes": "Long-lived. Some alive today remember the Age of Voyages."
+    },
+    {
+      "id": "wood_elf",
+      "origin": "Shaped by Aeloria",
+      "homeland": "Sylvaren (Thousand Groves)",
+      "faith": "Old Wood",
+      "path_affinity": "Primal (Druid, Ranger)",
+      "notes": "Clan-based, keeps distance from the court."
+    },
+    {
+      "id": "dark_elf",
+      "origin": "Split from the high elven court in a succession crisis during the Age of Crowns",
+      "homeland": "Western edge of Sylvaren (Nightbound Houses)",
+      "faith": "Night Court",
+      "path_affinity": "Shadow, Pact",
+      "notes": "Merchant-and-spy dynasties. Rivals of high elves, not villains."
+    },
+    {
+      "id": "dwarf",
+      "origin": "Shaped by Durgrim and Hestrel",
+      "homeland": "Khardun",
+      "faith": "Stone Covenant",
+      "path_affinity": "Craft, Runesmith, Warrior (defender)",
+      "notes": "Clan and guild based. Oaths and debts are sacred."
+    },
+    {
+      "id": "high_orc",
+      "origin": "Shaped by Thessaly (provisional)",
+      "homeland": "Tharos (Red Steppe)",
+      "faith": "Old Wood (Thessaly)",
+      "path_affinity": "Berserker, Shaman, Warrior",
+      "notes": "Clan society. Raids and captives are part of frontier life."
+    },
+    {
+      "id": "beastfolk",
+      "origin": "Shaped by Thessaly",
+      "homeland": "Tharos",
+      "faith": "Old Wood (Thessaly)",
+      "path_affinity": "Primal, Ranger, Shadow",
+      "notes": "They are people, not animals. Enslaving or hunting them is a serious crime in most realms.",
+      "species": {
+        "fox": "Illusion, trickery, Bard, Rogue",
+        "wolf": "Pack tactics, Ranger, Warrior",
+        "bunny": "Scouting, speed, luck-based Rogue Paths",
+        "cat": "Acrobatics, Rogue, Assassin",
+        "dog": "Guardianship, tracking, Knight-style loyalty Paths",
+        "bear": "Berserker, guardian Warrior",
+        "lizard": "Survival, ritual, Shaman, Alchemist"
+      }
+    },
+    {
+      "id": "dragonkin",
+      "origin": "Claim descent from the First Wyrms (provisional)",
+      "homeland": "Tharos (Scaled Peaks)",
+      "faith": "Old Wood (Thessaly)",
+      "path_affinity": "Dragonblood, Elementalist",
+      "notes": "A beastfolk people, distinct from true dragons."
+    },
+    {
+      "id": "demon",
+      "origin": "Shaped by Nyxara",
+      "homeland": "Vashkar",
+      "faith": "Night Court",
+      "path_affinity": "Pact, Emberborn, Duelist",
+      "notes": "House-based society built on bloodline and contracts."
+    },
+    {
+      "id": "devil",
+      "origin": "Shaped by Malvek",
+      "homeland": "Vashkar",
+      "faith": "Night Court (Malvek)",
+      "path_affinity": "Contractor, Warlock, law-based Templar-style Paths",
+      "notes": "Contract and law bound. Run the Ledger Courts."
+    },
+    {
+      "id": "succubus_incubus",
+      "origin": "Nyxara's line",
+      "homeland": "Vashkar (House Lysmere)",
+      "faith": "Night Court",
+      "path_affinity": "Enchanter, Bard, Emissary",
+      "notes": "Courtiers, diplomats and envoys."
+    },
+    {
+      "id": "vampire",
+      "origin": "Nyxara's line (provisional)",
+      "homeland": "Scattered, inside other nations' courts",
+      "faith": "Night Court",
+      "path_affinity": "Nightblood, Assassin, Arcane",
+      "notes": "Living beings, long-lived bloodline, a small old aristocracy. Not undead."
+    },
+    {
+      "id": "angel",
+      "origin": "Created by the supreme creator, 10 to 20 for each god",
+      "homeland": "God islands",
+      "faith": "Their god",
+      "path_affinity": "Divine, Sunblessed",
+      "notes": "Serve the gods and act as envoys. Rarely on the ground. Very few exist, so each one matters."
+    },
+    {
+      "id": "god",
+      "origin": "Made by the creator",
+      "homeland": "God islands",
+      "faith": "n/a",
+      "notes": "Eight physical beings. They do not age but can be killed. See religion.gods."
+    }
+  ],
+  "half_races": {
+    "rule": "Offspring of two peoples (half-elf, half-orc, half-demon, half-angel, etc.). They inherit a blend of both parents' Path affinities.",
+    "no_interrace_marriage": "No legal or customary interrace marriage exists anywhere. Unions between peoples are unrecognised and no faith performs the rite for a mixed couple.",
+    "how_born": [
+      "Eloped couples who flee their peoples, often to borderlands or cosmopolitan cities",
+      "Captive or bonded couples, where an enslaved or captive person and an owner or captor form a lasting bond. Morally tangled, because the power gap makes it unclear how free the choice was.",
+      "Enslaved mothers, whose children are born into the same legal status where slavery is legal",
+      "Frontier and trade-road liaisons among soldiers, caravan crews and adventurers, often unacknowledged",
+      "Rarely, liaisons with angels or god-touched beings"
+    ],
+    "legal_status_rule": "The child takes the mother's people and legal status, unless the father formally acknowledges and frees them (provisional).",
+    "lifespan_rule": "Falls between the parents' lifespans, leaning toward the shorter-lived parent. A half-elf with a human parent often lives 150 to 250 years.",
+    "fertility_rule": "Any two humanoid peoples can conceive, but odds fall as the lifespan gap and lineage distance grow, so half-races are few. Peoples shaped by the same god or pair are closest.",
+    "map": [
+      {
+        "region": "Aurendale, Hallowmere, Stormvale",
+        "stance": "Suspect",
+        "notes": "Free if the mother is free, but barred from noble rank and temple posts"
+      },
+      {
+        "region": "Castellane",
+        "stance": "Tolerated",
+        "notes": "Chivalric culture gives them more room"
+      },
+      {
+        "region": "Marrowen",
+        "stance": "Harsh",
+        "notes": "Status follows the mother, so many are enslaved"
+      },
+      {
+        "region": "Sarrakesh",
+        "stance": "Mixed",
+        "notes": "Cannot inherit, but can be freed with protections"
+      },
+      {
+        "region": "Sunlit Court",
+        "stance": "Shunned",
+        "notes": "Barred from Court rank, allowed only as commoners"
+      },
+      {
+        "region": "Thousand Groves",
+        "stance": "Suspect",
+        "notes": "Clans occasionally adopt, rarely"
+      },
+      {
+        "region": "Nightbound Houses",
+        "stance": "Tolerated",
+        "notes": "Useful as go-betweens, excluded from house rank"
+      },
+      {
+        "region": "Khardun",
+        "stance": "Shunned",
+        "notes": "Cannot be clan-kin, only hearth-guests in guilds"
+      },
+      {
+        "region": "Demon Houses",
+        "stance": "Ambiguous",
+        "notes": "Commons by default, but a strong bloodline can be adopted by a House by contract"
+      },
+      {
+        "region": "Red Steppe",
+        "stance": "Mixed",
+        "notes": "Accepted if the father acknowledges the child at the clan fire"
+      },
+      {
+        "region": "Beastfolk lands",
+        "stance": "Accepting",
+        "notes": "Clans readily adopt"
+      },
+      {
+        "region": "Cosmopolitan cities",
+        "stance": "Tolerated",
+        "notes": "Couples live openly but cannot wed"
+      }
+    ],
+    "inter_race_relations": "Very frowned upon everywhere. No interrace marriage exists."
+  },
+  "geography": {
+    "continents": [
+      {
+        "id": "aldermere",
+        "peoples": [
+          "human"
+        ],
+        "character": "Temperate farmland, rivers, feudal kingdoms"
+      },
+      {
+        "id": "sylvaren",
+        "peoples": [
+          "high_elf",
+          "wood_elf",
+          "dark_elf"
+        ],
+        "character": "Ancient forests, white-stone courts, twilight canyons in the west"
+      },
+      {
+        "id": "khardun",
+        "peoples": [
+          "dwarf"
+        ],
+        "character": "Mountain ranges, deep holds, iron and gold"
+      },
+      {
+        "id": "vashkar",
+        "peoples": [
+          "demon",
+          "devil",
+          "succubus_incubus"
+        ],
+        "character": "Warm volcanic highlands, red-stone cities, fertile ash-soil valleys. Vivid, not grim."
+      },
+      {
+        "id": "tharos",
+        "peoples": [
+          "high_orc",
+          "beastfolk",
+          "dragonkin"
+        ],
+        "character": "Steppes, savanna, jungle, marsh, river deltas, mountains"
+      }
+    ],
+    "seas": [
+      "Middle Sea (center, contains Concord Isle)",
+      "Stormwall Sea (north and west)"
+    ],
+    "cosmopolitan_cities": [
+      {
+        "id": "concord",
+        "location": "Concord Isle, center of the Middle Sea",
+        "rule": "Charter council",
+        "notes": "Founded the Charter. Neutral charter city."
+      },
+      {
+        "id": "port_halcyon",
+        "location": "Southern coast of Aldermere",
+        "rule": "Merchant council",
+        "notes": "Biggest harbor and markets."
+      },
+      {
+        "id": "tessara",
+        "location": "River crossroads between Aldermere and Sylvaren",
+        "rule": "River guild council"
+      },
+      {
+        "id": "stonebridge",
+        "location": "Mountain pass between Khardun and Aldermere",
+        "rule": "Joint human-dwarf garrison",
+        "notes": "Toll disputes settled by the Charter."
+      },
+      {
+        "id": "gloamhaven",
+        "location": "Strait between Vashkar and Sylvaren",
+        "rule": "Night-market guilds",
+        "notes": "Demons, dark elves and vampires trade here."
+      }
+    ],
+    "animals_by_continent": {
+      "aldermere": [
+        "deer",
+        "boar",
+        "wolves",
+        "brown bears",
+        "foxes",
+        "hares",
+        "hawks",
+        "salmon"
+      ],
+      "sylvaren": [
+        "moonstags",
+        "silver owls",
+        "white hares",
+        "songbirds",
+        "river otters"
+      ],
+      "khardun": [
+        "mountain goats",
+        "snow leopards",
+        "cave bears",
+        "eagles",
+        "rock-badgers"
+      ],
+      "vashkar": [
+        "ash-lizards",
+        "red-maned lions",
+        "desert foxes",
+        "sunbirds",
+        "goats"
+      ],
+      "tharos": [
+        "wild horses",
+        "aurochs",
+        "mammoths",
+        "rhinos",
+        "panthers",
+        "crocodiles",
+        "apes"
+      ],
+      "seas": [
+        "whales",
+        "sharks",
+        "seals",
+        "giant squid",
+        "great turtles"
+      ]
+    },
+    "layout": {
+      "middle_sea": "At the center of the world, with Concord Isle in its heart",
+      "stormwall_sea": "Wraps the north and west",
+      "gloam_strait": "Narrow strait between Sylvaren and Vashkar, home to Gloamhaven",
+      "positions": {
+        "aldermere": "West-southwest",
+        "sylvaren": "North of Aldermere",
+        "khardun": "East of Aldermere",
+        "vashkar": "Northeast, across the Gloam Strait from Sylvaren",
+        "tharos": "South, across the Middle Sea"
+      }
+    },
+    "land_links": [
+      {
+        "id": "tessara_neck",
+        "joins": "Aldermere and Sylvaren",
+        "city": "Tessara"
+      },
+      {
+        "id": "stonebridge_spine",
+        "joins": "Aldermere and Khardun",
+        "city": "Stonebridge",
+        "note": "Mountain range"
+      }
+    ],
+    "continent_details": {
+      "aldermere": {
+        "climate": "Temperate north, warm south, desert in the southeast",
+        "terrain": "River plains, hills, northern highlands",
+        "extra_cities": [
+          "Brightwater (river port)",
+          "Harrowgate (northern fort)",
+          "Saltmarsh Quay (southern port)"
+        ],
+        "wonders": [
+          "The Golden Vale (wheat basin)",
+          "The Hallow Fells"
+        ],
+        "ancient_site": "The Old Beacon, a tower from the Age of Voyages"
+      },
+      "sylvaren": {
+        "climate": "Mild, humid, misty",
+        "terrain": "Vast forests, moonlit lakes, twilight canyons in the west",
+        "extra_cities": [
+          "Aelune (lakeside scholar city)",
+          "Mossgate (wood elf trading grove)"
+        ],
+        "wonders": [
+          "The Moonwell spring",
+          "The Glass Falls"
+        ],
+        "ancient_site": "The Dawnstones, a circle from the Age of Dawn"
+      },
+      "khardun": {
+        "climate": "Cold and high",
+        "terrain": "Mountain ranges, deep valleys, hot springs",
+        "extra_cities": [
+          "Frostmoot (northern winter hold)",
+          "Gemmarow (gem mines)"
+        ],
+        "wonders": [
+          "The Great Anvil (peak)",
+          "The Crystal Halls (cavern)"
+        ],
+        "ancient_site": "The First Hold, a sealed ancient hall"
+      },
+      "vashkar": {
+        "climate": "Warm, with a fierce rainy season",
+        "terrain": "Volcanic highlands, fertile ash plains",
+        "extra_cities": [
+          "Cindergate (port)",
+          "Redmarket (great bazaar)",
+          "Ashmere (farm valley)"
+        ],
+        "wonders": [
+          "The Burning Terraces (hot-spring terraces)",
+          "The Glasswastes (fields of fire-glass)"
+        ],
+        "ancient_site": "Shrine of the First Flame"
+      },
+      "tharos": {
+        "climate": "Hot, monsoon rains",
+        "terrain": "Steppe, savanna, marsh, jungle, mountains",
+        "extra_cities": [
+          "Delta Market (river-delta trade town)",
+          "Highpost (caravan station)"
+        ],
+        "wonders": [
+          "The Behemoth Run (migration route)"
+        ],
+        "ancient_site": "The Wyrm Graves, bones of a First Wyrm"
+      }
+    },
+    "travel": {
+      "on_foot": "20 to 25 miles a day",
+      "on_horseback": "30 to 40 miles a day",
+      "sea": {
+        "port_halcyon_to_concord": "About 6 days",
+        "concord_to_vashkar": "About 8 days",
+        "concord_to_tharos": "About 10 days"
+      },
+      "note": "All provisional. Teleportation exists but is costly and rare, so ordinary travel still dominates."
+    }
+  },
+  "political_map": {
+    "aldermere": {
+      "binding_body": "Diet of Crowns. Settles disputes between crowns but has little power to enforce.",
+      "realms": [
+        {
+          "id": "aurendale",
+          "ruler": "King Edric III",
+          "capital": "Solhaven",
+          "notes": "Richest farmland, most prestigious crown. No clear heir. Hosts Solenne's Dawn Cathedral.",
+          "slavery": "Restricted to debt bondage"
+        },
+        {
+          "id": "hallowmere",
+          "ruler": "King Aldric IV",
+          "capital": "Varnhold",
+          "notes": "Cold northern highlands, devout, law-bound. Hosts Varan's Crown Basilica.",
+          "slavery": "Restricted"
+        },
+        {
+          "id": "stormvale",
+          "ruler": "Queen Maren II",
+          "capital": "Gullhaven",
+          "notes": "Coastal shipbuilders and fishing fleets.",
+          "slavery": "Restricted"
+        },
+        {
+          "id": "castellane",
+          "ruler": "Duke-King Lucan Valois",
+          "capital": "Castelmont",
+          "notes": "Hills, vineyards, chivalric culture.",
+          "slavery": "Frowned upon"
+        },
+        {
+          "id": "marrowen",
+          "ruler": "King Osric Valemont",
+          "capital": "Marrowgate",
+          "notes": "Southern plains and great estates.",
+          "slavery": "Legal and common"
+        },
+        {
+          "id": "sarrakesh",
+          "ruler": "Sultana Ilyara",
+          "capital": "Qasr Amaru",
+          "notes": "Desert oases and caravan routes.",
+          "slavery": "Legal, with formal protections and manumission traditions"
+        }
+      ],
+      "independent_cities": [
+        "port_halcyon",
+        "tessara"
+      ]
+    },
+    "sylvaren": {
+      "realms": [
+        {
+          "id": "sunlit_court",
+          "people": "high elves",
+          "ruler": "Queen Ilvariel the Unforgotten and the Council of Elders",
+          "capital": "Lumenthar",
+          "slavery": "Banned"
+        },
+        {
+          "id": "thousand_groves",
+          "people": "wood elves",
+          "ruler": "Clan councils",
+          "capital": "Silverglade",
+          "notes": "Hosts Aeloria's Moonwell Temple."
+        },
+        {
+          "id": "nightbound_houses",
+          "people": "dark elves",
+          "ruler": "Council of house-heads: Ysmere (trade), Kaelthorn (craft), Vesh (information)",
+          "capital": "Veyrithil"
+        }
+      ]
+    },
+    "khardun": {
+      "ruler": "High King Haldrek Stonevow, chosen by the Moot of Thanes",
+      "holds": [
+        {
+          "id": "hammerhall",
+          "notes": "Capital, seat of the Moot. Durgrim's Anvil."
+        },
+        {
+          "id": "deepforge",
+          "notes": "Largest mining and smithing hold. Hestrel's Great Forge."
+        },
+        {
+          "id": "goldenreach",
+          "notes": "Gems, banking and dwarven finance."
+        },
+        {
+          "id": "runeholm",
+          "notes": "Runecraft and the Runesmith academy."
+        },
+        {
+          "id": "gravelstone",
+          "notes": "Frontier hold guarding the human border."
+        }
+      ]
+    },
+    "vashkar": {
+      "ruler": "Archduchess Vesperine Kaldrith, chosen by the Conclave of the Great Houses",
+      "capital": "Emberspire (Nyxara's Veil Cathedral)",
+      "houses": [
+        {
+          "id": "kaldrith",
+          "role": "Ruling house"
+        },
+        {
+          "id": "sarvoth",
+          "role": "Military and fire-forges"
+        },
+        {
+          "id": "morvane",
+          "role": "Devil-aligned, runs the Ledger Courts at Ashvault (Malvek's Hall of Ledgers)"
+        },
+        {
+          "id": "lysmere",
+          "role": "Succubi and incubi courtiers and envoys"
+        }
+      ]
+    },
+    "tharos": {
+      "regions": [
+        {
+          "id": "red_steppe",
+          "peoples": "High orcs",
+          "organisation": "Clans (Ironjaw, Redhorn, Ashfang) under a Warmother's Council"
+        },
+        {
+          "id": "fangwood",
+          "peoples": "Wolf, bear, dog",
+          "organisation": "Pack-clan confederation"
+        },
+        {
+          "id": "pridelands",
+          "peoples": "Cat",
+          "organisation": "Savanna clans"
+        },
+        {
+          "id": "reedmarsh",
+          "peoples": "Lizard",
+          "organisation": "Marsh-village councils"
+        },
+        {
+          "id": "burrow_commons",
+          "peoples": "Bunny",
+          "organisation": "Communal warren-towns"
+        },
+        {
+          "id": "red_glades",
+          "peoples": "Fox",
+          "organisation": "Clever trading clans"
+        },
+        {
+          "id": "scaled_peaks",
+          "peoples": "Dragonkin",
+          "organisation": "Mountain clans"
+        }
+      ],
+      "notes": "Thessaly's Hunt-Mother's Lodge stands at Wildmark, where clans gather for seasonal moots."
+    },
+    "tensions": [
+      "Marrowen vs Castellane: border feud over slavery law, escaped slaves crossing north",
+      "Aurendale succession: no clear heir, neighbors positioning",
+      "Hallowmere vs Stormvale: fishing and shipping rights",
+      "Sunlit Court vs Nightbound Houses: long cold rivalry that never becomes war",
+      "Khardun and Aldermere: toll disputes at Stonebridge, settled by the Charter",
+      "Vashkar and Sylvaren: wary trade through Gloamhaven",
+      "Orc clans vs southern Aldermere: frontier raids and captive-taking that fuel the slave trade",
+      "Beastfolk vs loggers: human and elven timber demands encroach on Fangwood and the Red Glades",
+      "The Silence: Varan's church keeps the official line while the Radiant Faith strains"
+    ],
+    "alliances": [
+      "Iron Pact: Khardun and the northern human crowns",
+      "Aurendale-Sunlit Court Accord: quiet trade and law alliance"
+    ],
+    "leaders": {
+      "aurendale": [
+        {
+          "role": "Chancellor",
+          "name": "Lord Rowan Ashby"
+        },
+        {
+          "role": "Lord Marshal",
+          "name": "Duke Gerard Holt"
+        },
+        {
+          "role": "Hierophant of the Dawn",
+          "name": "Ilsa Verrow"
+        }
+      ],
+      "hallowmere": [
+        {
+          "role": "Lord Chancellor",
+          "name": "Baron Hadrian Voss"
+        },
+        {
+          "role": "Lord Marshal",
+          "name": "Dame Brenna Thorne"
+        },
+        {
+          "role": "Lord Justiciar (Varan's church)",
+          "name": "Corvin Ashgrove"
+        },
+        {
+          "role": "Commander of the Crown Templars",
+          "name": "Ser Dorian Hale"
+        }
+      ],
+      "stormvale": [
+        {
+          "role": "Lord Admiral",
+          "name": "Teodor Kess"
+        },
+        {
+          "role": "Chancellor",
+          "name": "Lady Bryn Halloway"
+        },
+        {
+          "role": "Dawnwarden",
+          "name": "Corin Tidewell"
+        }
+      ],
+      "castellane": [
+        {
+          "role": "Seneschal",
+          "name": "Count Aurelien de Maret"
+        },
+        {
+          "role": "Marshal",
+          "name": "Dame Isaure de Vaux"
+        },
+        {
+          "role": "Bishop",
+          "name": "Lucien Marchand"
+        }
+      ],
+      "marrowen": [
+        {
+          "role": "Lord Steward",
+          "name": "Duke Cassian Dray"
+        },
+        {
+          "role": "General",
+          "name": "Harlan Brask"
+        },
+        {
+          "role": "Dawnwarden",
+          "name": "Mortimer Gale"
+        }
+      ],
+      "sarrakesh": [
+        {
+          "role": "Grand Vizier",
+          "name": "Kaszim Orlan"
+        },
+        {
+          "role": "Sword-Captain",
+          "name": "Naheeb Sarrad"
+        },
+        {
+          "role": "Dawnwarden",
+          "name": "Ashar Menn"
+        }
+      ],
+      "sunlit_court": [
+        {
+          "role": "Head of the Council of Elders",
+          "name": "Elder Thalindra Vael"
+        },
+        {
+          "role": "Warden-General",
+          "name": "Caelenor Dawnarrow"
+        },
+        {
+          "role": "Chief Loremaster",
+          "name": "Sylvaris Orenn"
+        }
+      ],
+      "thousand_groves": [
+        {
+          "role": "Grove-Speaker",
+          "name": "Maelis Barkwhisper"
+        },
+        {
+          "role": "Grove-Warden",
+          "name": "Thessin Greenleaf"
+        },
+        {
+          "role": "Archdruid (Aeloria's church)",
+          "name": "Elowen Mistral"
+        }
+      ],
+      "nightbound_houses": [
+        {
+          "role": "Head of House Ysmere",
+          "name": "Lady Nahlil Ysmere"
+        },
+        {
+          "role": "Head of House Kaelthorn",
+          "name": "Lord Orsin Kaelthorn"
+        },
+        {
+          "role": "Head of House Vesh",
+          "name": "Master Ilthuyr Vesh"
+        }
+      ],
+      "khardun": [
+        {
+          "role": "Thane of Hammerhall",
+          "name": "Torvald Ironhand"
+        },
+        {
+          "role": "Thane of Deepforge",
+          "name": "Rurik Anvilfall"
+        },
+        {
+          "role": "Vault-Master of Goldenreach",
+          "name": "Gunnar Goldvein"
+        },
+        {
+          "role": "Rune-Warden of Runeholm",
+          "name": "Sigrun Stonescribe"
+        },
+        {
+          "role": "Warden of Gravelstone",
+          "name": "Bjarni Grimshield"
+        },
+        {
+          "role": "High Oathkeeper (Durgrim's church)",
+          "name": "Orsa Deepvow"
+        },
+        {
+          "role": "Forge-Mother (Hestrel's church)",
+          "name": "Hilda Emberbeard"
+        }
+      ],
+      "vashkar": [
+        {
+          "role": "Head of House Sarvoth (military)",
+          "name": "Lord Dravik Sarvoth"
+        },
+        {
+          "role": "Head of House Morvane (Ledger Courts)",
+          "name": "Lady Cassiel Morvane"
+        },
+        {
+          "role": "Head of House Lysmere",
+          "name": "Lady Velura Lysmere"
+        },
+        {
+          "role": "Grand Arbiter, a devil (Malvek's church)",
+          "name": "Iskander Thorne"
+        },
+        {
+          "role": "Mistress of Veils (Nyxara's church)",
+          "name": "Kalista Vaun"
+        },
+        {
+          "role": "Ember-Conclave head (Kharrath's church)",
+          "name": "High Prelate Draegan Ashveil (provisional)"
+        }
+      ],
+      "red_steppe": [
+        {
+          "role": "Warmother",
+          "name": "Ushara Ashfang"
+        },
+        {
+          "role": "Warchief of Clan Ironjaw",
+          "name": "Brakka Ironjaw"
+        },
+        {
+          "role": "Warchief of Clan Redhorn",
+          "name": "Gorra Redhorn"
+        }
+      ],
+      "beastfolk_lands": [
+        {
+          "role": "Moot-Caller, wolf (Thessaly's church)",
+          "name": "Saela Greyfang"
+        },
+        {
+          "role": "Pack-Elder of Fangwood, bear",
+          "name": "Varga Stoneback"
+        },
+        {
+          "role": "Broker-Chief of the Red Glades, fox",
+          "name": "Kiri Brightbrush"
+        },
+        {
+          "role": "Wyrm-Speaker of the Scaled Peaks, dragonkin",
+          "name": "Ashkor Emberscale"
+        }
+      ],
+      "independent_cities": [
+        {
+          "city": "Port Halcyon",
+          "role": "First Speaker",
+          "name": "Marcello Veyne"
+        },
+        {
+          "city": "Tessara",
+          "role": "River-Master",
+          "name": "Anya Brightwater"
+        },
+        {
+          "city": "Concord",
+          "role": "Charter Speaker",
+          "name": "Orsolya Dane"
+        },
+        {
+          "city": "Stonebridge",
+          "role": "Joint commanders",
+          "name": "Commander Brannoch Ironshield and Captain Isolde Hale"
+        },
+        {
+          "city": "Gloamhaven",
+          "role": "Guildmistress",
+          "name": "Sable Rook"
+        }
+      ]
+    },
+    "profiles": {
+      "aurendale": {
+        "population": "about 6 million",
+        "military": "High",
+        "wealth": "Very high",
+        "goal": "Secure the succession and keep leading the Diet of Crowns",
+        "allies": [
+          "sunlit_court",
+          "hallowmere",
+          "castellane"
+        ],
+        "rivals": [
+          "marrowen"
+        ]
+      },
+      "hallowmere": {
+        "population": "about 3 million",
+        "military": "High (Crown Templars, hardy levies)",
+        "wealth": "Moderate",
+        "goal": "Restore divine sanction after the Silence and hold the north",
+        "allies": [
+          "khardun",
+          "aurendale"
+        ],
+        "rivals": [
+          "stormvale"
+        ]
+      },
+      "stormvale": {
+        "population": "about 3 million",
+        "military": "Moderate, strong navy",
+        "wealth": "High",
+        "goal": "Secure the sea lanes and ease Hallowmere's tolls",
+        "allies": [
+          "port_halcyon"
+        ],
+        "rivals": [
+          "hallowmere"
+        ]
+      },
+      "castellane": {
+        "population": "about 4 million",
+        "military": "Moderate, elite knights",
+        "wealth": "High",
+        "goal": "Contain Marrowen and stem the slave trade at the border",
+        "allies": [
+          "aurendale"
+        ],
+        "rivals": [
+          "marrowen"
+        ]
+      },
+      "marrowen": {
+        "population": "about 5 million",
+        "military": "High",
+        "wealth": "High",
+        "goal": "Protect slavery in law and expand southern influence",
+        "allies": [
+          "sarrakesh"
+        ],
+        "rivals": [
+          "castellane",
+          "red_steppe"
+        ]
+      },
+      "sarrakesh": {
+        "population": "about 3 million",
+        "military": "Moderate (Oasis Guard, camel riders)",
+        "wealth": "High",
+        "goal": "Keep caravan trade supremacy",
+        "allies": [
+          "marrowen",
+          "port_halcyon"
+        ],
+        "rivals": []
+      },
+      "sunlit_court": {
+        "population": "about 400,000",
+        "military": "Small but elite",
+        "wealth": "High",
+        "goal": "Preserve tradition and bloodline",
+        "allies": [
+          "aurendale"
+        ],
+        "rivals": [
+          "nightbound_houses"
+        ]
+      },
+      "thousand_groves": {
+        "population": "about 600,000",
+        "military": "Moderate, guerrilla",
+        "wealth": "Low",
+        "goal": "Protect the forests from loggers",
+        "allies": [
+          "beastfolk_lands"
+        ],
+        "rivals": []
+      },
+      "nightbound_houses": {
+        "population": "about 150,000",
+        "military": "Small, strong spies",
+        "wealth": "Very high",
+        "goal": "Trade independence and influence",
+        "allies": [
+          "vashkar"
+        ],
+        "rivals": [
+          "sunlit_court"
+        ]
+      },
+      "khardun": {
+        "population": "about 1.5 million",
+        "military": "High",
+        "wealth": "Very high",
+        "goal": "Keep Stonebridge tolls and quality control",
+        "allies": [
+          "hallowmere"
+        ],
+        "rivals": []
+      },
+      "vashkar": {
+        "population": "about 3 million",
+        "military": "High (House legions)",
+        "wealth": "High",
+        "goal": "Expand Ledger Court influence",
+        "allies": [
+          "nightbound_houses",
+          "port_halcyon"
+        ],
+        "rivals": []
+      },
+      "red_steppe": {
+        "population": "about 1.2 million",
+        "military": "High, mobile",
+        "wealth": "Low to moderate",
+        "goal": "Tribute, captives and mercenary income",
+        "allies": [
+          "beastfolk_lands"
+        ],
+        "rivals": [
+          "marrowen"
+        ]
+      },
+      "beastfolk_lands": {
+        "population": "about 2 million",
+        "military": "Low to moderate",
+        "wealth": "Low to moderate",
+        "goal": "Protect their lands",
+        "allies": [
+          "thousand_groves",
+          "red_steppe"
+        ],
+        "rivals": []
+      }
+    },
+    "relations": [
+      {
+        "a": "aurendale",
+        "b": "sunlit_court",
+        "status": "Allied",
+        "note": "Aurendale-Sunlit Court Accord"
+      },
+      {
+        "a": "hallowmere",
+        "b": "khardun",
+        "status": "Allied",
+        "note": "Iron Pact"
+      },
+      {
+        "a": "aurendale",
+        "b": "castellane",
+        "status": "Friendly"
+      },
+      {
+        "a": "stormvale",
+        "b": "port_halcyon",
+        "status": "Friendly"
+      },
+      {
+        "a": "sarrakesh",
+        "b": "marrowen",
+        "status": "Friendly",
+        "note": "Trade"
+      },
+      {
+        "a": "thousand_groves",
+        "b": "beastfolk_lands",
+        "status": "Friendly"
+      },
+      {
+        "a": "red_steppe",
+        "b": "beastfolk_lands",
+        "status": "Friendly",
+        "note": "Kin under Thessaly"
+      },
+      {
+        "a": "vashkar",
+        "b": "nightbound_houses",
+        "status": "Friendly",
+        "note": "Trade"
+      },
+      {
+        "a": "sunlit_court",
+        "b": "nightbound_houses",
+        "status": "Wary",
+        "note": "Cold rivalry"
+      },
+      {
+        "a": "vashkar",
+        "b": "sunlit_court",
+        "status": "Wary"
+      },
+      {
+        "a": "hallowmere",
+        "b": "stormvale",
+        "status": "Wary",
+        "note": "Trade dispute"
+      },
+      {
+        "a": "marrowen",
+        "b": "castellane",
+        "status": "Hostile",
+        "note": "Slavery feud"
+      },
+      {
+        "a": "marrowen",
+        "b": "red_steppe",
+        "status": "Hostile",
+        "note": "Frontier raids"
+      },
+      {
+        "a": "khardun",
+        "b": "aldermere",
+        "status": "Strained",
+        "note": "Stonebridge tolls"
+      }
+    ]
+  },
+  "societies": {
+    "human": {
+      "government": "Feudal monarchies, loosely tied by the Diet of Crowns",
+      "class_ladder": [
+        "royal house",
+        "high nobility (dukes, counts)",
+        "lesser nobility and knights",
+        "clergy",
+        "burghers and guild masters",
+        "free farmers and craftsmen",
+        "serfs",
+        "bonded and enslaved (in some realms)"
+      ],
+      "law": "Three overlapping court systems: royal, church and guild",
+      "economy": "Farming, wool, timber, trade. Guilds control the towns.",
+      "military": "Feudal levies, knightly orders, mercenary companies"
+    },
+    "high_elf": {
+      "government": "Monarch and Council of Elders, advised by Loremasters",
+      "class_ladder": [
+        "Royal House",
+        "Great Houses",
+        "Loremasters (archivists, scholars)",
+        "Wardens (guardians and rangers)",
+        "Artisans",
+        "Commoner households"
+      ],
+      "culture": "Decades-long apprenticeships, rare and celebrated births, sacred memory and lineage. Politics is slow and grudges last generations."
+    },
+    "wood_elf": {
+      "government": "Clan councils in outlying groves",
+      "notes": "Keep their distance from the court."
+    },
+    "dark_elf": {
+      "government": "Council of house-heads from Ysmere (trade and banking), Kaelthorn (craft) and Vesh (information)",
+      "class_ladder": [
+        "house-heads",
+        "house kin",
+        "retainers (brokers, agents)",
+        "artisans",
+        "cave-farmers",
+        "indentured servants on registered terms",
+        "foreign residents"
+      ],
+      "culture": "Dusk-and-night cycle, markets open at twilight, favors are the real currency. Discretion and house loyalty are sacred.",
+      "economy": "Underground trade, banking, crafts and information",
+      "slavery": "Chattel banned. Indenture is term-limited and registered in a ledger (provisional).",
+      "rivalry": "High elves see them as defectors. They see the high elves as frozen in the past."
+    },
+    "dwarf": {
+      "government": "High King chosen by the Moot of Thanes. Each hold run by its clan council.",
+      "class_ladder": [
+        "High King",
+        "Thanes (clan heads)",
+        "Guildmasters",
+        "Craftsmen and miners",
+        "Clan-kin laborers"
+      ],
+      "law": "The Ledger records oaths and debts. Breaking an oath is the gravest crime. Chattel slavery banned, term-limited debt-bondage allowed.",
+      "economy": "Mining, smithing, stonework, runecraft. Guilds control quality and export.",
+      "military": "Shield-wall infantry and siege engineers"
+    },
+    "demon": {
+      "government": "Conclave of the Great Houses, led by an Archduke chosen from among them",
+      "class_ladder": [
+        "Archduke and Great Houses",
+        "House Lords",
+        "Contract-holders (administrators, merchants, officers)",
+        "Retainers",
+        "Commons (lesser demons, half-breeds)",
+        "Bondservants (bound by signed, inheritable debts)"
+      ],
+      "devils": "A law-bound order running the Ledger Courts, the contract-enforcing bureaucracy",
+      "succubi_incubi": "Organised into courtly houses of diplomats, negotiators and envoys",
+      "culture": "Status comes from contracts kept, favors owed, and family name. Colourful and politically sharp, not grim."
+    },
+    "high_orc": {
+      "government": "Warmother's Council of clan matriarchs, with a warchief leading each clan in war",
+      "class_ladder": [
+        "Warmother",
+        "Warchief",
+        "Hearth-Elders",
+        "Champions",
+        "herders and hunters",
+        "Ironhands (smiths, tanners)",
+        "adopted captives"
+      ],
+      "culture": "Mounted nomads who breed horses and warg mounts. Status comes from deeds, disputes are settled by trial of combat, guests are sacred.",
+      "captives": "Under kin-right, a captive who serves a year and a day can be adopted into the clan (provisional).",
+      "military": "Mounted archers and warg cavalry"
+    },
+    "beastfolk": {
+      "government": "No single ruler. Each region has a clan council. The Moot-Caller convenes all of them at Wildmark.",
+      "regions": {
+        "fangwood": "Wolf, bear and dog pack-clans. Deeds above rank.",
+        "pridelands": "Cat prides, household-centered",
+        "reedmarsh": "Lizard villages with healers and ritualists",
+        "burrow_commons": "Bunny warrens with communal property, scouts and messengers",
+        "red_glades": "Fox clans as brokers and traders",
+        "scaled_peaks": "Dragonkin clans who guard family hoards and keep wyrm-speaker elders"
+      },
+      "status": "They are people. Enslaving one is a crime almost everywhere. In cosmopolitan cities they work as scouts, guides and traders."
+    },
+    "angel": {
+      "nature": "Created by the supreme creator and assigned to serve a god. Each god has its own host of 10 to 20.",
+      "ranks": [
+        "Host-Captain",
+        "Warden",
+        "Envoy",
+        "Keeper (archivist)",
+        "Attendant"
+      ],
+      "structure": "Hosts are small, so most ranks have only a few angels each (provisional).",
+      "culture": "Duty and service. Rare trips to the ground on missions. Each host takes on the character of its god.",
+      "mortality": "Can be killed. Death is final and no new angels are created (provisional)."
+    },
+    "vampire": {
+      "structure": "No realm. Advisors, physicians, bankers and scholars inside other peoples' courts. Status by age.",
+      "council": "The Quiet Table, a council of elders that settles disputes between vampires across continents (provisional)",
+      "law": "Feeding on the unwilling is a capital crime. Blood comes from paid donors in licensed blood-houses."
+    },
+    "devil": {
+      "government": "Run the Ledger Courts of Ashvault",
+      "ranks": [
+        "Scribe",
+        "Notary",
+        "Arbiter",
+        "Magistrate",
+        "Grand Arbiter"
+      ],
+      "culture": "Exact and literal. They never lie but do not volunteer information.",
+      "contracts": "A sealed contract binds the signer's MP and breaking it drains it (provisional).",
+      "role": "Neutral arbiters for international contracts. The Charter often hires them."
+    }
+  },
+  "religion": {
+    "structure": "Four faiths, eight gods in four bonded pairs. Each god has one major church and one floating island above it, plus a host of angels. Because death is final, religion is about this life: blessings, guidance, law, and heritage. No holy days system.",
+    "faiths": [
+      {
+        "id": "radiant_faith",
+        "gods": [
+          "solenne",
+          "varn"
+        ],
+        "followers": "Humans, angels",
+        "character": "Mercy and law. Varan's church controls coronations, Solenne's runs hospitals."
+      },
+      {
+        "id": "old_wood",
+        "gods": [
+          "aeloria",
+          "thessaly"
+        ],
+        "followers": "Elves, beastfolk, high orcs",
+        "character": "Nature, moon, hunt and kin. Strict on bloodline purity among elves."
+      },
+      {
+        "id": "stone_covenant",
+        "gods": [
+          "durgrim",
+          "hestrel"
+        ],
+        "followers": "Dwarves",
+        "character": "Oaths, craft and ancestral memory. Strict on bloodline purity."
+      },
+      {
+        "id": "night_court",
+        "gods": [
+          "nyxara",
+          "kharrath",
+          "malvek"
+        ],
+        "followers": "Demons, devils, succubi and incubi, vampires, dark elves",
+        "character": "Ambition, fire, conquest, freedom and binding contracts. The Night Court covers all three gods of the demon peoples."
+      }
+    ],
+    "gods": [
+      {
+        "id": "solenne",
+        "name": "Solenne",
+        "title": "Goddess of Dawn and Mercy",
+        "shaped": "Humans",
+        "symbol": "Rising sun over an open hand",
+        "sacred_animal": "Dawn-dove",
+        "major_church": "Dawn Cathedral, Solhaven, Aurendale",
+        "angel_host": "Dawnbound",
+        "clergy": [
+          "Acolyte",
+          "Brother or Sister",
+          "Lightbearer (priest)",
+          "Dawnwarden (bishop)",
+          "Hierophant of the Dawn"
+        ],
+        "orders": [
+          "Order of the Open Hand (healers and hospitals)"
+        ],
+        "paths_granted": [
+          "Cleric",
+          "Paladin (mercy oath)"
+        ],
+        "on_slavery": "Preaches mercy and urges manumission, does not forbid it",
+        "on_half_races": "Welcoming in principle, inconsistent in practice",
+        "status": "Alive but silent and grieving for Varan, her bonded partner (provisional)."
+      },
+      {
+        "id": "varan",
+        "name": "Varan",
+        "title": "Goddess of Law and Kings",
+        "shaped": "Humans",
+        "symbol": "Crown over scales",
+        "sacred_animal": "Crown-eagle",
+        "major_church": "Crown Basilica, Varnhold, Hallowmere",
+        "angel_host": "Crownhost",
+        "clergy": [
+          "Clerk",
+          "Magistrate-priest",
+          "Justiciar",
+          "Lord Justiciar"
+        ],
+        "orders": [
+          "Crown Templars (lawkeepers and inquisitors)"
+        ],
+        "paths_granted": [
+          "Templar",
+          "Knight (oath-bound)"
+        ],
+        "on_slavery": "Upholds the law as written and regulates it",
+        "on_half_races": "Follows local law",
+        "status": "Enslaved by Kharrath in 592 YC using the world's slavery system at divine scale. Held in physical captivity in Ashvault's deepest level. Conscious and aware but kept compliant through binding and carnal pleasure. Her MP drains into Kharrath.",
+        "angel_host_status": "The Crownhost is scattered. Some dead, some missing. A few walk the ground searching for her, sensing she is alive but cannot locate her.",
+        "paths_note": "Templar and oath-bound Knight Paths can no longer be awakened through Varan's Temple Rite — her island is dark and her divine authority is being drained. Existing holders keep their Paths."
+      },
+      {
+        "id": "aeloria",
+        "name": "Aeloria",
+        "title": "Goddess of Forests and the Moon",
+        "shaped": "Elves",
+        "symbol": "Crescent over a tree",
+        "sacred_animal": "White stag",
+        "major_church": "Moonwell Temple, Silverglade, Sylvaren",
+        "angel_host": "Silverwing",
+        "clergy": [
+          "Grovekeeper",
+          "Grove-Mother",
+          "Archdruid"
+        ],
+        "orders": [
+          "Silverbough Wardens"
+        ],
+        "paths_granted": [
+          "Druid",
+          "Ranger",
+          "Oracle"
+        ],
+        "on_slavery": "Forbids it",
+        "on_half_races": "Suspicious, strict on bloodline purity"
+      },
+      {
+        "id": "thessaly",
+        "name": "Thessaly",
+        "title": "The Hunt-Mother",
+        "shaped": "Beastfolk and high orcs (provisional)",
+        "symbol": "Bow over a paw print",
+        "sacred_animal": "Great wolf",
+        "major_church": "The Hunt-Mother's Lodge, Wildmark, Tharos",
+        "angel_host": "Huntwing",
+        "clergy": [
+          "Packspeaker",
+          "Huntmaster",
+          "Moot-Caller"
+        ],
+        "orders": [
+          "The Wild Lodge"
+        ],
+        "paths_granted": [
+          "Ranger",
+          "Beastbinder",
+          "Shaman"
+        ],
+        "on_slavery": "Forbids enslaving beastfolk. Orc captives are usually adopted into clans.",
+        "on_half_races": "Comparatively accepting"
+      },
+      {
+        "id": "durgrim",
+        "name": "Durgrim",
+        "title": "The Stonefather",
+        "shaped": "Dwarves",
+        "symbol": "Anvil before a mountain",
+        "sacred_animal": "Stone-goat (honored as a symbol, not as living ancestors)",
+        "major_church": "The Anvil, Hammerhall, Khardun",
+        "angel_host": "Stonewatch",
+        "clergy": [
+          "Stone-priest",
+          "Oath-Warden",
+          "Ledger-keeper",
+          "High Oathkeeper"
+        ],
+        "orders": [
+          "Oathkeepers"
+        ],
+        "paths_granted": [
+          "Warrior (defender)",
+          "Runesmith"
+        ],
+        "on_slavery": "Bans chattel slavery, allows term-limited debt-bondage",
+        "on_half_races": "Suspicious, strict on bloodline purity"
+      },
+      {
+        "id": "hestrel",
+        "name": "Hestrel",
+        "title": "Goddess of the Forge",
+        "shaped": "Dwarves",
+        "symbol": "Hammer over a flame",
+        "sacred_animal": "Ember-wren",
+        "major_church": "The Great Forge, Deepforge, Khardun",
+        "angel_host": "Emberwing",
+        "clergy": [
+          "Flame-tender",
+          "Master of the Flame",
+          "Forge-Mother"
+        ],
+        "orders": [
+          "Guild of the Sacred Hearth"
+        ],
+        "paths_granted": [
+          "Master Smith",
+          "Artificer",
+          "Runesmith"
+        ],
+        "on_slavery": "Silent, honors free craftsmen",
+        "on_half_races": "Judges by skill"
+      },
+      {
+        "id": "nyxara",
+        "name": "Nyxara",
+        "title": "Goddess of Night and Desire",
+        "shaped": "Demons, succubi and incubi, vampires (provisional)",
+        "symbol": "Veil before a star",
+        "sacred_animal": "Moon-moth",
+        "major_church": "Veil Cathedral, Emberspire, Vashkar",
+        "angel_host": "Veilwing",
+        "clergy": [
+          "Veilkeeper",
+          "Whisperer (confessor)",
+          "Mistress or Master of Veils"
+        ],
+        "orders": [
+          "The Velvet Houses (tied to House Lysmere)"
+        ],
+        "paths_granted": [
+          "Emberborn",
+          "Enchanter",
+          "Nightblood"
+        ],
+        "on_slavery": "Favors personal freedom, tolerates bondage by contract",
+        "on_half_races": "More accepting than other faiths",
+        "act_5_fate": "Confronts Kharrath at the start of Act 6 and is enslaved by him using the same method as Varan. The player witnesses it. This is the emotional turning point of the final act."
+      },
+      {
+        "id": "malvek",
+        "name": "Malvek",
+        "title": "God of Contracts and Bargains",
+        "shaped": "Devils",
+        "symbol": "Scales over a quill",
+        "sacred_animal": "Ledger-raven",
+        "major_church": "Hall of Ledgers, Ashvault, Vashkar",
+        "angel_host": "Ledgerwing",
+        "clergy": [
+          "Scribe",
+          "Notary",
+          "Arbiter",
+          "Grand Arbiter"
+        ],
+        "orders": [
+          "The Ledger Courts"
+        ],
+        "paths_granted": [
+          "Contractor",
+          "Warlock",
+          "Emissary"
+        ],
+        "on_slavery": "Contract-bondage is sacred and strictly enforced",
+        "on_half_races": "Judged by the contract they hold"
+      },
+      {
+        "id": "kharrath",
+        "name": "Kharrath",
+        "title": "God of War, Conquest, and Fire",
+        "shaped": "Demons (with Nyxara)",
+        "symbol": "A sword wreathed in flame",
+        "sacred_animal": "Fire-lion (red-maned lion of Vashkar)",
+        "major_church": "Ember Temple, Cindergate, Vashkar",
+        "angel_host": "Emberstrike",
+        "clergy": [
+          "Ember-novice",
+          "Flame-priest",
+          "War-prelate",
+          "Ember-Bishop",
+          "Ember-Conclave (inner circle)"
+        ],
+        "orders": [
+          "The Ember Conclave (inner circle, knows the truth)",
+          "Kharrath's Vanguard (battle-priests and warriors)"
+        ],
+        "paths_granted": [
+          "Berserker",
+          "Duelist",
+          "Emberborn"
+        ],
+        "on_slavery": "Conquest is natural. The strong own the weak.",
+        "on_half_races": "Strength matters, not blood",
+        "status": "Active and growing stronger by siphoning Varan's MP. The central villain of the game.",
+        "secret": "Has enslaved Varan and plans to absorb all other gods to become the sole deity of Verendel.",
+        "bonded_partner": "Nyxara",
+        "note": "Nyxara suspects something is wrong but cannot prove it.",
+        "slavery_method": "Uses the world's existing slavery system scaled to divine levels, powered by his own MP. Compliance maintained through binding and carnal pleasure. Each enslaved goddess's drained MP reduces the cost of the next enslavement."
+      }
+    ],
+    "church_leaders": [
+      {
+        "god": "solenne",
+        "title": "Hierophant of the Dawn",
+        "name": "Ilsa Verrow",
+        "seat": "Solhaven"
+      },
+      {
+        "god": "varan",
+        "title": "Lord Justiciar",
+        "name": "Corvin Ashgrove",
+        "seat": "Varnhold",
+        "note": "Leads the church of an enslaved goddess. May know the truth behind the Silence (provisional)."
+      },
+      {
+        "god": "aeloria",
+        "title": "Archdruid",
+        "name": "Elowen Mistral",
+        "seat": "Silverglade"
+      },
+      {
+        "god": "thessaly",
+        "title": "Moot-Caller",
+        "name": "Saela Greyfang",
+        "seat": "Wildmark"
+      },
+      {
+        "god": "durgrim",
+        "title": "High Oathkeeper",
+        "name": "Orsa Deepvow",
+        "seat": "Hammerhall"
+      },
+      {
+        "god": "hestrel",
+        "title": "Forge-Mother",
+        "name": "Hilda Emberbeard",
+        "seat": "Deepforge"
+      },
+      {
+        "god": "nyxara",
+        "title": "Mistress of Veils",
+        "name": "Kalista Vaun",
+        "seat": "Emberspire"
+      },
+      {
+        "god": "malvek",
+        "title": "Grand Arbiter",
+        "name": "Iskander Thorne",
+        "seat": "Ashvault"
+      }
+    ],
+    "faith_strain": "The Radiant Faith is strained: Solenne is silent, Varan's church keeps up the official line, and some clergy demand answers."
+  },
+  "slavery": {
+    "sources": [
+      "debt bondage",
+      "war captives",
+      "criminal sentences",
+      "birth into bondage",
+      "purchase at market"
+    ],
+    "status_tiers": [
+      "chattel slaves",
+      "indentured servants working off a term",
+      "bonded household staff"
+    ],
+    "by_realm": {
+      "southern_human": "Legal and common (Marrowen). Sarrakesh: legal with formal protections.",
+      "northern_human": "Restricted to debt bondage with fixed terms (Aurendale, Hallowmere, Stormvale). Castellane frowns on it.",
+      "demon_houses": "Contract-bondage, signed and inheritable debts",
+      "orc_clans": "War captives, often adopted into the clan over time",
+      "high_elves": "Banned, though quiet exploitation of outsiders exists",
+      "dwarves": "Chattel banned, term-limited debt-bondage allowed",
+      "dark_elves": "Chattel banned. Registered term-limited indenture.",
+      "beastfolk": "Enslaving beastfolk is a crime almost everywhere."
+    },
+    "ways_out": [
+      "manumission by owner",
+      "purchase of freedom",
+      "service",
+      "temple sanctuary"
+    ],
+    "origin": "Grew from captives and debts in the Age of Crowns. The Charter treaty left the question to each realm, which is why the world is a patchwork.",
+    "story_engine": "Smuggling, border disputes, escaped slaves seeking sanctuary, rival legal codes, and awakened people discovering their Path while in bondage.",
+    "awakened_and_slavery": "Some realms free or buy out the Awakened, some bind them with legal contracts, some forbid owning one.",
+    "birth_status": "The child of an enslaved mother takes her legal status where slavery is legal, unless the father formally acknowledges and frees the child.",
+    "divine_slavery": {
+      "exists": true,
+      "perpetrator": "Kharrath",
+      "mechanism": "The world's existing slavery system applied to divine beings. MP-intensive for the enslaver.",
+      "compliance_method": "Binding and carnal pleasure rather than punishment or suppression.",
+      "note": "The same framework that enslaves mortals can, in principle, be applied to any being with MP — including gods. Kharrath is simply the first to have enough MP to attempt it on a divine being."
+    }
+  },
+  "economy": {
+    "currency": "Concord Crown, one currency worldwide, minted by the Concord Mint and licensed city banks to a single standard (provisional name)",
+    "coins": [
+      {
+        "name": "Bit",
+        "metal": "copper",
+        "value": "1 bit"
+      },
+      {
+        "name": "Mark",
+        "metal": "silver",
+        "value": "10 bits"
+      },
+      {
+        "name": "Crown",
+        "metal": "gold",
+        "value": "10 marks (100 bits)"
+      },
+      {
+        "name": "Grand",
+        "metal": "platinum bar",
+        "value": "10 crowns, bank settlements only"
+      }
+    ],
+    "sample_prices": {
+      "loaf_of_bread": "1 bit",
+      "tavern_meal": "3 bits",
+      "common_room_bed": "5 bits",
+      "private_inn_room": "2 marks",
+      "laborer_day_wage": "5 bits",
+      "skilled_craftsman_day_wage": "2 marks",
+      "dagger": "5 marks",
+      "sword": "3 crowns",
+      "chain_mail": "20 crowns",
+      "plate_armor": "150 crowns",
+      "riding_horse": "25 crowns",
+      "warhorse": "150 crowns",
+      "town_house": "about 400 crowns",
+      "awakening_stone": "about 500 crowns"
+    },
+    "wayfarer_contract_pay": {
+      "initiate": "3 to 10 marks",
+      "wayfarer": "2 to 5 crowns",
+      "journeyman": "10 to 30 crowns",
+      "veteran": "50 to 150 crowns",
+      "champion": "300 to 1,000 crowns",
+      "legend": "1,000 crowns and up",
+      "charter_cut": "About 10%"
+    },
+    "banks_and_trade_houses": [
+      {
+        "id": "ysmere_exchange",
+        "people": "dark elves",
+        "role": "Banking and shipping"
+      },
+      {
+        "id": "goldenreach_vaults",
+        "people": "dwarves",
+        "role": "Bullion, gems, deposits"
+      },
+      {
+        "id": "halcyon_merchant_council",
+        "people": "humans",
+        "role": "Sea trade"
+      },
+      {
+        "id": "tessara_river_guilds",
+        "people": "humans",
+        "role": "Barge trade"
+      },
+      {
+        "id": "ledger_courts",
+        "people": "devils",
+        "role": "Underwrite and arbitrate large contracts"
+      }
+    ],
+    "banking_rules": "Each major city has its own banks. Banks issue letters of credit honored by other banks. Loans run 10 to 20 percent a year. Unpaid debt can lead to debt bondage.",
+    "trade_goods": {
+      "aldermere": [
+        "grain",
+        "wool",
+        "wine",
+        "timber"
+      ],
+      "sylvaren": [
+        "fine textiles",
+        "herbs",
+        "bowwood"
+      ],
+      "khardun": [
+        "iron",
+        "steel",
+        "gems",
+        "runework"
+      ],
+      "vashkar": [
+        "fire-forged glass",
+        "spices",
+        "obsidian"
+      ],
+      "tharos": [
+        "horses",
+        "hides",
+        "furs",
+        "monster parts"
+      ],
+      "seas": [
+        "salt",
+        "fish",
+        "pearls"
+      ]
+    },
+    "dues": [
+      "crown taxes",
+      "temple tithe of about a tenth",
+      "guild dues",
+      "road and bridge tolls (Stonebridge is the famous one)",
+      "Charter fees"
+    ],
+    "resources": "Hides, scales, tusks (Craft), venom and bile (Alchemists), bones and horns (Runesmiths), trophies (Proof of Deed bounties). Overhunting causes regulation.",
+    "regulated_goods": [
+      "gunpowder (sulfur from Vashkar, saltpeter from caves)",
+      "enchanted gear",
+      "Awakening Stones"
+    ]
+  },
+  "adventurer_system": {
+    "organisation": "The Wayfarers' Charter, an international guild founded in Concord. Its license is recognised across borders and grants travel, arms and contract rights almost everywhere.",
+    "ranks": [
+      "Initiate",
+      "Wayfarer",
+      "Journeyman",
+      "Veteran",
+      "Champion",
+      "Legend"
+    ],
+    "joining": "A trial at any guild hall, sponsored by a licensed member or local authority",
+    "contracts": [
+      "monster hunting",
+      "escort",
+      "exploration",
+      "bounty",
+      "courier",
+      "relic recovery"
+    ],
+    "services": "Lodging, gear storage at member rates, healers, item identification. The guild takes a cut.",
+    "jurisdiction": "Limited legal protection. Kingdoms still apply local law.",
+    "rivals": [
+      "mercenary companies",
+      "temple knight orders",
+      "free-blades (unregistered)"
+    ],
+    "link_to_paths": "Wayfarer rank and Path tier are separate but loosely correlated."
+  },
+  "paths": {
+    "unawakened": "Most people",
+    "awakened_share": "Roughly one in ten (provisional)",
+    "methods": [
+      {
+        "id": "temple_rite",
+        "how": "A priest performs a rite at a shrine and the god answers or does not",
+        "paths": "Divine",
+        "difficulty": "Moderate",
+        "note": "Varan's rite no longer works since 592 YC, so Templar and oath-bound Knight Paths can no longer be awakened this way."
+      },
+      {
+        "id": "trial_of_mastery",
+        "how": "Years of training end in a formal trial (duel, forge-test, vigil)",
+        "paths": "Martial, Craft, Shadow",
+        "difficulty": "Hard but reliable"
+      },
+      {
+        "id": "bloodline_stirring",
+        "how": "Latent inheritance wakes at coming-of-age or in a crisis",
+        "paths": "Bloodline",
+        "difficulty": "Unpredictable"
+      },
+      {
+        "id": "pact",
+        "how": "Bargain with a spirit, devil, angel or ancient being",
+        "paths": "Pact",
+        "difficulty": "Fast but carries obligations"
+      },
+      {
+        "id": "communion",
+        "how": "Living in tune with nature, beasts or ancestral memory",
+        "paths": "Primal",
+        "difficulty": "Slow"
+      },
+      {
+        "id": "awakening_stones",
+        "how": "Rare crystals sold by the Charter that nudge a ready person over the line",
+        "paths": "Any, weakly",
+        "difficulty": "Expensive, only works if already close"
+      },
+      {
+        "id": "near_death",
+        "how": "Rare, unpredictable awakening in a crisis",
+        "paths": "Any",
+        "difficulty": "Cannot be forced"
+      }
+    ],
+    "families": {
+      "martial": [
+        "Warrior",
+        "Knight",
+        "Berserker",
+        "Duelist"
+      ],
+      "arcane": [
+        "Mage",
+        "Elementalist",
+        "Runesmith",
+        "Enchanter"
+      ],
+      "divine": [
+        "Cleric",
+        "Paladin",
+        "Templar",
+        "Oracle"
+      ],
+      "primal": [
+        "Druid",
+        "Shaman",
+        "Beastbinder",
+        "Ranger"
+      ],
+      "shadow": [
+        "Rogue",
+        "Assassin",
+        "Spy",
+        "Bard"
+      ],
+      "craft": [
+        "Master Smith",
+        "Alchemist",
+        "Artificer",
+        "Provisioner"
+      ],
+      "pact": [
+        "Warlock",
+        "Summoner",
+        "Contractor",
+        "Emissary"
+      ],
+      "bloodline": [
+        "Dragonblood",
+        "Emberborn",
+        "Sunblessed",
+        "Nightblood"
+      ]
+    },
+    "affinity_rule": "Affinity makes a Path easier or faster for a people. It is never a hard restriction. See peoples[].path_affinity.",
+    "tiers": [
+      "0 Unawakened",
+      "1 Awakened",
+      "2 Adept (specialised branch)",
+      "3 Master (regional renown, can teach)",
+      "4 Legend (unique Path)"
+    ]
+  },
+  "reputation_and_bounty": {
+    "principle": "News travels slowly. Reputation is local first, then spreads via heralds, bards, merchant caravans, ship crews, temple messengers, and the Charter's Ledger of Names.",
+    "tracks": {
+      "renown": "How widely you are known and admired",
+      "infamy": "How widely you are known for wrongdoing",
+      "standing": "Relationship with a specific faction, realm, temple, guild or House"
+    },
+    "standing_tiers": [
+      "Hated",
+      "Hostile",
+      "Wary",
+      "Neutral",
+      "Welcome",
+      "Trusted",
+      "Honored",
+      "Exalted"
+    ],
+    "fame_tiers": [
+      "Unknown",
+      "Local Name",
+      "Regional Name",
+      "Famed or Notorious",
+      "Legend or Arch-Criminal"
+    ],
+    "same_act_different_realm": "Acts are judged by local law and values, by witnesses, location and who was harmed. Example: freeing a slave is theft in southern human realms, honorable among high elves, a breach of contract in demon houses.",
+    "punishment_ladder": [
+      "fine or restitution",
+      "stocks or public shaming",
+      "forced labor or imprisonment",
+      "exile",
+      "outlawry (outside protection of law)",
+      "execution"
+    ],
+    "weregild": "Blood-price paid to a victim's family as an alternative to punishment. Recognised by dwarves and northern humans.",
+    "clearing_name": [
+      "restitution or blood-price",
+      "temple penance",
+      "noble or royal pardon",
+      "serving a term",
+      "time and distance",
+      "changing identity"
+    ],
+    "bounty": {
+      "issuers": [
+        "Crown or noble (royal writs)",
+        "Temples (heresy and desecration)",
+        "Guilds (bandits and thieves)",
+        "Wayfarers' Charter (monsters and its own rogue members)",
+        "Private citizens",
+        "Demon Houses (contract-bounties)"
+      ],
+      "types": [
+        "Dead or Alive",
+        "Alive Only",
+        "Proof of Deed",
+        "Extradition Writ"
+      ],
+      "rules": [
+        "Posted on boards in towns, guild halls and temples",
+        "Legally valid only in the issuing realm unless extradition or Charter sanction applies",
+        "Reward grows with infamy tier and target danger",
+        "Rewards can include land, minor titles, pardons or favors"
+      ],
+      "hunters": [
+        "Charter hunters",
+        "Thief-takers and sheriff's deputies",
+        "Templars",
+        "Free-blades"
+      ]
+    },
+    "teleportation_and_fugitives": "Fugitives who can teleport are rare. Prisons, courthouses and borders use ward runes, and bounty hunters rely on trackers and warded ground (provisional)."
+  },
+  "bestiary": {
+    "note": "Beastfolk are people, not animals. Monsters are treated as dangerous wildlife with habitats and diets, not as evil. Tiers match Wayfarer ranks.",
+    "domestic": [
+      "horses",
+      "mules",
+      "donkeys",
+      "oxen",
+      "camels",
+      "cattle",
+      "sheep",
+      "goats",
+      "pigs",
+      "chickens",
+      "geese",
+      "hounds",
+      "falcons",
+      "hawks",
+      "ferrets",
+      "cats"
+    ],
+    "monster_tiers": {
+      "tier_1_initiate": [
+        "giant rats",
+        "bloodflies",
+        "bog-snappers",
+        "cliff-hens"
+      ],
+      "tier_2_wayfarer": [
+        "dire wolves",
+        "razor-boars",
+        "giant spiders",
+        "stone-crabs"
+      ],
+      "tier_3_journeyman": [
+        "wargs",
+        "owlbears",
+        "sabre-cats",
+        "griffons",
+        "manticores",
+        "wyverns"
+      ],
+      "tier_4_veteran": [
+        "hydras",
+        "chimeras",
+        "rocs",
+        "sea serpents",
+        "lesser drakes"
+      ],
+      "tier_5_champion": [
+        "krakens",
+        "wyrm-queens",
+        "great behemoths"
+      ],
+      "tier_6_legend": [
+        "ancient dragons (First Wyrms)",
+        "sun-stag and moon-hound (sacred guardians)",
+        "the World-Serpent (myth)"
+      ]
+    },
+    "sacred_animals": [
+      "Aeloria's white stag",
+      "Thessaly's great wolf",
+      "Solenne's dawn-doves",
+      "Durgrim's stone-goats"
+    ],
+    "mounts_and_companions": "Hounds, hawks and horses are common. Griffons, hippogriffs and tamed wyverns are rare and usually need a Beastbinder or Ranger Path. Many kingdoms require a Charter license or noble permit for dangerous mounts.",
+    "not_included": "Undead and horror creatures. No ghosts or undead exist in this world."
+  },
+  "history": {
+    "eras": [
+      {
+        "id": "the_making",
+        "span": "Before the calendar",
+        "events": [
+          "Creator shapes the world, the First Wyrms and wild beasts",
+          "Creator makes the eight gods in four pairs",
+          "Creator makes the angels, 10 to 20 for each god, and assigns them to serve the gods, then withdraws",
+          "Gods shape the peoples",
+          "First gift: the common tongue"
+        ]
+      },
+      {
+        "id": "age_of_dawn",
+        "span": "About 2,000 years",
+        "events": [
+          "Gods walk among their peoples and teach farming, forging, law, music and the shaping of MP",
+          "Peoples stay on their own continents",
+          "Gods raise floating islands above the first great temples",
+          "Memory Halls become the tradition for honoring the dead"
+        ]
+      },
+      {
+        "id": "age_of_voyages",
+        "span": "About 500 years",
+        "events": [
+          "Human sailors cross the seas",
+          "Port Halcyon founded as the first shared trade harbor",
+          "Awakening Stones discovered in sacred sites",
+          "First half-races appear and purity traditions turn to suspicion"
+        ]
+      },
+      {
+        "id": "age_of_crowns",
+        "span": "About 400 years",
+        "events": [
+          "Human tribes unify into feudal kingdoms",
+          "Wars of contact and succession spread slavery unevenly",
+          "Dark elves split from the high court",
+          "Demon Houses consolidate and devils formalise the Ledger Courts",
+          "A behemoth migration devastates Tharos and Aldermere and forces peoples to cooperate"
+        ]
+      },
+      {
+        "id": "charter_age",
+        "span": "Year 0 to present (about 614 YC)",
+        "events": [
+          "Representatives meet at Concord and sign the Wayfarers' Charter",
+          "Charter creates the adventurer guild, the common currency and first cross-border rules",
+          "Treaty leaves slavery to each realm",
+          "Trade houses that financed it become the first banks",
+          "592 YC: The Silence. Varan, Goddess of Law and Kings, is secretly enslaved and removed from her island by House Morvane using a corrupted Seekers ritual. The church officially says she has withdrawn."
+        ]
+      }
+    ],
+    "living_memory": "Elves old enough to remember the Age of Voyages are still alive."
+  },
+  "open_items": [
+    "Gate condition specifics: relationship thresholds, stats, and other checks (to be defined by user)",
+    "Deep sub-quests for each of the 29 characters",
+    "Relationship system: as per the game's standard",
+    "Background and class options for the protagonist character creation screen"
+  ],
+  "biology": {
+    "note": "All ages are provisional. Adulthood is 18 or older for every people.",
+    "human": {
+      "adult_at": 18,
+      "lifespan": "60 to 80, many die earlier from disease and war"
+    },
+    "high_elf": {
+      "adult_at": "about 50",
+      "lifespan": "1,000 to 1,500",
+      "notes": "Rare births, youthful for centuries, slender with keen sight"
+    },
+    "wood_elf": {
+      "adult_at": "about 40",
+      "lifespan": "700 to 1,000",
+      "notes": "Sturdier than high elves"
+    },
+    "dark_elf": {
+      "adult_at": "about 50",
+      "lifespan": "900 to 1,300",
+      "notes": "Eyes adapted to low light, poor in bright glare"
+    },
+    "dwarf": {
+      "adult_at": "about 40",
+      "lifespan": "250 to 350",
+      "notes": "Few children per lifetime. Short, broad, dense-boned."
+    },
+    "high_orc": {
+      "adult_at": 18,
+      "lifespan": "50 to 70",
+      "notes": "Tall, heavy-muscled, small tusks"
+    },
+    "beastfolk": {
+      "adult_at": "18 (lizard 25)",
+      "lifespan_by_species": {
+        "fox": "60 to 80",
+        "wolf": "70 to 90",
+        "bunny": "50 to 70",
+        "cat": "70 to 90",
+        "dog": "60 to 80",
+        "bear": "80 to 100",
+        "lizard": "100 to 150"
+      },
+      "notes": "Human build with animal ears, tail and species traits. Fur or scale patches. Senses tuned to the species."
+    },
+    "dragonkin": {
+      "adult_at": 30,
+      "lifespan": "200 to 300",
+      "notes": "Horns, scales, tail, no wings"
+    },
+    "demon": {
+      "adult_at": "about 30",
+      "lifespan": "500 to 800",
+      "notes": "Horns, heat-resistant, low fertility"
+    },
+    "devil": {
+      "adult_at": "about 40",
+      "lifespan": "700 to 1,000",
+      "notes": "Low fertility"
+    },
+    "succubus_incubus": {
+      "adult_at": "about 25",
+      "lifespan": "400 to 700",
+      "notes": "Youthful for long. Charm is an inherent MP trait (provisional)."
+    },
+    "vampire": {
+      "adult_at": "about 30",
+      "lifespan": "1,500 and more, ages very slowly",
+      "notes": "Living beings who can die from wounds or illness. Need small amounts of blood for MP upkeep, taken from paid donors in licensed blood-houses. Feeding on the unwilling is a capital crime everywhere. Prolonged daylight saps their MP."
+    },
+    "angel": {
+      "adult_at": "from creation",
+      "lifespan": "Do not age",
+      "notes": "Created by the supreme creator, not born. Can be killed and death is final. Roughly 80 to 160 exist in total. Liaisons with mortals are extremely rare, so half-angels are almost unheard of."
+    },
+    "god": {
+      "adult_at": "n/a",
+      "lifespan": "Do not age",
+      "notes": "Can be killed. Killing a god would be catastrophic for its faith, its island and its people."
+    }
+  },
+  "culture": {
+    "by_people": {
+      "human": {
+        "food": "Bread, stew, ale, wine in the south",
+        "dress_and_homes": "Wool and linen. Timber and stone homes, castles and walled towns",
+        "customs": "Dowries and bride-prices. Guild and parish life",
+        "naming": "Given name plus family or place name, e.g. Edric of Solhaven"
+      },
+      "high_elf": {
+        "food": "Fruit, honeyed bread, tea, light wines",
+        "dress_and_homes": "Flowing silks. Stone-and-living-wood halls",
+        "customs": "Long courtships. Music and poetry. Heavy etiquette",
+        "naming": "Given name plus house or deed-name, e.g. Ilvariel of Silver Dawn"
+      },
+      "wood_elf": {
+        "food": "Foraged greens, game, herbal drinks",
+        "dress_and_homes": "Leaf-dyed cloth. Treehouses and grove-lodges",
+        "customs": "Clan gatherings under the moon"
+      },
+      "dark_elf": {
+        "food": "Mushroom dishes, spiced wine, river fish",
+        "dress_and_homes": "Dark layered cloth in muted colors. Carved cave-cities",
+        "customs": "Favor-trading, twilight markets"
+      },
+      "dwarf": {
+        "food": "Roast meat, dark bread, strong beer",
+        "dress_and_homes": "Leather and mail. Carved stone halls",
+        "customs": "Oath-swearing. Craft pride. Beards braided with clan marks",
+        "naming": "Given name plus clan name, e.g. Haldrek Stonevow"
+      },
+      "high_orc": {
+        "food": "Roast meat, mare's milk, flatbread",
+        "dress_and_homes": "Hide and leather, felt tents",
+        "customs": "Horse-games, trial by combat, open hearth hospitality",
+        "naming": "Given name, clan, and a deed, e.g. Gorra Redhorn the Horse-Breaker"
+      },
+      "beastfolk": {
+        "food": "Species-based, from grain and fruit to fish and game",
+        "dress_and_homes": "Light practical clothes that accommodate ears and tails",
+        "customs": "Pack and clan feasts. Seasonal moots at Wildmark"
+      },
+      "demon": {
+        "food": "Spiced meats, fire-roasted dishes, sweet liquors",
+        "dress_and_homes": "Rich dyed fabrics. Red-stone towers",
+        "customs": "Contracts at every occasion. Courtly dueling",
+        "naming": "Given name plus house name, e.g. Vesperine Kaldrith"
+      }
+    },
+    "marriage": "Only within a people. Courtship, dowries or bride-prices, and a simple hearth-rite in the local temple.",
+    "death_customs": "Because nothing follows death, funerals focus on legacy. Names and deeds are carved in Memory Halls and written in family Deedbooks.",
+    "literacy": "Common among clergy, guilds, nobles and elves. Rarer among peasants (roughly one in five humans).",
+    "education": "Apprenticeships, temple schools, guild halls, and the Arcane Collegium of Tessara."
+  },
+  "military_and_technology": {
+    "tech_level": "Late medieval. Iron, steel and plate for elites. Longbows and crossbows, trebuchets, siege towers, sailing ships, water mills, basic clockwork. Gunpowder exists (user decided): basic technology like cannons, but magic far outperforms it. Books are hand-copied. Letters travel by messenger, signal fire and Charter relay. Magic adds enchanted gear and healing, both rare. Teleportation exists but is costly and rare.",
+    "forces": {
+      "human": "Feudal levies, knights, crossbow companies, mercenaries",
+      "high_elf": "Wardens (rangers and archers) and the elite Sunlit Guard",
+      "dark_elf": "House guards and agents",
+      "dwarf": "Shield-wall infantry and siege engineers",
+      "high_orc": "Mounted archers and warg cavalry",
+      "beastfolk": "Pack skirmishers and scouts",
+      "demon": "House legions",
+      "devil": "Do not fight, they arbitrate",
+      "cannon_crews": "Siege and fortress cannon crews in human and dwarven armies (provisional)"
+    },
+    "war_rules": "Armies are small and campaigns are limited by the rainy season. The Charter bars attacks on temples and Memory Halls. Fortresses are warded against teleportation (provisional).",
+    "knightly_orders": [
+      {
+        "id": "crown_templars",
+        "god": "Varan"
+      },
+      {
+        "id": "order_of_the_open_hand",
+        "god": "Solenne",
+        "role": "Hospitallers"
+      },
+      {
+        "id": "silverbough_wardens",
+        "god": "Aeloria"
+      },
+      {
+        "id": "wild_lodge",
+        "god": "Thessaly"
+      },
+      {
+        "id": "oathkeepers",
+        "god": "Durgrim"
+      }
+    ],
+    "gunpowder": {
+      "status": "Present. Cannons and similar basic technology. Magic far outperforms it. Used when magic is expensive (user decided).",
+      "use": "Mainly in sieges, fortresses and on ships, and by realms short on mages or when MP is exhausted, such as long sieges and mass levies (provisional).",
+      "limits": "Slow reload, loud and unreliable. No reliable hand firearms yet (provisional).",
+      "production": "Sulfur from Vashkar's volcanoes, saltpeter from caves. Cannons cast by dwarven smiths and human guilds (provisional).",
+      "regulation": "Gunpowder is a regulated trade good (provisional)."
+    }
+  },
+  "factions": [
+    {
+      "id": "wayfarers_charter",
+      "type": "Adventurer guild",
+      "base": "Concord",
+      "aim": "Keep peace and trade"
+    },
+    {
+      "id": "gilded_spears",
+      "type": "Mercenary company",
+      "base": "Aldermere",
+      "aim": "Prestige and contracts"
+    },
+    {
+      "id": "greywatch_company",
+      "type": "Elite mercenaries",
+      "base": "Stonebridge",
+      "aim": "Quiet, expensive, loyal to contract"
+    },
+    {
+      "id": "salt_wharf_brotherhood",
+      "type": "Smugglers",
+      "base": "Port Halcyon",
+      "aim": "Profit, including slave-running"
+    },
+    {
+      "id": "veil_hands",
+      "type": "Thieves and information brokers",
+      "base": "Gloamhaven",
+      "aim": "Secrets for sale"
+    },
+    {
+      "id": "free_road",
+      "type": "Abolitionist network",
+      "base": "Hidden",
+      "aim": "Smuggle slaves out of Marrowen"
+    },
+    {
+      "id": "clean_hearth",
+      "type": "Purity society",
+      "base": "Sunlit Court and Khardun",
+      "aim": "Laws against half-races"
+    },
+    {
+      "id": "seekers_of_the_first_word",
+      "type": "Heterodox sect",
+      "base": "Scattered",
+      "aim": "Reach the nameless Creator directly"
+    },
+    {
+      "id": "arcane_collegium_of_tessara",
+      "type": "Mage school",
+      "base": "Tessara",
+      "aim": "Scholarship and training"
+    },
+    {
+      "id": "runeholm_academy",
+      "type": "Runesmith school",
+      "base": "Khardun",
+      "aim": "Preserve runecraft"
+    },
+    {
+      "id": "house_vesh_network",
+      "type": "Spy service",
+      "base": "Dark elf lands",
+      "aim": "Information and leverage"
+    }
+  ],
+  "medicine": {
+    "healers": {
+      "everywhere": [
+        "herbalists",
+        "apothecaries",
+        "midwives",
+        "barber-surgeons"
+      ],
+      "temples": "The Order of the Open Hand runs hospitals and treats the poor",
+      "by_people": {
+        "dwarf": "Hold-surgeons are best with wounds and bones",
+        "elf": "Herbs and healing springs",
+        "high_orc": "Clan bone-setters and shamans"
+      }
+    },
+    "healing_magic": "Cleric Path heals by speeding natural recovery using MP from both healer and patient. Closes wounds and mends bones in days. Cannot regrow lost limbs, reverse aging or revive the dead. Large heals leave the patient exhausted.",
+    "typical_costs": {
+      "minor_healing_draught": "about 1 crown",
+      "temple_healing": "5 marks to 5 crowns",
+      "master_healer": "50 crowns and up"
+    },
+    "diseases": [
+      {
+        "id": "winter_cough",
+        "notes": "Common seasonal chest illness"
+      },
+      {
+        "id": "red_pox",
+        "notes": "Contagious fever and rash. Survivors are immune."
+      },
+      {
+        "id": "marsh_fever",
+        "notes": "River valleys, Reedmarsh, southern coasts"
+      },
+      {
+        "id": "bloodflux",
+        "notes": "Dysentery from bad water, common in armies and ships"
+      },
+      {
+        "id": "stone_lung",
+        "notes": "Miners' wasting lung, especially in Khardun"
+      },
+      {
+        "id": "sailors_rot",
+        "notes": "Scurvy-like illness on long voyages"
+      },
+      {
+        "id": "grey_cough",
+        "notes": "Rare epidemic that returns every few decades"
+      }
+    ],
+    "susceptibility": "Elves resist common illness, dwarves resist poison, humans are most vulnerable.",
+    "other": [
+      "Childbirth is the leading cause of death among humans",
+      "Ports run quarantines",
+      "Alchemists make antidotes for monster venom"
+    ],
+    "note": "All provisional"
+  },
+  "bounty_hunters": [
+    {
+      "id": "charter_writ_bearer",
+      "who": "Licensed Charter hunter, Journeyman or higher",
+      "method": "By the book. Brings targets in alive and follows jurisdiction."
+    },
+    {
+      "id": "thief_taker",
+      "who": "Local deputy for a reeve or sheriff",
+      "method": "Knows the streets. Sometimes takes bribes."
+    },
+    {
+      "id": "templar_hound",
+      "who": "Crown Templar tracking heretics and desecrators",
+      "method": "Zealous but lawful. Hunts for the temple."
+    },
+    {
+      "id": "free_blade",
+      "who": "Unlicensed freelancer",
+      "method": "Takes any contract. Skilled, flexible morals."
+    },
+    {
+      "id": "ledger_hound",
+      "who": "Devil agent of the Ledger Courts",
+      "method": "Hunts contract-breakers with sealed writs"
+    },
+    {
+      "id": "houseblade",
+      "who": "Demon House retriever or assassin",
+      "method": "Polite and lethal. Works contract-bounties."
+    },
+    {
+      "id": "clan_tracker",
+      "who": "Orc or beastfolk, often Wild Lodge",
+      "method": "Hunts poachers and killers of sacred animals"
+    },
+    {
+      "id": "slave_catcher",
+      "who": "Southern human recapturing escaped slaves",
+      "method": "Legal in Marrowen and Sarrakesh, hated and often outlawed elsewhere. Natural enemy of the Free Road."
+    },
+    {
+      "id": "beast_slayer",
+      "who": "Monster specialist, often Ranger or Beastbinder",
+      "method": "Proof-of-Deed contracts on dangerous animals"
+    },
+    {
+      "id": "veil_hand_finder",
+      "who": "Dark elf information broker",
+      "method": "Does not fight. Locates fugitives for a fee."
+    }
+  ]
+}
