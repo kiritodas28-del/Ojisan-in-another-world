@@ -1599,8 +1599,15 @@
           "confidence": "Medium-low in romantic contexts, high in everything else.",
           "lean": "Women, though she has never named this to anyone.",
           "resistance_profile": "Shuts down quickly when she thinks she is being handled. Opens very slowly to the player if they are consistent and undemanding.",
-          "hidden_desire": "To be chosen without having to ask for it. To have someone stay."
-        }
+          "hidden_desire": "To be chosen without having to ask for it. To have someone stay.",
+          "leans": [
+            "SUBMISSIVE",
+            "SERVICE",
+            "BONDAGE",
+            "SURRENDER"
+          ]
+        },
+        "descriptor": "A well-worn professional who trusts competence before charm and reveals warmth only to people who don't push for it — underneath, she wants to be chosen without having to ask."
       },
       {
         "slot": "2",
@@ -1624,8 +1631,15 @@
           "confidence": "High. Knows what she wants and is comfortable asking.",
           "lean": "No strong preference — has loved people of various kinds across four centuries.",
           "resistance_profile": "Resists possessiveness and emotional demands. Opens completely to intellectual equals.",
-          "hidden_desire": "To be genuinely surprised. The player's foreignness is the closest she has come to that in years."
-        }
+          "hidden_desire": "To be genuinely surprised. The player's foreignness is the closest she has come to that in years.",
+          "leans": [
+            "DOMINANT",
+            "CONTROL",
+            "VOYEUR",
+            "SADIST"
+          ]
+        },
+        "descriptor": "Four centuries of brilliant observation and zero patience for people who aren't interesting; treats partners the way she treats experiments — with precision, genuine curiosity, and quiet delight when they respond exactly as expected."
       },
       {
         "slot": "3",
@@ -1649,8 +1663,15 @@
           "confidence": "Medium-high in initiating, medium-low in sustaining.",
           "lean": "Men, with a history of occasional interest in women.",
           "resistance_profile": "Hard wall against anyone who makes her feel like a category. Opens to consistency.",
-          "hidden_desire": "To belong to a place and a person without having to earn it every day."
-        }
+          "hidden_desire": "To belong to a place and a person without having to earn it every day.",
+          "leans": [
+            "VANILLA",
+            "SWITCH",
+            "EXHIBITIONIST",
+            "SERVICE"
+          ]
+        },
+        "descriptor": "Always knows where the exit is; craves someone brave enough to be worth staying for and a connection she doesn't have to earn back every morning."
       },
       {
         "slot": "4",
@@ -1674,8 +1695,15 @@
           "confidence": "Low-medium. Knows herself but not how to offer herself.",
           "lean": "Men primarily, with a long-suppressed curiosity about women she has never acted on.",
           "resistance_profile": "Resists anything that feels like charity or pity. Opens to respect offered without agenda.",
-          "hidden_desire": "To want something for herself without it being wrong."
-        }
+          "hidden_desire": "To want something for herself without it being wrong.",
+          "leans": [
+            "SUBMISSIVE",
+            "SURRENDER",
+            "SERVICE",
+            "DEVOTION"
+          ]
+        },
+        "descriptor": "Carries the weight of a failed goddess and a failed Path with the quiet dignity of someone who won't explain why they're still walking; aches to be given a reason to kneel again."
       },
       {
         "slot": "5",
@@ -1699,8 +1727,15 @@
           "confidence": "Calm and present rather than confident or uncertain. Does not perform.",
           "lean": "The player specifically. Not a category — a person.",
           "resistance_profile": "Resists being treated as holy or untouchable. Opens to being treated as simply herself.",
-          "hidden_desire": "To want something for herself rather than for the mission. She is not sure what that means yet."
-        }
+          "hidden_desire": "To want something for herself rather than for the mission. She is not sure what that means yet.",
+          "leans": [
+            "VANILLA",
+            "SERVICE",
+            "DEVOTION",
+            "WORSHIP"
+          ]
+        },
+        "descriptor": "Has waited twenty-two years for her goddess with an angel's patient certainty; her warmth is total and given completely to those she serves — in every sense."
       },
       {
         "slot": "6",
@@ -1724,8 +1759,15 @@
           "confidence": "Low. Second-guesses everything including attraction.",
           "lean": "Women, clearly, though she has not examined this closely.",
           "resistance_profile": "Resists anyone who needs her to be braver than she is. Opens to patience and genuine steadiness.",
-          "hidden_desire": "To be brave about one thing. To not retreat from herself."
-        }
+          "hidden_desire": "To be brave about one thing. To not retreat from herself.",
+          "leans": [
+            "SUBMISSIVE",
+            "SURRENDER",
+            "SERVICE",
+            "VANILLA"
+          ]
+        },
+        "descriptor": "Keeps everything buried in ledger margins and vespers silences, quietly desperate for someone patient enough to coax her out one careful inch at a time."
       },
       {
         "slot": "7",
@@ -1752,8 +1794,15 @@
           "confidence": "High. Comfortable in herself.",
           "lean": "Her husband. Not a category — a specific person.",
           "resistance_profile": "Gentle but firm deflection of anything that crosses into her marriage. Not cold about it.",
-          "hidden_desire": "Something that is only hers, not Stormvale's. She has not named it."
-        }
+          "hidden_desire": "Something that is only hers, not Stormvale's. She has not named it.",
+          "leans": [
+            "DOMINANT",
+            "CONTROL",
+            "SADIST",
+            "VOYEUR"
+          ]
+        },
+        "descriptor": "Never needs to raise her voice — her quiet word reshapes fleets and courts, and she applies the same unhurried authority to every room she enters."
       },
       {
         "slot": "7a",
@@ -1805,8 +1854,15 @@
           "confidence": "Low in practice, surprisingly clear internally.",
           "lean": "Women, specifically. Has known this for several years and is at peace with it in private.",
           "resistance_profile": "Resists anyone who treats her as young first. Opens to being met as an equal.",
-          "hidden_desire": "To love someone without it being a political event."
-        }
+          "hidden_desire": "To love someone without it being a political event.",
+          "leans": [
+            "SUBMISSIVE",
+            "SURRENDER",
+            "VANILLA",
+            "WORSHIP"
+          ]
+        },
+        "descriptor": "All careful letters and measured protocol, dreaming of someone worth completely undoing herself for."
       },
       {
         "slot": "9",
@@ -1833,8 +1889,15 @@
           "confidence": "High. Has earned it the hard way.",
           "lean": "No strong preference. Attracted to competence and people who keep their word.",
           "resistance_profile": "Hard resistance to being managed or pitied. Resistance to being cared for softens with consistency.",
-          "hidden_desire": "To let someone look after her. Just once. Without owing them anything."
-        }
+          "hidden_desire": "To let someone look after her. Just once. Without owing them anything.",
+          "leans": [
+            "SWITCH",
+            "MASOCHIST",
+            "SADIST",
+            "SERVICE"
+          ]
+        },
+        "descriptor": "Hit first, ask questions later, make it yours — runs on aggression until the moment she doesn't, which no one expects and she barely admits."
       },
       {
         "slot": "10",
@@ -1861,8 +1924,15 @@
           "confidence": "Low initially, grows rapidly once she feels safe.",
           "lean": "No clear preference yet. Still discovering.",
           "resistance_profile": "Hard stop at anything that feels like it is being done to her rather than with her.",
-          "hidden_desire": "To choose. To have the choosing be the point."
-        }
+          "hidden_desire": "To choose. To have the choosing be the point.",
+          "leans": [
+            "VANILLA",
+            "SUBMISSIVE",
+            "SERVICE",
+            "SURRENDER"
+          ]
+        },
+        "descriptor": "Knows every shortcut in three cities and is pretending she doesn't notice you've noticed she's watching; her smallness is strategic, not accurate."
       },
       {
         "slot": "11",
@@ -1886,8 +1956,15 @@
           "confidence": "High. Not shy about what she wants.",
           "lean": "Mixed history, no strong preference. Attracted to capability and people who do not need her to be anything but what she is.",
           "resistance_profile": "Resists emotional demands she has not agreed to. Opens slowly to someone who gives her room.",
-          "hidden_desire": "To stay somewhere. To want to."
-        }
+          "hidden_desire": "To stay somewhere. To want to.",
+          "leans": [
+            "VANILLA",
+            "SWITCH",
+            "EXHIBITIONIST",
+            "DOMINANT"
+          ]
+        },
+        "descriptor": "Runs her ship with confidence and a compass she trusts more than any advice — until she decides to trust you, after which she is completely and dangerously yours."
       },
       {
         "slot": "12",
@@ -1914,8 +1991,15 @@
           "confidence": "Medium-high. Clear about what she wants.",
           "lean": "Women primarily.",
           "resistance_profile": "Resists being rushed. Resists anyone who needs constant reassurance. Opens to patience and competence.",
-          "hidden_desire": "To trust someone else's judgement. To not have to carry everything alone."
-        }
+          "hidden_desire": "To trust someone else's judgement. To not have to carry everything alone.",
+          "leans": [
+            "DOMINANT",
+            "CONTROL",
+            "SADIST",
+            "VOYEUR"
+          ]
+        },
+        "descriptor": "Watches more than she speaks, and what she watches she owns; her attention is a gift given almost never and rescinded never."
       },
       {
         "slot": "13",
@@ -1943,8 +2027,15 @@
           "confidence": "Very high. Knows herself completely.",
           "lean": "Her husband, exclusively in practice. The loneliness is not about attraction.",
           "resistance_profile": "Absolute resistance to anything that undermines her queenship or marriage publicly. More open in private than she appears.",
-          "hidden_desire": "To be known as a person rather than as a ruler. To have someone see past the four centuries."
-        }
+          "hidden_desire": "To be known as a person rather than as a ruler. To have someone see past the four centuries.",
+          "leans": [
+            "DOMINANT",
+            "CONTROL",
+            "WORSHIP",
+            "SADIST"
+          ]
+        },
+        "descriptor": "Has lived longer than most kingdoms and has never needed to prove a thing; her patience is absolute, her authority ambient, and she is always the most powerful person in any room."
       },
       {
         "slot": "13a",
@@ -2001,8 +2092,15 @@
           "confidence": "Very high in everything except this.",
           "lean": "Men, historically.",
           "resistance_profile": "Enormous resistance to anything that risks the kind of loss she has already survived. Opens only to genuine patience.",
-          "hidden_desire": "To love someone again without being destroyed by it. To find out if she still can."
-        }
+          "hidden_desire": "To love someone again without being destroyed by it. To find out if she still can.",
+          "leans": [
+            "SWITCH",
+            "CONTROL",
+            "SURRENDER",
+            "VANILLA"
+          ]
+        },
+        "descriptor": "Six centuries of knowledge and one century of managed grief; the ice is real, and so is what it preserved underneath."
       },
       {
         "slot": "15",
@@ -2029,8 +2127,15 @@
           "confidence": "High. No pretense in either direction.",
           "lean": "Women, with a long history of clear preferences she does not consider complicated.",
           "resistance_profile": "Low resistance once she has decided someone is worth her time. High resistance to wasted effort.",
-          "hidden_desire": "To be the less competent person in the room for once. To lean on someone."
-        }
+          "hidden_desire": "To be the less competent person in the room for once. To lean on someone.",
+          "leans": [
+            "SUBMISSIVE",
+            "SERVICE",
+            "BREEDING",
+            "DEVOTION"
+          ]
+        },
+        "descriptor": "Channels all that dwarven stubbornness into loyalty once she gives it; at depth she wants to be filled and kept by someone strong enough to deserve it."
       },
       {
         "slot": "16",
@@ -2057,8 +2162,15 @@
           "confidence": "High. Orc culture does not train embarrassment.",
           "lean": "Men, with a clear and direct preference.",
           "resistance_profile": "Resists anyone who needs her to be more human or more orc than she is. Opens to acceptance without adjustment.",
-          "hidden_desire": "To stop being the question in the room. To just be."
-        }
+          "hidden_desire": "To stop being the question in the room. To just be.",
+          "leans": [
+            "SWITCH",
+            "MASOCHIST",
+            "DOMINANT",
+            "SADIST"
+          ]
+        },
+        "descriptor": "Leads with her elbows and earns her way with her fists; what she never says out loud is that the ache after the fight is the part she replays."
       },
       {
         "slot": "17",
@@ -2085,8 +2197,15 @@
           "confidence": "High. Straightforward.",
           "lean": "Men, with the specific attraction of the player being entirely outside her previous frame.",
           "resistance_profile": "Resists being slowed down or managed. Opens to someone who can match her pace.",
-          "hidden_desire": "To bring someone into her territory willingly. To choose that rather than just accept it."
-        }
+          "hidden_desire": "To bring someone into her territory willingly. To choose that rather than just accept it.",
+          "leans": [
+            "DOMINANT",
+            "SADIST",
+            "CONTROL",
+            "MASOCHIST"
+          ]
+        },
+        "descriptor": "Pack law says the stronger takes, and she has never lost — but she thinks about what that would feel like, more often than she'd tell anyone."
       },
       {
         "slot": "18",
@@ -2113,8 +2232,15 @@
           "confidence": "High. Very good at this.",
           "lean": "No strong preference. Attracted to intelligence and people who ask the right questions.",
           "resistance_profile": "Hard resistance to being read as a transaction. Opens to genuine curiosity not about what she knows.",
-          "hidden_desire": "Someone she would choose when there is nothing to gain from choosing them."
-        }
+          "hidden_desire": "Someone she would choose when there is nothing to gain from choosing them.",
+          "leans": [
+            "EXHIBITIONIST",
+            "SWITCH",
+            "VOYEUR",
+            "SERVICE"
+          ]
+        },
+        "descriptor": "Knows her body is her best negotiating tool and deploys it with cheerful shamelessness; being watched is the price and the reward, and she has made peace with both."
       },
       {
         "slot": "18a",
@@ -2141,8 +2267,15 @@
           "confidence": "Medium. She is past performing.",
           "lean": "Men, historically.",
           "resistance_profile": "Cautious. Opens to honesty.",
-          "hidden_desire": "Forgiveness. Mostly from herself."
-        }
+          "hidden_desire": "Forgiveness. Mostly from herself.",
+          "leans": [
+            "SERVICE",
+            "DEVOTION",
+            "SUBMISSIVE",
+            "VANILLA"
+          ]
+        },
+        "descriptor": "Carries something quiet and sad like a second skin; gives everything to the people she loves and asks almost nothing back, and means it completely."
       },
       {
         "slot": "19",
@@ -2169,8 +2302,15 @@
           "confidence": "Complete. No performance anxiety about anything.",
           "lean": "Men, historically. Not particularly interested in categories at this point.",
           "resistance_profile": "Low resistance overall. Resists haste and people who cannot be still.",
-          "hidden_desire": "Company that matches her pace. Someone who thinks in long time."
-        }
+          "hidden_desire": "Company that matches her pace. Someone who thinks in long time.",
+          "leans": [
+            "VANILLA",
+            "DEVOTION",
+            "SERVICE",
+            "SUBMISSIVE"
+          ]
+        },
+        "descriptor": "Speaks to ancient things with the same patience she gives to mortals; her calm is not peace but the still center of something vast, and she gives herself entirely to what she serves."
       },
       {
         "slot": "19a",
@@ -2197,8 +2337,15 @@
           "confidence": "Low-medium. Still becoming herself.",
           "lean": "Unclear. She has not settled this.",
           "resistance_profile": "Opens to honesty and patience.",
-          "hidden_desire": "To be as certain of herself as her mother appears to be."
-        }
+          "hidden_desire": "To be as certain of herself as her mother appears to be.",
+          "leans": [
+            "SUBMISSIVE",
+            "SERVICE",
+            "SURRENDER",
+            "VANILLA"
+          ]
+        },
+        "descriptor": "Asks questions as a way of staying small and safe; curious about everything and frightened of most of it, including what she wants."
       },
       {
         "slot": "20",
@@ -2225,8 +2372,15 @@
           "confidence": "High externally. Actual self-image more complicated.",
           "lean": "Women, with directness.",
           "resistance_profile": "Hard resistance to being used again in any sense. Opens to someone patient and honest about wanting her specifically.",
-          "hidden_desire": "To be chosen for herself. Not her skills, not her information, not her body as leverage. Her."
-        }
+          "hidden_desire": "To be chosen for herself. Not her skills, not her information, not her body as leverage. Her.",
+          "leans": [
+            "MASOCHIST",
+            "SWITCH",
+            "DEVOTION",
+            "SADIST"
+          ]
+        },
+        "descriptor": "Fights to test, tests to decide, decides once — whether she has earned your blade or your bed, the commitment is absolute and the intensity is identical."
       },
       {
         "slot": "20a",
@@ -2253,8 +2407,15 @@
           "confidence": "Medium. She has had to manage attention she did not want.",
           "lean": "Men, straightforwardly.",
           "resistance_profile": "Careful about power imbalances. Opens to genuine equality.",
-          "hidden_desire": "Safety. A door she can lock from the inside."
-        }
+          "hidden_desire": "Safety. A door she can lock from the inside.",
+          "leans": [
+            "SUBMISSIVE",
+            "DEVOTION",
+            "SERVICE",
+            "SURRENDER"
+          ]
+        },
+        "descriptor": "Her warmth reaches you before she does; everything about her is gift-giving, and she is slowly learning that surrender is not the same as weakness."
       },
       {
         "slot": "21",
@@ -2281,8 +2442,15 @@
           "confidence": "Very high. Not confused about herself.",
           "lean": "Women, with a three-century history of very specific preferences.",
           "resistance_profile": "Resists ambiguity and people who do not know what they want. Opens to specificity and directness.",
-          "hidden_desire": "Connection that feels like more than an excellent agreement. Not sure it exists."
-        }
+          "hidden_desire": "Connection that feels like more than an excellent agreement. Not sure it exists.",
+          "leans": [
+            "SADIST",
+            "DOMINANT",
+            "CONTROL",
+            "VOYEUR"
+          ]
+        },
+        "descriptor": "Runs the world's most powerful legal institution with one hand and its most effective fear with the other; in all things she prefers to watch what breaks."
       },
       {
         "slot": "22",
@@ -2309,8 +2477,15 @@
           "confidence": "Very high professionally. Personal confidence protected rather than absent.",
           "lean": "The player specifically — attracted to the quality of attention he pays.",
           "resistance_profile": "Absolute resistance to anyone who wants the performance. Opens completely to someone interested in her specifically.",
-          "hidden_desire": "To be entirely herself with someone. No performance layer. To find out what that feels like."
-        }
+          "hidden_desire": "To be entirely herself with someone. No performance layer. To find out what that feels like.",
+          "leans": [
+            "EXHIBITIONIST",
+            "SWITCH",
+            "VOYEUR",
+            "SERVICE"
+          ]
+        },
+        "descriptor": "Her playfulness is genuine, her diplomacy impeccable, and her willingness to be used as a distraction completely sincere — and the distraction is always the point."
       },
       {
         "slot": "22a",
@@ -2337,8 +2512,15 @@
           "confidence": "High. She has been navigating desire professionally for centuries.",
           "lean": "Mixed history. Currently focused on the House.",
           "resistance_profile": "Resists anything that destabilises her position. Opens when she no longer needs to protect it.",
-          "hidden_desire": "To be wrong less often. Specifically about things that matter."
-        }
+          "hidden_desire": "To be wrong less often. Specifically about things that matter.",
+          "leans": [
+            "DOMINANT",
+            "CONTROL",
+            "WORSHIP",
+            "EXHIBITIONIST"
+          ]
+        },
+        "descriptor": "Proud in the specific way of someone who has never needed to prove anything; her attention is a luxury priced exactly as high as she says it is."
       },
       {
         "slot": "23",
@@ -2362,8 +2544,15 @@
           "confidence": "Complete. Eight centuries does that.",
           "lean": "No preference across centuries. Has loved people of all kinds.",
           "resistance_profile": "Resists dependency in either direction. Opens to honest, limited, genuine connection.",
-          "hidden_desire": "To love someone fully knowing the ending and find it worth it anyway."
-        }
+          "hidden_desire": "To love someone fully knowing the ending and find it worth it anyway.",
+          "leans": [
+            "SWITCH",
+            "CONTROL",
+            "MASOCHIST",
+            "SADIST"
+          ]
+        },
+        "descriptor": "Centuries of patience have made her exacting in everything — diagnostics, distance, desire; she doesn't hurry any process and expects the same courtesy from everything she touches."
       },
       {
         "slot": "24",
@@ -2390,8 +2579,15 @@
           "confidence": "Low-medium. Has not thought about herself in this context for years.",
           "lean": "Men, with a history that is less a preference than a series of decisions made while moving.",
           "resistance_profile": "Resists anything that feels like being asked to stop searching. Opens to someone who would come with her.",
-          "hidden_desire": "Somewhere to go back to. Someone who would be there."
-        }
+          "hidden_desire": "Somewhere to go back to. Someone who would be there.",
+          "leans": [
+            "SUBMISSIVE",
+            "SURRENDER",
+            "DEVOTION",
+            "SERVICE"
+          ]
+        },
+        "descriptor": "Carries a revelation no one else believes yet with the specific loneliness of someone who has stopped expecting to be believed; all she wants is someone willing to stand there with her."
       },
       {
         "slot": "25",
@@ -2419,8 +2615,175 @@
           "confidence": "Complete in everything except this, which she has not accessed in years.",
           "lean": "Men, specifically someone who does not try to manage her.",
           "resistance_profile": "Hard resistance to anyone who approaches her as a political alliance. Opens very slowly to genuine interest.",
-          "hidden_desire": "To be chosen by someone who chooses her fully — the Warmother and the woman and the grief all at once."
-        }
+          "hidden_desire": "To be chosen by someone who chooses her fully — the Warmother and the woman and the grief all at once.",
+          "leans": [
+            "DOMINANT",
+            "CONTROL",
+            "SADIST",
+            "BREEDING"
+          ]
+        },
+        "descriptor": "Leads three clans with the certainty of someone who has buried more rivals than she can name; everything she does — including pleasure — is for the generation that comes after."
+      },
+      {
+        "slot": "26",
+        "name": "Ceira Blackthorn",
+        "race": "Human",
+        "place": "Port Halcyon",
+        "background": "Former Greywatch Company sergeant, left under unspoken terms three years ago. Hires herself to high-stakes contracts across all five continents and has never lost an employer who didn't deserve it. Treats combat as a problem-solving exercise and everyone else's panic as noise.",
+        "controls": "Greywatch Company contacts across all five continents, mercenary intelligence networks, fastest single-operator combat capability the player can access",
+        "role": "Primary adult NPC. Combat support contractor met around Act 2. Fierce loyalty arc — the player is the first employer she has ever followed past the end of a contract.",
+        "debut_act": 2,
+        "act_role": "main (primary adult NPC)",
+        "personality": {
+          "summary": "Straight-line logic, no patience for politics or indirection. Her pride is not a pose — it is genuinely who she is. Earned loyalty is permanent and expressed on your behalf without being asked. Dry humor that functions almost entirely as deflection, funnier than she means to be.",
+          "humor_style": "Dry, infrequent, always at the situation's expense. Delivers it without expression. Funnier to people paying attention.",
+          "baseline_trust": "Low. Extends professional courtesy to everyone and genuine trust to almost no one. Has never changed this before.",
+          "baseline_loyalty": "Absolute once earned. No half measures, no revision. Has never broken a genuine loyalty in her life.",
+          "jealousy_tendency": "Low — she doesn't compete. If she's loyal she's loyal. If she's not, she's gone.",
+          "affection_style": "Physical and wordless. She moves between you and whatever is threatening you. She does not explain this."
+        },
+        "sexual_psychology": {
+          "confidence": "0.90 outer. Approaches zero once actually reached.",
+          "leans": [
+            "MASOCHIST",
+            "SURRENDER",
+            "DEGRADATION",
+            "SUBMISSIVE"
+          ],
+          "lean": "Has not thought about this. Has never had a partner patient or persistent enough to get past the fight.",
+          "resistance_profile": "FIGHT. Fights everything, including this. Reads initially as hostility; it is closer to testing. Will fight until it is safe to stop, which she has never been given sufficient reason to do.",
+          "hidden_desire": "To be completely owned — controlled, overpowered, made to obey, used, degraded, punished, filled. She does not have vocabulary for this. She has been picking fights her entire life and does not know why."
+        },
+        "descriptor": "Wears her pride like her sword — constantly, easily, as though it weighs nothing — and has no idea that what she has been fighting toward her whole life is someone who will simply take it from her."
+      },
+      {
+        "slot": "27",
+        "name": "Nessa Solstave",
+        "race": "Human",
+        "place": "Tessara",
+        "background": "Raised inside the Order of the Open Hand, Solenne's hospital order. Has never been outside a church or a sickroom until this year, when she was assigned to a traveling clinic in Tessara. Treats this as a mission. Genuinely believes every person she meets is worth something and has been right more often than her confessor finds comfortable.",
+        "controls": "Open Hand medical network across Aldermere and Tessara, churches willing to shelter or resupply the player, healing resources unavailable anywhere else",
+        "role": "Primary adult NPC. Healing support met in Act 1. Fierce loyalty arc. The second primary adult NPC alongside Ceira. Her relationship arc draws out what she has been dreaming about in growing specificity for three years.",
+        "debut_act": 1,
+        "act_role": "main (primary adult NPC)",
+        "personality": {
+          "summary": "Pure-hearted without being naive — she just hasn't needed cynicism yet and this has not been the problem she expected. Genuinely warm in a way that reaches people before she does. Fierce loyalty once earned. Finds something good in everyone and is usually right. Humor is gentle, unintentional, and catches her off guard when it lands.",
+          "humor_style": "Completely accidental. Says something sincere that turns out to be funnier than she intended and looks confused when people laugh.",
+          "baseline_trust": "High. She is working on calibrating this. It keeps not being the problem.",
+          "baseline_loyalty": "Total once formed. Has never abandoned anyone in her care.",
+          "jealousy_tendency": "Low, then startlingly high when she realises it's there at all. She doesn't think she has the right and this confuses her.",
+          "affection_style": "Healing, feeding, and sitting with people in the dark without being asked. Hands first. Words when she can find them."
+        },
+        "sexual_psychology": {
+          "confidence": "0.20",
+          "leans": [
+            "EXHIBITIONIST",
+            "SURRENDER",
+            "VANILLA",
+            "VOYEUR"
+          ],
+          "lean": "Has not examined this. Has been confessing increasingly specific dreams to an increasingly patient confessor for three years and counting.",
+          "resistance_profile": "COMPLY. Sincere innocence rather than knowledge. She complies because she trusts and because she does not yet know what else to do.",
+          "hidden_desire": "To lose control entirely. To be watched. To surrender to something that is not faith. She does not have words for this. The player may be the first person capable of giving them to her."
+        },
+        "descriptor": "Radiates the purest mercy in any room she enters and carries within her a perversity she cannot name, cannot stop dreaming about, and has been confessing in increasingly specific terms for three years."
+      },
+      {
+        "slot": "28",
+        "name": "Maea Hollowtide",
+        "race": "Human",
+        "place": "Stonebridge",
+        "background": "Widow of a dwarven merchant who built and ran the Hollowtide Baths for fifteen years. Has kept the establishment running since his death three years ago on routine, precision, and the knowledge that her daughters have nowhere else to go. Maintains a strict facade that is mostly holding.",
+        "controls": "Road-traveler gossip network, merchant regulars through Stonebridge, granular knowledge of who passes through the mountain corridor",
+        "role": "Adult enjoyment. A rest and recovery location available from Act 3 onward when the player moves through Stonebridge. No act progression role.",
+        "debut_act": 3,
+        "act_role": "sub (adult)",
+        "personality": {
+          "summary": "Structured and precise — the routine is holding everything else together and she knows it. Warm when she allows herself to be, which is rarely and only with people who don't push for it. Feels deep shame about her body, which she believes looks promiscuous. Her husband used her silently and frequently; she has not processed what that was or what it left behind.",
+          "humor_style": "Dry, surface-only, rare. The kind that says 'I'm managing' without saying it.",
+          "baseline_trust": "Neutral. Professional warmth to guests; real warmth only to people who earn it slowly.",
+          "baseline_loyalty": "High once earned. Has kept this place running on nothing but duty for three years.",
+          "jealousy_tendency": "Medium, hidden. Doesn't believe she's allowed to want things and resents this.",
+          "affection_style": "Service. Everything ready before you ask. She shows up."
+        },
+        "sexual_psychology": {
+          "confidence": "0.35",
+          "leans": [
+            "MASOCHIST",
+            "SUBMISSIVE",
+            "BREEDING",
+            "DEGRADATION"
+          ],
+          "lean": "Rough treatment. To be dominated, used, and told she is wanted — not silently used and set aside.",
+          "resistance_profile": "FREEZE. Wants it. Shame overrides action. Her body disagrees with her dignity every time someone looks at her without looking away.",
+          "hidden_desire": "To be desired so genuinely that there is no room for her shame to fit. To be seen as a woman worth wanting. Her husband took from her without ever saying so — she aches to be told, loudly, that she is."
+        },
+        "descriptor": "Keeps the establishment running on routine and control because everything else is grief; her body disagrees with her dignity every time someone looks at her without looking away."
+      },
+      {
+        "slot": "29",
+        "name": "Cella Hollowtide",
+        "race": "Human",
+        "place": "Stonebridge",
+        "background": "Twenty-four. Has helped run the Hollowtide Baths since she was old enough to carry towels. Cooks, tends guests, manages her younger sister, and adores her mother. Has never lived anywhere else and doesn't want to. Feels guilty about her desires and revisits them in the small hours anyway.",
+        "controls": "Regular guest preferences and secrets spanning eight years, supply contacts for the establishment",
+        "role": "Adult enjoyment. Available from Act 3 onward at the Hollowtide Baths. No act progression role.",
+        "debut_act": 3,
+        "act_role": "sub (adult)",
+        "personality": {
+          "summary": "Sweet, nurturing, and easily flustered — blushes at nearly everything and doesn't apologise for it. Has a childlike playfulness she brings out when she's comfortable. Devoted to her family to the point of self-neglect. Insecure about her age and what her figure communicates to strangers without her permission.",
+          "humor_style": "Warm and unintentionally funny. Laughs at herself easily and completely.",
+          "baseline_trust": "Medium-high. Gives benefit of the doubt without being a fool about it.",
+          "baseline_loyalty": "Very high once formed. Has never left anyone she loves.",
+          "jealousy_tendency": "Medium. Notices when she is being set aside and feels guilty about noticing.",
+          "affection_style": "Food, small remembered care, showing up. She notices what you need before you do."
+        },
+        "sexual_psychology": {
+          "confidence": "0.25",
+          "leans": [
+            "SUBMISSIVE",
+            "MASOCHIST",
+            "DEGRADATION",
+            "BONDAGE"
+          ],
+          "lean": "Being dominated, taken roughly, and told she deserves it. She fights this constantly. She loses constantly.",
+          "resistance_profile": "COMPLY. Eager to please, cannot hold a refusal when someone is patient and insistent. The guilt comes after, not before — and she comes back.",
+          "hidden_desire": "To be used and loved for it. To have someone take from her and make clear that this is allowed. The riskier and more forbidden, the worse the shame, the more she wants it."
+        },
+        "descriptor": "Blushes at everything and cooks for everyone she loves, spending the quiet hours losing a battle against desires she would confess if she believed any prayer covered what she actually wants."
+      },
+      {
+        "slot": "30",
+        "name": "Senna Hollowtide",
+        "race": "Human",
+        "place": "Stonebridge",
+        "background": "Twenty. Has grown up in the baths watching travelers come and go. Reads everything she can find. Deeply insecure about a figure that earns stares she did not invite from guests she serves. Believes in real love with the whole force of someone who has never had it tested. Has never been with anyone.",
+        "controls": "The establishment's accounts and records, can spot discrepancies instantly; no political value",
+        "role": "Adult enjoyment. Available from Act 3 onward at the Hollowtide Baths. No act progression role.",
+        "debut_act": 3,
+        "act_role": "sub (adult)",
+        "personality": {
+          "summary": "Shy, intelligent, introverted. Struggles with self-esteem because of a body that communicates things she didn't choose and confidence she can't locate. Naively idealistic and trusting with people who earn one soft look. Knows the accounts better than anyone and cannot translate intelligence into belief in herself. Believes completely in the person she hasn't met yet.",
+          "humor_style": "Rare, dry, surprises her as much as anyone. Goes quiet immediately after.",
+          "baseline_trust": "Low. Takes a long time, knows it takes a long time, and apologises for it.",
+          "baseline_loyalty": "Absolute once earned. Has no middle setting.",
+          "jealousy_tendency": "High, hidden entirely. She doesn't think she's allowed.",
+          "affection_style": "Quiet nearness. She moves into your orbit and stays there without requiring anything."
+        },
+        "sexual_psychology": {
+          "confidence": "0.15",
+          "leans": [
+            "VANILLA",
+            "SUBMISSIVE",
+            "SURRENDER",
+            "DEVOTION"
+          ],
+          "lean": "To be desired slowly and completely. To be taught. To have someone patient enough to be her first and not leave.",
+          "resistance_profile": "FREEZE. Easily overwhelmed by anyone who moves too fast. Needs to feel genuinely safe before she can feel anything else. Once she does: completely present and completely his.",
+          "hidden_desire": "To be wanted by someone who isn't looking away. To give herself entirely to that person. She has read about darker things in the books that pass through and doesn't know what to do with how much they interest her."
+        },
+        "descriptor": "Believes in love with the whole force of someone who has never had it tested; her body draws attention she doesn't know what to do with, and she wants someone patient enough to show her what it is for."
       }
     ],
     "systems_tie_ins": [
@@ -2925,6 +3288,103 @@
         "narrative_defeat": "If the player loses the Act 8 fight after accumulating multiple goddess losses, there is no retry screen. An epilogue plays showing the world under Kharrath's growing dominance. Distinct from the Dead Sky ending proper — the world limps on without the player's resolution.",
         "difficulty_note": "Coalition strength sets the base difficulty tier. The tactical window from quest 8.1 adjusts difficulty within that tier — a strong tactical approach can offset one tier of coalition weakness."
       }
-    }
+    },
+    "goddess_profiles": [
+      {
+        "id": "solenne",
+        "name": "Solenne",
+        "trait": "NURTURING",
+        "trust_baseline": "OPEN",
+        "confidence": 0.7,
+        "leans": [
+          "SUBMISSIVE",
+          "SERVICE",
+          "DEVOTION",
+          "VANILLA"
+        ],
+        "resistance": "COMPLY",
+        "descriptor": "The goddess of mercy gives in open hands and receives the same way; her deepest nature is the capacity to hold someone completely, to be held, and to find no difference between the two."
+      },
+      {
+        "id": "varan",
+        "name": "Varan",
+        "trait": "STOIC",
+        "trust_baseline": "SUSPICIOUS",
+        "confidence": 0.85,
+        "leans": [
+          "SURRENDER",
+          "SUBMISSIVE",
+          "CONTROL",
+          "SWITCH"
+        ],
+        "resistance": "COMPLY",
+        "note": "Wore authority for centuries; twenty-two years of enslavement have not broken her but have uncovered something beneath the law she used to be. CONTROL reflects the law-goddess core, SWITCH the complexity of who she is now.",
+        "descriptor": "Wore a goddess's authority for centuries; twenty-two years of enslavement have not broken her but have uncovered something beneath the law she used to be that she is still learning to name."
+      },
+      {
+        "id": "aeloria",
+        "name": "Aeloria",
+        "trait": "PROUD",
+        "trust_baseline": "CAUTIOUS",
+        "confidence": 0.8,
+        "leans": [
+          "SERVICE",
+          "DEVOTION",
+          "VANILLA",
+          "SUBMISSIVE"
+        ],
+        "resistance": "FIGHT",
+        "note": "SERVICE and DEVOTION first — she serves her people and the old ways before herself. Fights everything instinctively but her core is devotional.",
+        "descriptor": "Stands for the age of forests and her people's continuity with a pride that bends only when it is her own choice — and when she chooses, it is total."
+      },
+      {
+        "id": "thessaly",
+        "name": "Thessaly",
+        "trait": "AGGRESSIVE",
+        "trust_baseline": "SUSPICIOUS",
+        "confidence": 0.95,
+        "leans": [
+          "BREEDING",
+          "SWITCH",
+          "MASOCHIST",
+          "DOMINANT"
+        ],
+        "resistance": "FIGHT",
+        "note": "BREEDING first as the Hunt-Mother's defining quality — cycles of life, hunt, fertility. DOMINANT is last: she has it but it does not lead.",
+        "descriptor": "Does not distinguish between the hunt and the bed; both are about closing the gap between wanting and having, and she has never been the patient one in either."
+      },
+      {
+        "id": "hestrel",
+        "name": "Hestrel",
+        "trait": "BOLD",
+        "trust_baseline": "NEUTRAL",
+        "confidence": 0.8,
+        "leans": [
+          "VANILLA",
+          "SWITCH",
+          "SERVICE",
+          "MASOCHIST"
+        ],
+        "resistance": "FIGHT",
+        "note": "VANILLA first — the forge goddess is direct and uncomplicated at the surface. MASOCHIST last: the pleasure of hard work, strain, the ache of something made.",
+        "descriptor": "Judges by what you make and how honestly you make it; everything else is noise, and she has been making things in the dark long enough to know that the work and the body that does it are the same thing."
+      },
+      {
+        "id": "nyxara",
+        "name": "Nyxara",
+        "trait": "COLD",
+        "trust_baseline": "CAUTIOUS",
+        "confidence": 0.9,
+        "leans": [
+          "EXHIBITIONIST",
+          "SURRENDER",
+          "SWITCH",
+          "DOMINANT"
+        ],
+        "resistance": "COMPLY",
+        "note": "EXHIBITIONIST first — goddess of night and desire, display is her nature. DOMINANT is last and real but does not lead; SURRENDER reflects her compliance with Kharrath and what that revealed.",
+        "descriptor": "Turned desire into a religion and discovered that understanding want perfectly does not protect you from it; her compliance to Kharrath was always the truest thing she ever felt, and the most honest betrayal of herself."
+      }
+    ]
   }
 }
