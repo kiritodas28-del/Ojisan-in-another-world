@@ -1,6 +1,6 @@
 # Ojisan -- Execution Task List
 
-**Task list version:** 4.1 (updated 2026-10-03)
+**Task list version:** 4.2 (updated 2026-10-10)
 **Tracks:** requirements_analysis.md v1.3, PRD v1.9
 
 ---
@@ -2046,3 +2046,405 @@
 - [ ] **38c.2** Add `OPEN_BANK_ACCOUNT`, `DEPOSIT`, `WITHDRAW`, `TAKE_LOAN`, `REPAY_LOAN` to `PlayerIntent` union in `dispatcher.ts`; each handler guards the `'bank'` feature on `world.currentNodeId` and routes to the corresponding function.
 - [ ] **38c.3** Wire `tickLoanInterest()` into `calendarEngine.runDayEndTick()` as a new step after step 8 (date increment) and before step 9 (NPC social tick).
 - [ ] **38c.4** Update `mockGameState.ts` — add `bank: { accounts: [], loans: [], totalEverDeposited: 0 }` to root.
+
+---
+
+## Phase 39: Mind Control — Skill Engine Extension
+
+> Mind control is a configurable `SkillEffect` variant in the existing skill system. A `MindControlParams` config object makes all costs, durations, resistance rules, and backlash catalog-driven so other lore can define entirely different mechanics without touching the engine.
+
+### 39a. Schema
+
+- [ ] **39a.1** Add `MindControlParams` interface to `skillEngine.ts` and export it: `{ mpCostFlat: number; mpCostPerTargetMpRatio: number; durationTurns: number; backlashHpPct: number; resistBreakChancePerTurn: number; maxTargetMpRatio: number; charmVariant?: boolean }`. `charmVariant: true` = lightweight social influence (Bard/Emissary Path use): no resistance break roll, much lower cost, no backlash; full `false` = hard control.
+- [ ] **39a.2** Add `{ type: 'MIND_CONTROL'; params: MindControlParams }` to `SkillEffect` union in `skillEngine.ts`.
+- [ ] **39a.3** Define `MindControlState` interface in `gameState.ts` and export it: `{ targetId: string; casterId: string; remainingTurns: number; params: MindControlParams; isCharm: boolean }`.
+- [ ] **39a.4** Add `activeMindControls: MindControlState[]` to `GameState` root — default `[]`.
+
+### 39b. skillEngine logic
+
+- [ ] **39b.1** Implement `applyMindControl(state, casterId, targetId, params, isCharm): { state, events }` in `skillEngine.ts` — guard: resolve target's `vitals.mp.current`; if `target mp > caster mp.max × params.maxTargetMpRatio` emit `MIND_CONTROL_RESISTED ({ reason: 'MP_TOO_HIGH' })` and return; deduct `mpCostFlat + (targetMp × mpCostPerTargetMpRatio)` from caster via `spendMp()`; if insufficient caster MP emit `MIND_CONTROL_RESISTED ({ reason: 'INSUFFICIENT_CASTER_MP' })` and return; apply `backlashHpPct × caster.vitals.hp.max` HP drain to caster (skip when `isCharm`); push `MindControlState` entry; emit `MIND_CONTROL_APPLIED`.
+- [ ] **39b.2** Implement `tickMindControls(state): { state, events }` in `skillEngine.ts` — for each `MindControlState`: decrement `remainingTurns`; if `remainingTurns <= 0` emit `MIND_CONTROL_EXPIRED` and remove; else roll `resistBreakChancePerTurn` against `target.stats.wis / 100`; on break emit `MIND_CONTROL_BROKEN` and remove. Skip resistance roll when `isCharm`.
+- [ ] **39b.3** Implement pure helpers `isMindControlled(state, targetId): boolean` and `getMindControl(state, targetId): MindControlState | undefined`. Export both.
+- [ ] **39b.4** Implement `releaseAllMindControls(state): { state, events }` — removes all entries; emits `MIND_CONTROL_EXPIRED` for each. Called at combat end.
+
+### 39c. Events and dispatcher wiring
+
+- [ ] **39c.1** Add `GameEvent` variants to `gameState.ts`: `MIND_CONTROL_APPLIED ({ casterId; targetId; durationTurns; isCharm })`, `MIND_CONTROL_RESISTED ({ casterId; targetId; reason: 'MP_TOO_HIGH' | 'INSUFFICIENT_CASTER_MP' })`, `MIND_CONTROL_BROKEN ({ targetId; atTurn: number })`, `MIND_CONTROL_EXPIRED ({ targetId })`.
+- [ ] **39c.2** Add `MIND_CONTROL` and `CHARM` to `PlayerIntent` union in `dispatcher.ts`; both route to `applyMindControl()` with `isCharm` derived from intent type.
+- [ ] **39c.3** Wire `tickMindControls()` into `combatEngine.ts` at the start of each player-turn resolution step (before action selection).
+- [ ] **39c.4** Wire `releaseAllMindControls()` in `dispatcher.ts` `processEventQueue()` — called when `COMBAT_ENCOUNTER` resolves (win, flee, or defeat).
+- [ ] **39c.5** Update `mockGameState.ts` — add `activeMindControls: []` to root.
+
+---
+
+## Phase 40: Teleportation Wards — WorldNode Property
+
+> One boolean flag on `WorldNode`; one guard in `worldEngine.ts`. No new engine needed. Wards block both inbound and outbound teleportation, matching the world bible list (prisons, courthouses, vaults, castles, temples, Charter halls, dwarven holds, Ledger Court halls).
+
+- [ ] **40.1** Add `wardedAgainstTeleport?: boolean` to `WorldNode` type in `gameState.ts` — absent/`undefined` = not warded. Applies to both inbound (FAST_TRAVEL destination) and outbound (current node). Document world bible ward-site list in JSDoc comment.
+- [ ] **40.2** Add `TELEPORT_WARD_BLOCKED ({ nodeId: string; direction: 'INBOUND' | 'OUTBOUND' })` to `GameEvent` union in `gameState.ts`.
+- [ ] **40.3** Update `worldEngine.ts` FAST_TRAVEL handler — before processing: check `wardedAgainstTeleport` on `state.world.currentNodeId` (outbound) and on the destination node (inbound); if either is `true`, emit `TELEPORT_WARD_BLOCKED` and return state unchanged (no gold deducted).
+- [ ] **40.4** Update `spireEngine.ts` spire-travel path — spires bypass gold cost but NOT wards; apply the same outbound/inbound `wardedAgainstTeleport` check before processing a spire-travel intent.
+- [ ] **40.5** Update `worldGraph.ts` stub nodes — add `wardedAgainstTeleport: true` to one example node (e.g. a prison/vault stub) with a JSDoc comment linking to the world bible ward-site list; all other stubs default to absent (not warded). Full ward attribution for all 81+ nodes is part of Phase 42h world data authoring.
+
+---
+
+## Phase 41: Generic Faction System
+
+> A catalog-driven faction engine. Factions have a standing score ([-100, +100]) and optional membership with rank. Knightly orders are a faction sub-type that gate on patron god status via `godStatusEngine`. The catalog is Ojisan-specific; the engine is lore-agnostic.
+
+### 41a. State changes
+
+- [ ] **41a.1** Define `FactionTier` union type in `gameState.ts` and export it: `type FactionTier = 'HOSTILE' | 'UNFRIENDLY' | 'NEUTRAL' | 'FRIENDLY' | 'TRUSTED' | 'CHAMPION'`.
+- [ ] **41a.2** Define `FactionStanding` interface in `gameState.ts` and export it: `{ score: number; tier: FactionTier; isMember: boolean; memberRank?: string }`.
+- [ ] **41a.3** Add `factions: Record<string, FactionStanding>` to `GameState` root — default `{}`; entries created lazily on first `applyFactionDelta()` call for that faction id.
+- [ ] **41a.4** Add `{ type: 'FACTION_STANDING'; factionId: string; min: number }` and `{ type: 'FACTION_MEMBER'; factionId: string }` variants to `DialogueCondition` union in `gameState.ts`.
+- [ ] **41a.5** Add `{ type: 'FACTION_DELTA'; factionId: string; delta: number }`, `{ type: 'JOIN_FACTION'; factionId: string; rank?: string }`, and `{ type: 'LEAVE_FACTION'; factionId: string }` variants to `DialogueEffect` union in `gameState.ts`.
+
+### 41b. factionEngine.ts
+
+- [ ] **41b.1** Create `src/engines/factionEngine.ts` — define and export `FactionDef` interface: `{ id: string; name: string; type: 'adventurer_guild' | 'mercenary' | 'criminal' | 'religious' | 'knightly_order' | 'academic' | 'political' | 'trade' | 'underground'; description: string; patronGodId?: GodId; tiers: Array<{ tier: FactionTier; minScore: number; label: string }>; memberRanks?: string[]; defaultScore: number }`.
+- [ ] **41b.2** Implement `deriveFactionTier(score: number, def: FactionDef): FactionTier` pure helper — walks `def.tiers` descending by `minScore`; returns the highest tier whose `minScore ≤ score`.
+- [ ] **41b.3** Implement `applyFactionDelta(state, factionId, delta, catalog): { state, events }` — lazy-init entry from `def.defaultScore` if absent; clamp score [-100, 100]; recompute tier; emit `FACTION_STANDING_CHANGED`; if tier boundary crossed also emit `FACTION_TIER_CROSSED`.
+- [ ] **41b.4** Implement `joinFaction(state, factionId, rank, catalog): { state, events }` — guard: `isKnightlyOrderActive(state, factionId, catalog)` must be true for type `'knightly_order'`; sets `isMember: true`, `memberRank: rank`; emits `FACTION_JOINED`.
+- [ ] **41b.5** Implement `leaveFaction(state, factionId): { state, events }` — sets `isMember: false`, clears `memberRank`; emits `FACTION_LEFT`.
+- [ ] **41b.6** Implement `isKnightlyOrderActive(state, factionId, catalog): boolean` — for `type !== 'knightly_order'` always returns `true`; for knightly orders calls `isGodFree(state, def.patronGodId)` from `godStatusEngine`; returns `false` when patron god is ENSLAVED or DEAD. This is the Phase 36c.1 hook.
+- [ ] **41b.7** Implement pure helpers `getFactionStanding(state, factionId, catalog): FactionStanding` (returns existing entry or `{ score: def.defaultScore, tier, isMember: false }`) and `isFactionMember(state, factionId): boolean`.
+- [ ] **41b.8** Implement `tickFactionDecay(state, catalog): { state, events }` — called at day-end; for factions with `type: 'criminal' | 'underground'` only: positive scores above NEUTRAL decay by 1 point/day; all other faction types do not decay. Emits `FACTION_STANDING_CHANGED` for each changed entry.
+
+### 41c. Events and dispatcher wiring
+
+- [ ] **41c.1** Add `GameEvent` variants to `gameState.ts`: `FACTION_STANDING_CHANGED ({ factionId; delta; newScore; newTier })`, `FACTION_TIER_CROSSED ({ factionId; from: FactionTier; to: FactionTier })`, `FACTION_JOINED ({ factionId; rank?: string })`, `FACTION_LEFT ({ factionId })`.
+- [ ] **41c.2** Extend `QuestReward` in `src/data/quests.ts` — add optional `factionDeltas?: { factionId: string; delta: number }[]` field. Update `questEngine.grantQuestReward()` to call `applyFactionDelta()` for each entry.
+- [ ] **41c.3** Add `evaluateDialogueCondition()` branches in `dialogueEngine.ts` for `FACTION_STANDING` (reads `state.factions[factionId].score`) and `FACTION_MEMBER` (reads `state.factions[factionId].isMember`).
+- [ ] **41c.4** Add `applyDialogueEffect()` branches in `dialogueEngine.ts` for `FACTION_DELTA`, `JOIN_FACTION`, and `LEAVE_FACTION` effects — each routes to the corresponding `factionEngine` function.
+- [ ] **41c.5** Wire `tickFactionDecay()` into `calendarEngine.runDayEndTick()` as a new step after step 8 (date increment), alongside `tickLoanInterest()`.
+- [ ] **41c.6** Update `mockGameState.ts` — add `factions: {}` to root.
+
+### 41d. Faction catalog data
+
+- [ ] **41d.1** Create `src/data/factionCatalog.ts` — define and export `FACTION_CATALOG: Record<string, FactionDef>` with all 16 entries:
+  - `wayfarers_charter` (adventurer_guild; no patron god; tiers HOSTILE→CHAMPION; memberRanks: ['Initiate', 'Journeyman', 'Ranger', 'Champion', 'Legend'])
+  - `gilded_spears` (mercenary; defaultScore 0)
+  - `greywatch_company` (mercenary; defaultScore 0)
+  - `salt_wharf_brotherhood` (criminal; defaultScore -20)
+  - `veil_hands` (underground; defaultScore -10)
+  - `free_road` (underground; defaultScore 0; hostile relationship with `salt_wharf_brotherhood` noted in description)
+  - `clean_hearth` (political; defaultScore 0)
+  - `seekers_of_the_first_word` (religious; defaultScore 0)
+  - `arcane_collegium_of_tessara` (academic; defaultScore 0)
+  - `runeholm_academy` (academic; defaultScore 0)
+  - `house_vesh_network` (trade; defaultScore 0)
+  - `crown_templars` (knightly_order; patronGodId: 'varan'; memberRanks: ['Initiate', 'Templar', 'Paladin', 'High Templar'])
+  - `order_of_the_open_hand` (knightly_order; patronGodId: 'solenne'; memberRanks: ['Hospitaller', 'Brother/Sister', 'Prior/Prioress', 'Commander'])
+  - `silverbough_wardens` (knightly_order; patronGodId: 'aeloria'; memberRanks: ['Scout', 'Warden', 'Forestward', 'High Warden'])
+  - `wild_lodge` (knightly_order; patronGodId: 'thessaly'; memberRanks: ['Tracker', 'Warden', 'Huntmaster'])
+  - `oathkeepers` (knightly_order; patronGodId: 'durgrim'; memberRanks: ['Pledge', 'Oathkeeper', 'Bondmaster', 'High Bondmaster'])
+
+---
+
+## Phase 42: Foundation Catalogs — Non-Act Data Authoring
+
+> All engines for these catalogs are implemented (Phases 24–41). This phase authors the Ojisan-specific data that populates them. Tasks may be done in any order within the phase; 42h (world graph) must precede the act data authoring phases.
+
+### 42a. Job and Class Catalog
+
+- [ ] **42a.1** Create `src/data/jobCatalog.ts` — export `JOB_CATALOG: Record<string, JobDef>` with all Ojisan job archetypes drawn from the world bible `paths` section. Target ~18 JobDefs: Warrior, Mage, Rogue, Ranger, Bard, Runesmith, Shaman, Berserker, Dragonblood, Alchemist, Oracle, Shadow, Contractor (devil paths), Primal (Druid/Hunter variants), Templar-base (prerequisite for knightly order sub-types), Emissary, Assassin, Bloodline. Each entry: `id`, `name`, `poolALabel/Max`, `poolBLabel/Max`, `innatePassiveIds`, `hasWeakNodeScan`, `promotionJobIds`, `promotionLevel`.
+- [ ] **42a.2** Export `CLASS_CATALOG: Record<string, ClassDef[]>` in `jobCatalog.ts` — 2–3 equippable class specializations per job archetype (e.g. Warrior → Knight / Berserker / Guardian). Each `ClassDef`: `id`, `name`, `jobId`, `nodes: ClassNodeDef[]` (skill tree).
+- [ ] **42a.3** Update `jobEngine.ts` — import and use `JOB_CATALOG` / `CLASS_CATALOG` for all catalog lookups; remove any inline stubs.
+
+### 42b. Faith Catalog
+
+*(Implements Phase 33b.1–33b.2 data portion — engine tasks in Phase 33 remain separate)*
+
+- [ ] **42b.1** Create `src/data/faithCatalog.ts` as specified in Phase 33b — four `FaithDef` entries (Radiant Faith: Solenne + Varan, +15% rite XP; Old Wood: Aeloria + Thessaly, +20%; Stone Covenant: Durgrim + Hestrel, +10%; Night Court: Nyxara + Malvek + Kharrath, +5%) plus `DEFAULT_FAITH_BY_RACE` const mapping every `Race` value to a `FaithId`.
+
+### 42c. Alignment and Infamy Catalogs
+
+- [ ] **42c.1** Create `src/data/alignmentCatalog.ts` — export `ALIGNMENT_AXIS_LABELS: Record<AlignmentAxis, { positive: string; negative: string; neutral: string; description: string }>`. Ojisan mapping: `axis_a` = Purifier (+) / Sovereign (-) / Pragmatist (0); `axis_b` = Lawful (+) / Chaotic (-) / Balanced (0); `axis_c` = Open (+) / Shadowed (-) / Private (0). Descriptions explain what accumulating score on each axis means for the player's world standing.
+- [ ] **42c.2** Create `src/data/infamyCatalog.ts` — export `BOUNTY_TIER_TEXT: Record<BountyTier, { label: string; guardLine: string; shopLine: string; description: string }>`. Author flavor text for all 5 tiers (NONE through CONDEMNED). Guard dialogue lines and shop-refusal lines are used by dialogue stubs until full trees are authored.
+
+### 42d. Skills Catalog
+
+- [ ] **42d.1** Populate `src/data/skills.ts` — author the full Battle tree (~20 skills: Power Strike, Shield Bash, Counter Strike, Rally, Steady Aim, Exploit Weakness, Disarm, Execute, etc.) and Ardor tree (~20 skills: Gentle Touch, Deep Rhythm, Reading Her, Overstimulate, Edge, Whisper Command, Sustained Pressure, etc.). Each `SkillDef`: `id`, `tree`, `name`, `isPassive`, `cpwCost`, `pointCost`, `prerequisites[]`, `effects[]`.
+
+### 42e. Status Effects Catalog
+
+- [ ] **42e.1** Read `src/data/statusEffects.ts` current content; expand to a full catalog (~25 effects) — combat effects: Burning, Stunned, Weakened, Slowed, Poisoned, Fortified, Inspired; intimacy effects: Aroused, Overstimulated, Sensitized, Flustered, Subdued, Compliant; special: `anomalous_rite_surge` (Phase 30b.2), Mind Clouded (charm effect marker). Each entry: `id`, `name`, `durationTurns`, `effects[]`, `stackable`.
+
+### 42f. Items Catalog
+
+- [ ] **42f.1** Expand `src/data/items.ts` from ~20 to ~65 items: weapons (iron sword, elven bow, assassin dagger, runic staff, mage focus ×2), armors (leather set, chain mail, plate set, cloth robe ×2), consumables (HP potion ×3, MP potion ×2, Stamina draught, antidote, status cure), materials (iron ore, silver ore, mana crystal, monster fang, forest herb, rare mineral ×2, Aether Crystal ×3 — fire/ice/wind variants), gifts (bouquet, fine wine, elven silk, carved token, rare jewel), tools (intimacy implements ×6), quest items (Edwyn's ledger, Seekers seal, charter writ, Varan's chain fragment ×1 — stub).
+
+### 42g. Recipes Catalog
+
+- [ ] **42g.1** Expand `src/data/recipes.ts` to ~30 crafting recipes: potions (HP potions from herbs + vials ×3 tiers), MP potions (mana crystal + vials ×2), status cures, equipment upgrades (iron/silver/rune-infused tiers for sword/armor), food (trail rations, feast, energizing tea — all provide passive buff status effects), specialty intimacy consumables (2–3 recipes using exotic materials).
+
+### 42h. World Graph — Full Aldermere + Corridor Stubs
+
+- [ ] **42h.1** Expand `src/data/worldGraph.ts` from 5 stubs to the full Aldermere map (~40 nodes). Required nodes and features:
+  - Tessara: Charter Hall (market, smithy), Arcane Collegium (alchemy_lab), Dockside (gambling), Market Square (market), Tessara Slums
+  - Hallowmere: Castle District (bank), Cathedral of Solenne (shrine), Templar Barracks, Market Road (market, smithy)
+  - Port Halcyon: Harbour (market), Salt Wharf District (gambling), Merchant Row (market, bank)
+  - Brightwater: Village Green, Hot Spring Baths (onsen), Roadside Shrine (shrine)
+  - Varnhold: Ledger Court Hall (wardedAgainstTeleport: true, bank), Border Gate, Countryside Inn
+  - Concord: Royal Quarter (bank, arena), Charter HQ, Guild Market (market, smithy, alchemy_lab), Outer Ring
+  - Ashvault District: Ember Temple Approach, Ember Temple Outer Ward (wardedAgainstTeleport: true), Ember Temple Deep Level (wardedAgainstTeleport: true)
+  - Wilderness nodes: North Road, East Marshes, Hallowmere Forest, Brightwater Hills, River Crossing ×2 — each tagged `isSafe: false`, appropriate `regionId`
+- [ ] **42h.2** Author all Aldermere `WorldEdge` entries — directed pairs for every corridor; `travelPhases` per leg (1 = same district, 2–3 = road segments, 4–5 = wilderness crossing or mountain pass).
+- [ ] **42h.3** Add Stonebridge Spine corridor stub nodes (3 nodes: Stonebridge South Gate, Spine Pass, Stonebridge North Gate) linking Aldermere to Khardun — `isSafe: false`, no features, `wardedAgainstTeleport: false`. Full Khardun/Sylvaren/Vashkar nodes deferred to Act 3–4 data phases.
+- [ ] **42h.4** Add `wardedAgainstTeleport: true` to all appropriate Aldermere nodes per world bible list (Ledger Court halls, castles, Templar barracks, Charter HQ, Cathedral). Document each one inline.
+- [ ] **42h.5** Author `ENEMY_ROAM_DEFS` for all 8 Aldermere wilderness nodes — 2–3 roam def entries per node drawing from the expanded monsters catalog (Phase 42i).
+
+### 42i. Monsters Catalog
+
+- [ ] **42i.1** Expand `src/data/monsters.ts` to ~22 monster types. Non-humanoid: Forest Wolf (Beast), River Troll (Beast), Stone Golem (Elemental), Swamp Wraith (Undead), Fire Salamander (Elemental), Corrupted Bear (MiasmaCorrupted), Thorn Crawler (Beast), Marsh Leech (Beast). Humanoid: Bandit (aggressive human), Ember Conclave Agent (Aggressive human, Act 2+ spawn), Ledger Court Hound (Devil, Defensive), Dark Cultist (Demon, SupportCaster), Succubus Scout (Succubus, Aggressive), Incubus Raider (Incubus, Aggressive), YukiOnna (BossScripted), Vampire Shade (Vampire, Aggressive). Boss variants: Alpha Wolf (BossScripted), Ember Conclave Captain (BossScripted). Each entry: full stat block, loot table, defeat options (Kill/Capture/Intimate where appropriate), `purificationReward`, `aiPattern`.
+
+### 42j. Achievements Catalog
+
+- [ ] **42j.1** Populate `src/data/achievements.ts` with ~35 achievements: Combat (first_kill BRONZE, kills_50 SILVER, kills_500 GOLD, first_boss_defeated SILVER, all_bosses PLATINUM); Intimacy (first_scene BRONZE, partners_10 SILVER, partners_all GOLD, max_satisfaction SILVER, scene_with_goddess GOLD); Relationship (first_close_bond BRONZE, devoted_partner SILVER, first_owned_npc GOLD, full_manor GOLD); World (discover_10 BRONZE, discover_all_aldermere SILVER, discover_all GOLD, reach_god_island PLATINUM); Story (complete_act_1 BRONZE, complete_act_5 SILVER, complete_act_8 GOLD, achieve_restored_pantheon GOLD, achieve_god_king PLATINUM, achieve_creator_stirs PLATINUM); Charter (reach_champion SILVER, reach_legend GOLD); Special (purify_all_regions GOLD, full_knightly_order SILVER).
+
+---
+
+## Phase 43: Character Profile Records
+
+> Author NpcCharacter records for the primary cast and goddesses. These are hand-authored profiles — not spawn-engine random output. Stored in dedicated data files. Goddesses live in a separate `GameState.goddesses` block; mortal characters enter `contacts[]` on first meeting.
+
+### 43a. Goddess Records
+
+- [ ] **43a.1** Create `src/data/goddessProfiles.ts` — export `GODDESS_PROFILES: Record<GodId, NpcCharacter>` for the 6 goddesses (Solenne, Varan, Aeloria, Thessaly, Hestrel, Nyxara). Each authored from `game_lore.json goddess_profiles` entries: `race: 'GODDESS'`, `faithId` tied to their own patronage, `sexualPsychology` authored (confidence, leans, resistance from lore), `personality.trait` and `social.trustBaseline` from lore, `vitals.mp = { current: 999999, max: 999999 }` (sentinel for divine scale), `vitals.hp` = very high, `isProtected: true`, `characterType: 'NPC'`. Varan's `playerBondType` starts `undefined`; enslaved state tracked separately on `GameState.gods`.
+- [ ] **43a.2** Add `goddesses: Record<GodId, NpcCharacter>` to `GameState` root — separate from `contacts[]`. Goddesses are never in the contact list until a specific story quest trigger (quest 1.x Varan or 2.x Aeloria first meeting). Default value: `GODDESS_PROFILES` seeded at game start.
+- [ ] **43a.3** Add `GameEvent` variant `GODDESS_CONTACT_ADDED ({ godId: GodId; npcId: string })` to `gameState.ts` — fired when a goddess entry is formally added to `contacts[]` for the first time. Dispatcher also calls `applyFactionDelta()` for the relevant knightly order and divine faith when this fires.
+- [ ] **43a.4** Update `mockGameState.ts` — add stub `goddesses` block using partial GODDESS_PROFILES (Varan only, with enslaved status noted in comment).
+
+### 43b. Primary Cast Records — Acts 1–5 Debuts
+
+- [ ] **43b.1** Create `src/data/characterProfiles.ts` — export `PRIMARY_CAST: Record<string, NpcCharacter>` with authored profiles for the 15 characters debuting in Acts 1–3: Aldra Vane, Syrael Dawnscribe, Mira Ashlen, Dame Dava Colth, Evara Tessyn, Nari Fenn, Queen Maren II, Sylvaris Orenn, Ashkora, Kiri Lorne, Velara Reyne, Velindra, Sigrun Stonevow, Ushara, Elowen. Each: authored `sexualPsychology` (leans, resistance, confidence from game_lore character entries), authored `personality`, correct `race` and `faithId`, `scheduleId` stub, `isProtected: true`.
+- [ ] **43b.2** Extend `PRIMARY_CAST` with the 15 remaining named female characters from Acts 4–8 (game_lore `side_character_slots`): Kessa Emberscale, Sera Ash, Rina Brightbrush, Lady Velura Lysmere, Ceira Blackthorn, Nessa Solstave, Maea Hollowtide, Cella Hollowtide, Senna Hollowtide, plus the remaining 6 characters from slots 19–25 as listed in game_lore. Also include the 2 male consorts (Lord-Consort Aendrel Vael, King-Consort Aldus Kess) as non-intimate NPCs.
+- [ ] **43b.3** Create `src/data/scheduleDefs.ts` — export `SCHEDULE_DEFS: Record<string, NpcScheduleDef>` with phase-to-locationId maps for the 12 most active Act 1–2 characters. Each entry covers all 5 DayPhases; key characters: Aldra Vane (Charter Hall mornings, market evenings), Syrael Dawnscribe (Collegium full day), Mira Ashlen (variable by quest progress), Dava Colth (monastery/barracks split).
+
+---
+
+## Phase 44: Act 1 Data Authoring — The Silence
+
+> Tessara then all of Aldermere. Quests 1.1–1.11 + optional 1.7 signal. Introduces 10 characters. Charter rank: Initiate → Journeyman. No ending-axis gates; only silent long-game penalties.
+
+### 44a. Quest Definitions
+
+- [ ] **44a.1** Author `QuestDef` entries for quests `1.1` through `1.6` in `src/data/quests.ts` — each: `id`, `name`, `type: 'MAIN'`, `objectives[]`, `reward` (gold + XP + charterXP on applicable quests), `failureConsequence` string for log display. Quest 1.2 reward includes `factionDeltas: [{ factionId: 'wayfarers_charter', delta: +20 }]` and `charterXP: 300`. Quest 1.3a/b/c authored as three linked entries sharing a parent quest id; each sub-contract has independent fail state.
+- [ ] **44a.2** Author `QuestDef` entries for quests `1.7` through `1.11` — Quest 1.7 has `optional_signal: true` comment; sets `FLAGS['basilica_signal_triggered'] = true` as an onEnter effect on the optional signal dialogue node. Quest 1.11 (Edwyn's records) condition: `FLAG('edwyn_records_found', true) OR FLAG('basilica_signal_triggered', true)`. Quest 1.9 (Syrael findings) condition: `FLAG('syrael_mp_assessment_done', true)`.
+- [ ] **44a.3** Create `src/data/storyFlags.ts` — export typed constant objects `ACT1_FLAGS`, and stub objects `ACT2_FLAGS` through `ACT9_FLAGS` (to be filled in subsequent phases). All flag id strings referenced in quest/dialogue files import from here — prevents typos. Act 1 flags: `CHARTER_TRIAL_FAILED`, `CHARTER_TRIAL_RETRY_DONE`, `SYRAEL_MP_ASSESSMENT_DONE`, `BASILICA_SIGNAL_TRIGGERED`, `EDWYN_RECORDS_FOUND`, `MIRA_NETWORK_ACTIVE`, `DAVA_ESCORT_FAILED`, `ACT1_COMPLETE`, plus one flag per character introduction (`ALDRA_MET`, `SYRAEL_MET`, etc.).
+
+### 44b. Dialogue Trees
+
+- [ ] **44b.1** Author `aldra_charter_trial` dialogue tree in `src/data/dialogueTrees.ts` — quest 1.2 trial sequence: 3 consecutive test nodes (combat assessment choice, contract-reading check, judgment scenario); PASS branch → `TRUST_DELTA +10` + `SET_FLAG CHARTER_TRIAL_DONE` + `FACTION_DELTA wayfarers_charter +20`; FAIL branch → `SET_FLAG CHARTER_TRIAL_FAILED` + retry offer node.
+- [ ] **44b.2** Author introduction dialogue trees for the 5 Act 1 characters met in quests 1.2–1.7: `aldra_vane_intro`, `syrael_dawnscribe_intro`, `mira_ashlen_intro`, `dava_colth_intro`, `edwyn_crale_intro`. Each: a 2–3 node first-meeting tree (sets the `_MET` flag, small trust delta) plus a follow-up tree that unlocks after the associated quest completes.
+- [ ] **44b.3** Author `basilica_pressure_scene` dialogue fragment — cutscene node (no player choices); sets `basilica_signal_triggered: true`; presented as a transition node when player leaves the Basilica during quest 1.7. This is Act 1's only visible failure signal.
+- [ ] **44b.4** Author `syrael_mp_findings` dialogue tree — quest 1.9 reveal; Syrael presents her analysis of the player's foreign MP; 2 player-choice branches (curious / guarded); `TRUST_DELTA +5` on curious; sets `foreign_mp_explained: true` flag.
+
+### 44c. Location Population Definitions
+
+- [ ] **44c.1** Create `src/data/locationPopulations.ts` — export `LOCATION_POPULATION_DEFS: LocationPopulationDef[]` for all 8 main Act 1 nodes. Key entries: Tessara Charter Hall (minNpcs 4, maxNpcs 8, `serviceNpcIds: ['aldra_vane', 'charter_clerk']`), Tessara Market Square (minNpcs 8, maxNpcs 16, Civilian + Merchant heavy), Hallowmere Cathedral (minNpcs 3, maxNpcs 6, `serviceNpcIds: ['dava_colth']` conditional on quest gate). Each entry: correct `locationId`, `classAssignments`, `refreshCycleDays: 3`.
+
+### 44d. Ending Axis Notes
+
+- [ ] **44d.1** Confirm `endingAxisEffect: undefined` on all Act 1 QuestDefs — Act 1 has no direct ending axis gates. Silent long-game penalties (Syrael skipped → late rune-ward theory; Dava escort failed → reactive meet in 1.12; trial failed → progress delay) are represented via story flags only. Document this pattern in a JSDoc comment on the first Act 1 QuestDef entry.
+
+---
+
+## Phase 45: Act 2 Data Authoring — Aeloria Threatened
+
+> Sylvaren. Quests 2.1–2.8 + 2.5a (The God's Chain power path). Introduces 3 characters. First goddess-status gate; first ending-axis effect. Aeloria saved or enslaved.
+
+### 45a. Quest Definitions
+
+- [ ] **45a.1** Author `QuestDef` entries for quests `2.1`–`2.5` in `src/data/quests.ts`. Quest 2.4 reward includes `factionDeltas: [{ factionId: 'silverbough_wardens', delta: +15 }]`. Quest 2.5 (the approach to Aeloria's island) sets `aeloria_island_reached: true` flag.
+- [ ] **45a.2** Author `QuestDef` for quest `2.5a` (The God's Chain) — power-path branch, available only if player did not destroy components in 2.5; sets `power_path_active: true` and `aeloria_components_held: true`; `endingAxisEffect: { axis: 'playerThrone', value: 'UNDECIDED' }` (begins the power path axis tracking).
+- [ ] **45a.3** Author `QuestDef` entries for quests `2.6`–`2.8`. Quest 2.8 is a branching QuestDef: save branch triggers `godStatusEngine.freeGod('aeloria')` via dispatcher + `endingAxisEffect: { axis: 'gods', value: 'ALL_SAFE' }` + `factionDeltas: silverbough_wardens +25`; fail branch sets `aeloria_enslaved: true` flag + `godStatusEngine.enslaveGod('aeloria', ...)` via dispatcher + `endingAxisEffect: { axis: 'gods', value: 'PARTIAL_LOSS' }`.
+- [ ] **45a.4** Extend `ACT2_FLAGS` in `storyFlags.ts`: `AELORIA_ISLAND_REACHED`, `POWER_PATH_ACTIVE`, `AELORIA_COMPONENTS_HELD`, `AELORIA_ENSLAVED`, `ELOWEN_ROGUE`, `DURGRIM_COMPONENTS_HELD`, `THESSALY_COMPONENTS_HELD`, `ACT2_COMPLETE`.
+
+### 45b. Dialogue Trees
+
+- [ ] **45b.1** Author introduction dialogue trees for Act 2 newly introduced characters (draw from game_lore character list for Act 2 debuts).
+- [ ] **45b.2** Author `aeloria_act2_confrontation` dialogue tree — the pivotal scene at the peak of quest 2.8: FIGHT branch (save Aeloria — requires coalition support from quest 2.7); POWER branch (hold components, do not fight — requires `power_path_active`); FLEE branch (available always; triggers fail state on timer expiry). Each branch sets correct flags and emits correct god-status events via effects.
+- [ ] **45b.3** Author `elowen_rogue_response` dialogue tree (conditional on `aeloria_enslaved` flag) — alternate Elowen encounter for Act 5 salvage; gates on `aeloria_enslaved: true`.
+
+### 45c. World Node Data
+
+- [ ] **45c.1** Add Sylvaren approach corridor nodes to `worldGraph.ts` (~8 nodes: Sunlit Court Gate, Elven Road, Thousand Groves Edge, Aeloria's Island Approach — `wardedAgainstTeleport: true`, Nightbound Houses district — 2 nodes). Full Sylvaren interior deferred to Act 4 data if needed.
+
+---
+
+## Phase 46: Act 3 Data Authoring — Durgrim Threatened
+
+> Khardun. Quests 3.1–3.7. Malvek reveal + turns ally. Durgrim saved or enslaved.
+
+### 46a. Quest Definitions
+
+- [ ] **46a.1** Author `QuestDef` entries for quests `3.1`–`3.7`. Quest 3.x (Malvek reveal) sets `malvek_ally: true` flag + `factionDeltas: [{ factionId: 'oathkeepers', delta: +15 }]`. Quest 3.5 has `power_path_branch` flag check (`durgrim_components_held: true` if power path active). Quest 3.7 save branch: `godStatusEngine.freeGod('durgrim')` + unlocks `oathkeepers` faction join gate + `endingAxisEffect: { axis: 'gods', value: 'ALL_SAFE' }`; fail branch: `durgrim_enslaved: true` + Khardun lockdown flag + `endingAxisEffect: { axis: 'gods', value: 'PARTIAL_LOSS' }`.
+- [ ] **46a.2** Extend `ACT3_FLAGS` in `storyFlags.ts`: `MALVEK_ALLY`, `DURGRIM_ENSLAVED`, `KHARDUN_LOCKDOWN`, `DURGRIM_COMPONENTS_HELD`, `ACT3_COMPLETE`.
+
+### 46b. Dialogue Trees
+
+- [ ] **46b.1** Author `malvek_reveal_scene` dialogue tree — player reveals Varan's enslaved truth to Malvek; gated on `trust` with Malvek ≥ threshold; Malvek's reaction branches on player's prior infamy in Vashkar region; sets `malvek_ally: true` on trust branch.
+- [ ] **46b.2** Author introduction trees for Sigrun Stonevow and other Act 3 characters introduced.
+- [ ] **46b.3** Author `sigrun_act3_coalition` dialogue tree — Sigrun commits the Oathkeepers to the coalition; sets `oathkeepers_coalition_joined: true`.
+
+### 46c. World Node Data
+
+- [ ] **46c.1** Expand `worldGraph.ts` with full Khardun nodes (~10 nodes: Runeholm, Stonevow Hold, Irongate Pass, Khardun Capital — `wardedAgainstTeleport: true` (dwarven hold), Deep Mines, Mountain Crossing ×2). Wire all edges including Stonebridge Spine connection to Phase 42h.3 stubs.
+
+---
+
+## Phase 47: Act 4 Data Authoring — Thessaly Threatened
+
+> Tharos (Red Steppe). Quests 4.1–4.8. Iron Throne of Law flag set at 4.8. Thessaly saved or enslaved.
+
+### 47a. Quest Definitions
+
+- [ ] **47a.1** Author `QuestDef` entries for quests `4.1`–`4.8`. Quest 4.7 has `power_path_branch` (`thessaly_components_held: true`). Quest 4.8 is the pivotal endorsement choice: `endorse_malvek` branch sets `iron_throne_endorsed: true` + `factionDeltas: [{ factionId: 'oathkeepers', delta: +20 }]` + `endingAxisEffect: { axis: 'law', value: 'LEDGER_REFORMED' }`; `temp_alliance` branch sets `endingAxisEffect: { axis: 'law', value: 'DIVIDED' }`. Quest 4.9 (or 4.8 completion): Thessaly save → `godStatusEngine.freeGod('thessaly')` + Wild Lodge opens + `endingAxisEffect: { axis: 'gods', value: 'ALL_SAFE' }`; fail → `thessaly_enslaved: true` + orc clan split + `endingAxisEffect: { axis: 'gods', value: 'PARTIAL_LOSS' }`.
+- [ ] **47a.2** Extend `ACT4_FLAGS` in `storyFlags.ts`: `IRON_THRONE_ENDORSED`, `THESSALY_ENSLAVED`, `ORC_CLAN_SPLIT`, `THESSALY_COMPONENTS_HELD`, `MALVEK_ENDORSEMENT_DONE`, `ACT4_COMPLETE`.
+
+### 47b. Dialogue Trees
+
+- [ ] **47b.1** Author `malvek_endorsement_choice` dialogue tree — quest 4.8 pivotal decision; full dialogue for both branches including Malvek's reaction to each; sets `iron_throne_endorsed` flag and `endingAxisEffect` via dialogue effects.
+- [ ] **47b.2** Author introduction trees for Ushara and other Act 4 characters.
+
+### 47c. World Node Data
+
+- [ ] **47c.1** Expand `worldGraph.ts` with Tharos nodes (~8 nodes: Wildmark gathering ground, Clan Ashfang Grounds, Red Steppe Crossing, Ironjaw Territory, Redhorn Flats, Thessaly's Grove — `wardedAgainstTeleport: true`). Wire edges including crossing from Khardun via mountain pass.
+
+---
+
+## Phase 48: Act 5 Data Authoring — Three-Way Threat + Coalition
+
+> Hestrel threatened, Nyxara enslaved mid-act, Solenne first targeted. Salvage quests available if Acts 2/3/4 failed. Coalition assembly.
+
+### 48a. Quest Definitions
+
+- [ ] **48a.1** Author `QuestDef` entries for quests `5.1`–`5.8` — three parallel tracks authored as interlocking QuestDef entries. Hestrel protection (quests 5.2–5.4): save → `godStatusEngine.freeGod('hestrel')` + dwarven coalition full; fail → `hestrel_enslaved: true` + logistics collapse. Nyxara warning quest (5.5): always results in `nyxara_enslaved` flag being set one quest later (tracked via `nyxara_enslavement_unavoidable: true` flag set here). Solenne first warning (5.7): sets `solenne_warned: true`. Quest 5.8 power path branch (`power_path_active` required).
+- [ ] **48a.2** Author Act 2/3/4 salvage QuestDefs: `5.S1` (Elowen's Warden camp raid — available only if `aeloria_enslaved`; rewards partial Silverbough support + `factionDeltas: silverbough_wardens +15`); `5.S2` (battle-cult war-priest duel — available only if `thessaly_enslaved`; single combat challenge; success flips Clan Ironjaw back + `factionDeltas: wild_lodge +10`).
+- [ ] **48a.3** Coalition assembly quest (5.9 or 5.8 completion): `endingAxisEffect: { axis: 'gods', value }` computed from count of currently-free goddesses at completion time — `'ALL_SAFE'` (4+ free), `'PARTIAL_LOSS'` (2–3 free), `'MULTIPLE_LOST'` (0–1 free).
+- [ ] **48a.4** Extend `ACT5_FLAGS` in `storyFlags.ts`: `HESTREL_ENSLAVED`, `NYXARA_ENSLAVEMENT_UNAVOIDABLE`, `SOLENNE_WARNED`, `COALITION_ASSEMBLED`, `WARDEN_SUPPORT_PARTIAL`, `IRONJAW_FLIPPED`, `ACT5_COMPLETE`.
+
+### 48b. Dialogue Trees
+
+- [ ] **48b.1** Author `hestrel_forge_protection` dialogue tree — the pivotal Hestrel scene; player choice to defend or step back; only the defend path leads to `godStatusEngine.freeGod('hestrel')`.
+- [ ] **48b.2** Author `coalition_assembly_scene` — final Act 5 meeting with all available coalition leaders present; dialogue branches for each leader based on their act-progression status (present or absent due to goddess loss).
+
+---
+
+## Phase 49: Act 6 Data Authoring — Nyxara Enslaved (Unavoidable)
+
+> Nyxara confronts Kharrath directly; enslaved on the spot. Player witnesses it. Act gates: Evara rescue method + Velindra's coalition warning.
+
+### 49a. Quest Definitions
+
+- [ ] **49a.1** Author `QuestDef` entries for quests `6.1`–`6.7`. Quest 6.x (Nyxara confrontation): completion always fires `godStatusEngine.enslaveGod('nyxara', 'kharrath_ember_conclave')` + `nyxara_enslaved: true` + `endingAxisEffect: { axis: 'goddess', value: 'ENSLAVED_BY_KHARRATH' }`. No save path — only strategic positioning for Act 8.
+- [ ] **49a.2** Quest 6.4 (warn Velura before Ember Temple meeting): success sets `velura_warned: true`; failure sets `house_lysmere_network_lost: true` — removes House Lysmere diplomatic network from Act 8 coalition.
+- [ ] **49a.3** Quest 6.5 (Evara rescue method): success sets `evara_rescue_method_secured: true` — Act 8 strategic-approach prerequisite for the Velindra dossier + Evara intel path.
+- [ ] **49a.4** Extend `ACT6_FLAGS` in `storyFlags.ts`: `NYXARA_ENSLAVED`, `VELURA_WARNED`, `HOUSE_LYSMERE_NETWORK_LOST`, `EVARA_RESCUE_METHOD_SECURED`, `ACT6_COMPLETE`.
+
+### 49b. Dialogue Trees
+
+- [ ] **49b.1** Author `nyxara_enslavement_witness` cutscene dialogue tree — the most pivotal moment in Act 6; player is observer only (no outcome choices); multiple reaction options for player character response; sets `nyxara_enslaved` flag via `onEnter` effect; permanently marks the moment in narrative log.
+- [ ] **49b.2** Author `velura_warning_window` dialogue tree — the time-sensitive Velura warning; available only during a 4-day window before Ember Temple meeting; sets `velura_warned` on completion.
+
+---
+
+## Phase 50: Act 7 Data Authoring — Solenne + Final Preparation
+
+> Solenne targeted for the last time. Three crystallizing choices determine faith and law axes. Coalition finalized. Act 3/5 salvage paths available.
+
+### 50a. Quest Definitions
+
+- [ ] **50a.1** Author `QuestDef` entries for quests `7.1`–`7.7`. Three crystallizing choice quests authored as full branching QuestDefs:
+  - Help Ezan + reveal truth: `endingAxisEffect: { axis: 'faith', value: 'TRUTH' }` + sets `seekers_thread_resolved: true` (Secret End prerequisite)
+  - Reveal truth, suppress ritual: `endingAxisEffect: { axis: 'faith', value: 'TRUTH' }` (no seekers flag)
+  - Keep lie, build power: `endingAxisEffect: { axis: 'faith', value: 'LIE' }` + reinforces `power_path_active`
+- [ ] **50a.2** Solenne quest (7.7 or 7.6): save → `godStatusEngine.freeGod('solenne')`; enslaved → `solenne_enslaved: true` + `endingAxisEffect: { axis: 'gods', value: 'MULTIPLE_LOST' }` (if she is lost, Dead Sky becomes the most likely outcome).
+- [ ] **50a.3** Law axis finalization quests (7.4–7.5): branch outcomes set `endingAxisEffect: { axis: 'law', value: 'CROWNS' | 'CHARTER' }` depending on player's political position at this point. `'LEDGER_REFORMED'` can only come from the 4.8 endorsement.
+- [ ] **50a.4** Act 3/5 salvage quests (7.S1 Sigrun resistance, 7.S2 Hestrel logistics substitute): author as `QuestDef` entries, each gated on respective failure flags.
+- [ ] **50a.5** Extend `ACT7_FLAGS` in `storyFlags.ts`: `SOLENNE_ENSLAVED`, `SEEKERS_THREAD_RESOLVED`, `FAITH_TRUTH`, `FAITH_LIE`, `LAW_CROWNS`, `LAW_CHARTER`, `SIGRUN_RESISTANCE_ACTIVE`, `ACT7_COMPLETE`.
+
+### 50b. Dialogue Trees
+
+- [ ] **50b.1** Author `solenne_truth_reveal` dialogue tree — player confronts the Radiant Faith clergy with the truth about Varan; branches determine `faith` axis outcome.
+- [ ] **50b.2** Author `ezan_help_or_oppose` dialogue tree — the Seekers thread decision; completing the Seekers' original intent vs. suppressing their ritual; sets `seekers_thread_resolved` on the correct branch.
+
+---
+
+## Phase 51: Act 8 Data Authoring — The Final Confrontation
+
+> Two approach tracks (Strategic / Direct). Quest 8.1 gates 8.2 difficulty tier. Quest 8.3 (The Goddess Court) determines goddess/player-throne ending axes. Quest 8.4 calls resolveEnding().
+
+### 51a. Quest Definitions
+
+- [ ] **51a.1** Author `QuestDef` entries for quests `8.1`–`8.4`. Quest 8.1 (approach choice): `act8_approach: 'STRATEGIC'` branch requires `evara_rescue_method_secured: true` + `velindra_dossier: true` flags; `act8_approach: 'DIRECT'` branch available always but harder without `iron_throne_endorsed`. Both set the `act8_approach` flag via `SET_FLAG` effect.
+- [ ] **51a.2** Quest 8.2 (Kharrath fight): no QuestDef objectives encode difficulty — dispatcher computes difficulty tier at encounter start from `GameState.gods` count and `act8_approach` flag (see world bible `act_8.fight_shape`). Author quest shell with objective `type: 'INTERACT', targetId: 'kharrath_encounter'` and reward shell. Reckless-assault bypass check (player approaches Ashvault before 8.1 completes): `QUEST_FAILED` on 8.2 + `SET_FLAG varan_killed: true` — triggers Dead Sky.
+- [ ] **51a.3** Quest 8.3 (The Goddess Court): author as a series of choice nodes per goddess (post-Kharrath defeat). For each present goddess (free or enslaved by Kharrath): FREE branch → `godStatusEngine.freeGod()` + tracks whether restoration is full or diminished; PLAYER_ENSLAVE branch (requires `power_path_active`) → `godStatusEngine.enslaveGod(godId, player.id)`. Sets `endingAxes.goddess` and `endingAxes.playerThrone` via `endingAxisEffect`.
+- [ ] **51a.4** Quest 8.4 (aftermath): completion triggers `resolveEnding(state)` in `endingTrackerEngine`; result written to `flags['ending_resolved']`. No endingAxisEffect on this quest — the tracker reads the already-accumulated axes.
+- [ ] **51a.5** Extend `ACT8_FLAGS` in `storyFlags.ts`: `ACT8_APPROACH`, `VARAN_KILLED`, `KHARRATH_DEFEATED`, `KHARRATH_IMPRISONED`, `KHARRATH_ASCENDED`, `GODDESS_COURT_DONE`, `ENDING_RESOLVED`, `ACT8_COMPLETE`.
+
+### 51b. Ending Conditions Data
+
+- [ ] **51b.1** Author `ENDING_CONDITIONS` const in `endingTrackerEngine.ts` (Phase 37b.3 data pass) — all 8 ending axis condition sets drawn from game_lore endings section:
+  - `the_restored_pantheon`: goddess = FREED_RESTORED, kharrath = DEFEATED, playerThrone = STEPPED_BACK, gods = ALL_SAFE
+  - `the_diminished_return`: goddess = FREED_DIMINISHED, kharrath = DEFEATED, playerThrone = STEPPED_BACK
+  - `the_silent_victory`: goddess = FREED_RESTORED, kharrath = IMPRISONED, playerThrone = STEPPED_BACK
+  - `the_iron_throne_of_law`: law = LEDGER_REFORMED, kharrath = IMPRISONED, playerThrone = RULING
+  - `the_broken_pantheon`: gods = MULTIPLE_LOST, kharrath = DEFEATED (player survived)
+  - `the_dead_sky`: kharrath = ASCENDED (all remaining goddesses captured before player reaches 8.2, OR varan_killed flag set)
+  - `the_god_king`: playerThrone = RULING, goddess = ENSLAVED_BY_PLAYER (all six), gods = ALL_SAFE (player never lost other gods)
+  - `the_creator_stirs`: faith = TRUTH, seekers_thread_resolved = true, varan_restored_full = true, plus 2–3 additional secret flags (leave as `FLAG` condition refs with TODO comments for secret flag definitions)
+
+---
+
+## Phase 52: Act 9 Data Authoring — Epilogue
+
+> Short epilogue. World one season after Act 8. One optional scene per companion relationship above Lover tier. Scenes are ending-conditional.
+
+### 52a. Quest Definitions
+
+- [ ] **52a.1** Author `QuestDef` entries for epilogue scenes `9.1`–`9.n` (one per relationship tier gate, approximately 12–15 entries covering all primary cast members). Each: `type: 'COMPANION'`, no objectives, no failure, single `LOVE` + `TRUST` condition from `DialogueCondition`. Reward: `{ xp: 0, gold: 0 }` — epilogue scenes are pure narrative.
+- [ ] **52a.2** Add ending-conditional flag check to each epilogue quest — `condition: FLAG('ending_resolved', <endingId>)` determines which variant of the scene is presented. Author at least two variants per character (good ending path / bad/neutral path).
+- [ ] **52a.3** Extend `ACT9_FLAGS` in `storyFlags.ts`: one flag per epilogue scene completed (`ALDRA_EPILOGUE_DONE`, etc.).
+
+### 52b. Epilogue Dialogue Trees
+
+- [ ] **52b.1** Author epilogue dialogue trees for all 6 goddesses — trees are conditional on relationship score (GATE: love ≥ 70) + ending flag. Each tree: a 3–4 node scene; no player-facing choices beyond tone selection.
+- [ ] **52b.2** Author epilogue dialogue trees for the 8 most narratively significant mortal characters (Aldra, Syrael, Dava, Evara, Velindra, Sigrun, Mira, Ushara) — same structure as 52b.1.
+- [ ] **52b.3** Author epilogue narrative log entries (plain text, no dialogue tree) for the 4 knightly order factions — short flavor paragraph on each order's state post-ending, gated on whether patron god is free/enslaved/dead. Displayed in a world-state summary screen before individual scenes.
+
+---
+
+## Phase 53: Character Sub-Quest Data Authoring
+
+> 29 main female characters + 6 goddesses + 5 new characters (Ceira, Nessa, Hollowtide family). Sub-quest chains drawn from character_subquests_p1–p4.json and character_subquests_goddesses_extended.json.
+
+### 53a. Sub-Quests — Characters 1–8 (Part 1)
+
+- [ ] **53a.1** Author `QuestDef` entries for sub-quest chains in `character_subquests_p1.json` — characters 1–8. Each character has a 3–5 quest `COMPANION` chain: introduction quest, 1–2 gate quests (trust/love gated), and a climax scene quest. Author as a linked chain via `condition: QUEST_STAGE` gates.
+- [ ] **53a.2** Author dialogue trees for Part 1 character sub-quest interactions — key trees: the trust-crossing dialogue (where the character opens up), the gate scene, and the climax scene approach tree.
+
+### 53b. Sub-Quests — Characters 9–16 (Part 2)
+
+- [ ] **53b.1** Author `QuestDef` entries for characters 9–16 from `character_subquests_p2.json` — same 3–5 quest chain structure.
+- [ ] **53b.2** Author dialogue trees for Part 2.
+
+### 53c. Sub-Quests — Characters 17–30 (Parts 3 & 4)
+
+- [ ] **53c.1** Author `QuestDef` entries for characters 17–24 from `character_subquests_p3.json`.
+- [ ] **53c.2** Author `QuestDef` entries for characters 25–30 and the 5 new characters (Ceira Blackthorn, Nessa Solstave, Maea/Cella/Senna Hollowtide) from `character_subquests_p4.json` — Hollowtide family chain is a shared 5-quest arc (Maea unlocks first; daughters unlock sequentially; family group scene unlocks at arc end).
+- [ ] **53c.3** Author dialogue trees for Parts 3 & 4.
+
+### 53d. Goddess Sub-Quests
+
+- [ ] **53d.1** Author `QuestDef` entries for all 6 goddess sub-quest chains from `character_subquests_goddesses_extended.json` — the most elaborate chains (5–7 quests per goddess). Each chain is gated on act progression (goddess must have been introduced + relevant act completed) and relationship score. Each chain includes: a revelation quest (goddess's true nature surfaces), an intimacy unlock quest (gated trust ≥ 75 + love ≥ 60), and a narrative climax quest (varies by whether goddess is free, enslaved by Kharrath, or enslaved by player). Varan's chain has an additional enslavement-arc branch if she is still held through Act 7.
+- [ ] **53d.2** Author dialogue trees for all 6 goddess chains — minimum 4 trees per goddess (introduction-depth tree, trust-opening tree, intimacy-unlock scene tree, climax tree).
+
+### 53e. Intimacy Catalog Expansion
+
+- [ ] **53e.1** Expand `src/data/intimacyCatalog.ts` — author `IntimacySceneDef` entries for each of the 29+ primary characters plus 6 goddesses. Each character: minimum 1 unlockable scene with `trustRequirement`, `loveRequirement`, `isRepeatable`, `actionSequence[]`, `npcResponseFragmentIds[]`. Characters with multiple leans (e.g. Ceira: MASOCHIST/SURRENDER/DEGRADATION) get 2–3 scene variants unlocking at different trust tiers.
+- [ ] **53e.2** Expand `src/data/intimacyFragments.ts` — add authored response fragment pools keyed by `npcId` for each primary cast member and goddess. Each pool: minimum 3 fragment entries per arousal tier (LOW / MED / HIGH / PEAK) covering the character's dominant lean. Fragment text must be consistent with the character's psychology profile and the 6 writing conventions from game_lore.
+- [ ] **53e.3** Expand `src/data/intimateResponseFragments.ts` — add post-scene emotional response fragments per character (keyed by npcId + scene outcome: SATISFIED / OVERWHELMED / FAINTED / BROKEN). Each fragment: 2–3 lines of in-character NPC dialogue that plays in the intimacy scene wind-down phase.
