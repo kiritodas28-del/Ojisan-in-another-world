@@ -1,0 +1,133 @@
+{
+"slots":[17,18,"18a",19,"19a",20,"20a",21,22,"22a",23,24,25],
+"characters":[
+{
+"slot":17,"name":"Vael Stoneback",
+"quests":[
+{"id":"SQ-VA1","type":"SQ","stage":"KNOWN","name":"Pack Law","desc":"What pack law says about the stronger taking. That she has never lost. That the rule has always been clear and the clarity has always been enough."},
+{"id":"SI-VA1","type":"SI","stage":"KNOWN","tags":["Corruption","Primal Taming begins"],"name":"Fast Enough","pre":"She moves fast. He keeps up.","scene":"She tests the pace. He matches it. She accelerates. He is still there. She lets him run first — briefly — then takes it back.","post":"She lets him run first again the next day. Briefly."},
+{"id":"SQ-VA2","type":"SQ","stage":"CRACKED","name":"The Sister She Follows","desc":"Her elder sister Varga specifically. What she learned that was not from Varga. That some knowledge is yours alone."},
+{"id":"SI-VA2","type":"SI","stage":"CRACKED","tags":["Sexual Degeneracy","Domination Loss begins"],"name":"Who Wins This","pre":"Pack law is clear about contests.","scene":"Contest. She wins the first two. In the third — MASOCHIST lean emerges — she finds out what losing on purpose feels like, once, to test it.","post":"'Interesting.'"},
+{"id":"SQ-VA3","type":"SQ","stage":"OPEN_EARLY","name":"The Territory She Would Offer","desc":"She describes the one place she would bring someone. She has never brought anyone. She describes why not."},
+{"id":"SI-VA3","type":"SI","stage":"OPEN_LATE","tags":["Primal Taming","Domination Loss complete","Moral Degradation"],"name":"Tamed Willingly","pre":"Pack law says tamed is beneath her.","scene":"She presents territory — herself — as a willing offering. PRIMAL TAMING with full consent. She initiates. She is the one who says: 'You can take this.'","post":"'I chose it.' She sounds satisfied. 'That is different from losing.'"},
+{"id":"SI-VA4","type":"SI","stage":"OPEN_LATE","tags":["Sexual Mind Break","Slave (pack bond)","Corruption complete"],"name":"Territory and Pack","pre":"She is thinking about what this makes him.","scene":"Extended intimacy — DOMINANT/MASOCHIST switching, SADIST reciprocal. She brings him into her territory. Willingly. As she wanted.","post":"She marks him. Lightly. 'Pack rule.' She is serious."},
+{"id":"SI-VA5","type":"SI","stage":"FALLEN","tags":["Slave (chosen)","all resolved"],"name":"Chosen, Not Taken","pre":"Pack law would say he took it.","scene":"'I chose it. The law does not have a word for that.' She finds this clarifying rather than troubling.","post":"She runs next to him. Not ahead."}
+]},
+{
+"slot":18,"name":"Kiri Brightbrush",
+"quests":[
+{"id":"SI-K1","type":"SI","stage":"KNOWN","tags":["Corruption","Exhibitionist activates"],"name":"The Broker Who Loses the Brief","pre":"She has had every information exchange choreographed.","scene":"He asks the right question — not about what she knows, about her. The one she was not ready for. She answers.","post":"She resells the answer to no one. First time."},
+{"id":"SI-K2","type":"SI","stage":"CRACKED","tags":["Sexual Humiliation","Corruption (Sensual)"],"name":"Watched While Watching","pre":"She watches everyone.","scene":"He watches her watching. He describes what she looks like when she watches. He is accurate. She is being seen accurately while seeing.","post":"'You could have used that.' He says: 'I know.' She is quiet for a moment."},
+{"id":"SI-K3","type":"SI","stage":"OPEN_LATE","tags":["Sexual Mind Break","Moral Degradation","Slave (chosen)"],"name":"Nothing to Gain","pre":"She has been calculating. The calculation will not close.","scene":"She has chosen him when there is nothing to gain. EXHIBITIONIST fully active — she shows him the real inventory: everything, without professional distance. VOYEUR inverted — she is the display.","post":"'I was not going to do that.'"},
+{"id":"SI-K4","type":"SI","stage":"FALLEN","tags":["Corruption complete","all resolved"],"name":"The Map She Keeps","pre":"She has been keeping a map of where his value lies. Professionally.","scene":"She gives him the map. Not the Conclave map — the personal one.","post":"'I retired from brokering that.'"}
+]},
+{
+"slot":"18a","name":"Rina Brightbrush","access":"Kiri FALLEN + Conclave dismantled world trigger",
+"quests":[
+{"id":"SI-R1","type":"SI","stage":"KNOWN","tags":["Rebuilding","Corruption"],"name":"The First Deal's Absolution","pre":"She has been carrying the original Conclave mistake for years.","scene":"He tells her what happened to the Conclave. She sits with it.","post":"'I can stop counting it.'"},
+{"id":"SI-R2","type":"SI","stage":"FALLEN","tags":["Rebuilding complete","Slow-Burn resolved"],"name":"What Forgiveness Looks Like","pre":"First honest conversation she has had that is not about the mistake.","scene":"VANILLA/SERVICE — she gives simply, without the guilt underneath the giving.","post":"'I forgot I could do that.'"}
+]},
+{
+"slot":19,"name":"Ashkora Emberscale",
+"quests":[
+{"id":"SQ-AK1","type":"SQ","stage":"KNOWN","name":"The Dream She Translated","desc":"The first Wyrm dream, years ago. What she thought it was. What she knows it is. That Kessa hears it longer than she does."},
+{"id":"SI-AK1","type":"SI","stage":"KNOWN","tags":["Corruption"],"name":"Patience Recognised","pre":"She moves in long time.","scene":"He waits. He matches her pace exactly — not performance, actual pace.","post":"She speaks more in the next hour than she has in a week."},
+{"id":"SQ-AK2","type":"SQ","stage":"CRACKED","name":"Kessa Before the Dreams","desc":"Kessa at five, at fifteen. What she is watching for. What she hopes Kessa never has to carry."},
+{"id":"SI-AK2","type":"SI","stage":"CRACKED","tags":["Corruption (Sensual)","Moral Degradation","Slave (beginning)"],"name":"Long Time Together","pre":"She has been finding reasons to be in the same place.","scene":"VANILLA/SERVICE — she gives with ancient patience. He receives at her pace.","post":"'You are the first person I have not had to slow down for.'"},
+{"id":"SI-AK3","type":"SI","stage":"OPEN_LATE","tags":["Sexual Mind Break","Corruption complete","Slave (chosen)"],"name":"What the Wyrm Knows","pre":"She has one piece of Wyrm wisdom she has not shared.","scene":"She shares it. It is about this. Extended intimacy — SUBMISSIVE/DEVOTION at depth. VANILLA frame. She gives completely.","post":"'The Wyrm says some things only happen once every thousand years.' It is unclear if she means the Wyrm or herself."},
+{"id":"SI-AK4","type":"SI","stage":"FALLEN","tags":["Rebuilding","Slave (chosen)"],"name":"In Long Time","pre":"She has been thinking in long time about this.","scene":"'In long time, this is the part I will remember.'","post":"She marks the date in the old calendar format."}
+]},
+{
+"slot":"19a","name":"Kessa Emberscale","access":"Ashkora FALLEN + separate player trust with Kessa",
+"quests":[
+{"id":"SI-KE1","type":"SI","stage":"KNOWN","tags":["Rebuilding","Corruption"],"name":"Being Certain","pre":"She is always unsure.","scene":"He gives her something to be certain about.","post":"'That is what that feels like.'"},
+{"id":"SI-KE2","type":"SI","stage":"FALLEN","tags":["Rebuilding complete","Slave (beginning)"],"name":"Not Afraid","pre":"She has questions.","scene":"Extended vanilla. She asks questions. He answers all of them.","post":"'I am not afraid of this.' She sounds surprised."}
+]},
+{
+"slot":20,"name":"Velara Ash",
+"quests":[
+{"id":"SQ-VL1","type":"SQ","stage":"KNOWN","name":"The Fabricated Contract","desc":"What the fabricated contract cost her. That it was worse than actual violence because it had legal language. What she decided the day she read it."},
+{"id":"SI-VL1","type":"SI","stage":"KNOWN","tags":["Corruption"],"name":"Not Your Leverage","pre":"She has been assessing: what does he want from her?","scene":"He wants something from her that is not leverage or information. She runs this through three verification passes.","post":"She adjusts the assessment. Still watching."},
+{"id":"SQ-VL2","type":"SQ","stage":"CRACKED","name":"Sera Inside","desc":"What it is like to know Sera is in there and to act professionally about it every day. What she says to herself each morning."},
+{"id":"SI-VL2","type":"SI","stage":"CRACKED","tags":["Domination Loss","Sexual Humiliation","Corruption"],"name":"Honest Combat","pre":"She fights everything.","scene":"They spar. She wins the first round. In the second: REVERSAL CAPTURE — he let her win. She is furious. He waits.","post":"'You let me win the first round.' He says: 'I wanted to see how you fight when you think you are ahead.' She is quiet for a long time."},
+{"id":"SQ-VL3","type":"SQ","stage":"OPEN_EARLY","name":"What She Would Have Been","desc":"If she had not been assigned to the Sarvoth, if there was no Morvane, if Sera had not needed protecting. She describes it briefly and specifically. She sounds fine."},
+{"id":"SI-VL3","type":"SI","stage":"OPEN_EARLY","tags":["Sexual Mind Break elements","Moral Degradation","Slave (beginning)"],"name":"Chosen For Herself","pre":"She has been verifying: is it her he wants.","scene":"MASOCHIST/DEVOTION — she gives and receives in a way that tests whether she is the subject. She is the subject. She has never been the subject before.","post":"'There is nothing transactional about this.' She checks again. 'No.'"},
+{"id":"SI-VL4","type":"SI","stage":"OPEN_LATE","tags":["Sexual Mind Break","Corruption complete"],"name":"The SWITCH Fully Active","pre":"She has SADIST and MASOCHIST both.","scene":"SWITCH arc — she leads first, he reverses, she accepts. Extended. DEVOTION as the undercurrent.","post":"'I chose both directions.'"},
+{"id":"SI-VL5","type":"SI","stage":"OPEN_LATE","tags":["Rebuilding","Slave (chosen)"],"name":"What the Contract Did Not Take","pre":"The contract took three years.","scene":"What the contract could not take — she gives it.","post":"'That was mine to give.' Pause. 'I gave it.'"},
+{"id":"SI-VL6","type":"SI","stage":"FALLEN","tags":["all resolved","Slave permanent"],"name":"Sera and After","pre":"When Sera is free, Velara is free. What comes next.","scene":"She tells him what comes next. It includes him.","post":"She files something in the Charter. Not a contract. A record."}
+]},
+{
+"slot":"20a","name":"Sera Ash","access":"Velara FALLEN + Sera freed from Morvane",
+"quests":[
+{"id":"SI-SE1","type":"SI","stage":"KNOWN","tags":["Rebuilding","Corruption"],"name":"The Door That Locks","pre":"She has never had a door she locks.","scene":"He gives her one, practically. She locks it. Locks it again.","post":"'I am going to do that a few more times.'"},
+{"id":"SI-SE2","type":"SI","stage":"FALLEN","tags":["Rebuilding complete","Slave (chosen, gentle)"],"name":"Gift-Giving Forward","pre":"She gives everything to everyone, always.","scene":"This time the giving is for her. SUBMISSIVE/DEVOTION with a player she trusts completely.","post":"'Warmth.' She names it."}
+]},
+{
+"slot":21,"name":"Iskara Thorne",
+"quests":[
+{"id":"SQ-IS1","type":"SQ","stage":"KNOWN","name":"Three Hundred Years of Contracts","desc":"The contract she is most proud of. The one she regrets. How she tells the difference."},
+{"id":"SI-IS1","type":"SI","stage":"KNOWN","tags":["Corruption"],"name":"The Unambiguous Offer","pre":"Everyone is ambiguous.","scene":"He asks something specific. She answers specifically. Under thirty seconds. She notes the time.","post":"'The first clear question I have been asked this month.'"},
+{"id":"SQ-IS2","type":"SQ","stage":"CRACKED","name":"Her Predecessor's Mistake","desc":"The specific cost of unknowingly helping build the ward. What she owes. How she is paying it."},
+{"id":"SI-IS2","type":"SI","stage":"CRACKED","tags":["Corruption","Domination Loss begins"],"name":"The Clause She Did Not Include","pre":"She contracts everything.","scene":"She realises there is something she cannot put in a contract — the specific thing she wants from this interaction. She tries. The clause will not settle.","post":"She notarises a document about something else and spends seven seconds thinking about the unresolvable clause."},
+{"id":"SQ-IS3","type":"SQ","stage":"OPEN_EARLY","name":"The Verdict She Keeps Returning To","desc":"A case from one hundred and forty years ago she keeps re-examining. The ruling was correct. Something else is wrong."},
+{"id":"SI-IS3","type":"SI","stage":"OPEN_EARLY","tags":["Domination Loss","Sexual Humiliation"],"name":"What Watching Gets You","pre":"VOYEUR — she has been watching specifically.","scene":"He turns and she realises he has known she was watching and has been performing for the observation. She finds this infuriating and interesting in equal measure.","post":"'You noticed.' 'Yes.' 'How long?' 'From the beginning.' She revises her assessment of him upward."},
+{"id":"SI-IS4","type":"SI","stage":"OPEN_LATE","tags":["Sexual Mind Break beginning","Moral Degradation"],"name":"The Agreement She Cannot Write","pre":"She has one working draft of what this is.","scene":"DOMINANT lead — she runs it precisely. Mid-scene: SADIST/CONTROL, but the player does not stay in the expected position. She escalates precision. He matches. The specific thing that breaks CONTROL: he is as precise as she is.","post":"'This is the closest I have been to not knowing what comes next.' She files this."},
+{"id":"SI-IS5","type":"SI","stage":"OPEN_LATE","tags":["Sexual Mind Break","Corruption complete"],"name":"Beyond Agreement","pre":"The unresolvable clause from SI-IS2.","scene":"Extended intimacy — SADIST/VOYEUR inverted. She receives. Precisely. She finds out what lies beyond the excellent agreement.","post":"'There is something beyond the contract.' She sounds genuinely surprised."},
+{"id":"SI-IS6","type":"SI","stage":"FALLEN","tags":["Slave (chosen, legally precise)","all resolved"],"name":"The Notation","pre":"She has been making a notation in her private records.","scene":"She reads it to him. Eleven seconds.","post":"She signs it."}
+]},
+{
+"slot":22,"name":"Velindra Lysmere",
+"quests":[
+{"id":"SQ-VD1","type":"SQ","stage":"KNOWN","name":"The Performance That Started","desc":"When she began adapting to rooms. What she was before that. Whether she can still find the before."},
+{"id":"SI-VD1","type":"SI","stage":"KNOWN","tags":["Corruption"],"name":"Not the Room","pre":"She adapts to every room.","scene":"He does not ask for the room version. He asks the question directed at her specifically — who she is when she is not performing. She gives half an answer. This is unprecedented.","post":"She gives half an answer. She cannot account for the half she gave."},
+{"id":"SQ-VD2","type":"SQ","stage":"CRACKED","name":"The Aunt She Hides From","desc":"What she has kept from Velura and why. That it is protection and condescension in equal measure and she cannot decide which it is."},
+{"id":"SI-VD2","type":"SI","stage":"CRACKED","tags":["Sexual Humiliation","Corruption"],"name":"Seen Past the Performance","pre":"VOYEUR — she watches what is being watched.","scene":"He watches her specifically and describes what he sees: not the diplomat, not the fixer, not the succubus. The specific person.","post":"She does not perform for three hours. This is the longest break in seven years."},
+{"id":"SQ-VD3","type":"SQ","stage":"OPEN_EARLY","name":"The Four-Year Dossier","desc":"What it cost to keep the investigation quiet for four years. The specific day she decided not to tell Velura. Whether she would do it again."},
+{"id":"SI-VD3","type":"SI","stage":"OPEN_EARLY","tags":["Sexual Mind Break","Moral Degradation","Corruption (Sensual)"],"name":"No Performance Layer","pre":"EXHIBITIONIST lean activates — but she wants to be seen truly, not performed.","scene":"She drops the performance entirely. SWITCH: she gives entirely herself, receives entirely. He sees all of it.","post":"'That is what it feels like.'"},
+{"id":"SI-VD4","type":"SI","stage":"OPEN_LATE","tags":["Sexual Mind Break","Corruption complete","Slave (beginning)"],"name":"The Real Playfulness","pre":"She has been performing playfulness.","scene":"Extended intimacy — VOYEUR as frame (he watches her be real). She discovers her actual playfulness, which is different from the performed version.","post":"'I had forgotten I was actually like that.'"},
+{"id":"SI-VD5","type":"SI","stage":"OPEN_LATE","tags":["Slave (chosen)","all resolved"],"name":"Entirely Herself","pre":"She has been practising being entirely herself.","scene":"She succeeds. SERVICE/SURRENDER at depth.","post":"'I am going to need to renegotiate what I do for work.'"},
+{"id":"SI-VD6","type":"SI","stage":"FALLEN","tags":["all resolved"],"name":"Velura Knows","pre":"She tells Velura. About the dossier, the four years. About this. This is the unlock for Velura's sub arc.","scene":"Velura's reaction unlocks 22a sub arc.","post":"She tells him: 'She cried.' Pause. 'I did not expect that.'"}
+]},
+{
+"slot":"22a","name":"Velura Lysmere","access":"Velindra FALLEN via SI-VD6",
+"quests":[
+{"id":"SI-VEL1","type":"SI","stage":"KNOWN","tags":["Corruption","Domination Loss"],"name":"What the Network Protects","pre":"Two centuries of protecting the house.","scene":"She asks what she protected it for, specifically.","post":"'I am not sure anymore.' This is progress."},
+{"id":"SI-VEL2","type":"SI","stage":"FALLEN","tags":["Corruption complete","Slave (chosen, briefly)"],"name":"The Proud Comfort","pre":"She does not need to prove anything.","scene":"DOMINANT/WORSHIP — she receives the attention the network never provided.","post":"'This is what I was protecting.'"}
+]},
+{
+"slot":23,"name":"Evara Nighthollow",
+"quests":[
+{"id":"SQ-EV1","type":"SQ","stage":"KNOWN","name":"The Seventh Generation","desc":"She describes one family she has watched across seven generations — what changed, what did not, what she learned about loving things that end."},
+{"id":"SI-EV1","type":"SI","stage":"KNOWN","tags":["Corruption"],"name":"Still Here","pre":"Eight centuries of attrition.","scene":"He is still there six weeks later. He has not started an arc of decline.","post":"She notes: 'Still here.' She says this like an observation about the weather. It means something else."},
+{"id":"SQ-EV2","type":"SQ","stage":"CRACKED","name":"The Calculation She Runs","desc":"The specific calculation she runs before letting anything matter: time remaining, cost of loss, whether the math clears. How many times the math has cleared in eight centuries."},
+{"id":"SI-EV2","type":"SI","stage":"CRACKED","tags":["Corruption","Domination Loss"],"name":"The Math That Cleared","pre":"She ran the calculation.","scene":"She tells him the result. Not warmly — accurately. CONTROL lead, MASOCHIST as undercurrent — she is giving something that will cost her.","post":"'The math cleared.'"},
+{"id":"SI-EV3","type":"SI","stage":"OPEN_LATE","tags":["Moral Degradation","Sexual Mind Break","Corruption complete"],"name":"Eight Centuries of Practice","pre":"She has enormous patience.","scene":"Extended intimacy — SWITCH fully active: CONTROL first, MASOCHIST second (allows something she has not allowed in two centuries), SADIST as texture. She is present in a way she has not been in a long time.","post":"'I forgot I still know how to be here.'"},
+{"id":"SI-EV4","type":"SI","stage":"FALLEN","tags":["Rebuilding","Slave (chosen, knowing the cost)"],"name":"Worth It Anyway","pre":"She has been assessing: knowing the ending, is it worth it?","scene":"VANILLA — simply herself, fully present. She gives without the eight centuries of calculation behind the giving.","post":"'Worth it.'"},
+{"id":"SQ-EV3","type":"SQ","stage":"FALLEN","name":"The Eighth Century","desc":"She adds one event to her eight-century account. She does not say what she names it."}
+]},
+{
+"slot":24,"name":"Sister Ezan",
+"quests":[
+{"id":"SQ-EZ1","type":"SQ","stage":"KNOWN","name":"The Mother's Faith","desc":"Her mother, the specific moment the mother died believing the Silence was real, what Ezan said at the grave."},
+{"id":"SI-EZ1","type":"SI","stage":"KNOWN","tags":["Corruption"],"name":"Standing There With Her","pre":"She has been carrying the revelation alone for twenty years.","scene":"He stands there with her. She describes the ritual. He does not walk away.","post":"'You are still here.'"},
+{"id":"SQ-EZ2","type":"SQ","stage":"CRACKED","name":"The Priest She Left","desc":"The morning she walked out of the Faith. What she took, what she left, whether she misses it."},
+{"id":"SI-EZ2","type":"SI","stage":"CRACKED","tags":["Corruption","Moral Degradation"],"name":"The Search Given Company","pre":"She has been alone in the search.","scene":"He helps for one day. Then a second. Then a week. SUBMISSIVE/DEVOTION — she gives the way she gives to the search, completely.","post":"'I have been waiting for someone to walk in the same direction.'"},
+{"id":"SQ-EZ3","type":"SQ","stage":"OPEN_EARLY","name":"What the Ritual Says","desc":"The specific part of the reconstructed ritual she has never told anyone. What it implies about where the player came from."},
+{"id":"SI-EZ3","type":"SI","stage":"OPEN_LATE","tags":["Sexual Mind Break","Corruption complete","Slave (chosen)"],"name":"Searching Together","pre":"She has found something.","scene":"SURRENDER fully active — she gives entirely, which for Ezan means giving someone the search itself. Extended intimacy as the culmination of twenty years of lonely purpose finding a partner.","post":"'You can come back to this.'"},
+{"id":"SI-EZ4","type":"SI","stage":"FALLEN","tags":["Rebuilding","all resolved"],"name":"The Place She Goes Back To","pre":"She does not have one.","scene":"He gives her one. DEVOTION as the anchor.","post":"'I have somewhere to go back to.'"},
+{"id":"SQ-EZ4","type":"SQ","stage":"FALLEN","name":"The Final Notes","desc":"She sends her full ritual notes to Syrael for safekeeping. She is not stopping — just not carrying them alone anymore."}
+]},
+{
+"slot":25,"name":"Ushara Ashfang",
+"quests":[
+{"id":"SQ-US1","type":"SQ","stage":"KNOWN","name":"The Three Clans","desc":"How she holds Ashfang, Ironjaw, and Redhorn. The difference between authority and being followed. Which she has."},
+{"id":"SI-US1","type":"SI","stage":"KNOWN","tags":["Corruption"],"name":"Not a Political Alliance","pre":"She has filed everyone who approaches her under ALLIANCE or ENEMY.","scene":"He approaches without an agenda. She runs her standard classification. It does not resolve.","post":"She runs it again the next day. Same result."},
+{"id":"SQ-US2","type":"SQ","stage":"CRACKED","name":"The Daughter She Lost","desc":"Five years ago. Not the specifics — the shape of it. That Garet is different from replacement. That this matters."},
+{"id":"SI-US2","type":"SI","stage":"CRACKED","tags":["Corruption","Moral Degradation"],"name":"The Test of Tharos","pre":"She runs a test on everyone who comes to the Steppe: can they see the land.","scene":"He sees the land. Specifically. She gives him a harder version. He passes. She has been running this test for fifteen years.","post":"She tells him the count of those who passed."},
+{"id":"SQ-US3","type":"SQ","stage":"OPEN_EARLY","name":"What Warmothers Do Not Say","desc":"The one thing she says in private that she does not say in the moot. That grief and authority coexist. What it costs to hold both."},
+{"id":"SI-US3","type":"SI","stage":"OPEN_EARLY","tags":["Domination Loss","Moral Degradation","Sexual Humiliation (being seen fully)"],"name":"Warmother and Woman","pre":"She has never had both received at once.","scene":"DOMINANT lead — she runs it on her terms. Midway: he addresses both — the authority and the grief beneath it. Both at once. She was not prepared for both at once.","post":"She is quiet for an unusual amount of time."},
+{"id":"SI-US4","type":"SI","stage":"OPEN_LATE","tags":["Sexual Mind Break","Corruption complete"],"name":"All At Once","pre":"She has been held as only one thing at a time.","scene":"Extended intimacy — DOMINANT/SADIST/BREEDING leans, but the frame is being chosen whole: the Warmother, the woman, the grief.","post":"'I did not know I was waiting for that.'"},
+{"id":"SI-US5","type":"SI","stage":"OPEN_LATE","tags":["Sexual Degeneracy","Slave (beginning)"],"name":"The Generation After","pre":"Everything she does is for the generation after.","scene":"BREEDING lean activated — she gives with that intention, specifically and privately.","post":"She touches her own face. 'I forgot I was still in it.'"},
+{"id":"SI-US6","type":"SI","stage":"FALLEN","tags":["Slave (chosen)","all resolved"],"name":"Chosen","pre":"She has been chosen for thirty years by necessity and duty.","scene":"He chooses her specifically — not Clan Ashfang, not the coalition, her.","post":"She says one word in high orc. The player does not know what it means. Garet, passing by, does. Garet says nothing."}
+]}
+]}

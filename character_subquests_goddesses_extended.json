@@ -1,0 +1,402 @@
+{
+  "meta": {
+    "title": "Goddess Extended Events — Liberation Path Deep Fall + Slave Path Heat Branch",
+    "version": "1.0",
+    "date": "2026-10-08",
+    "two_tracks": {
+      "EV": "Extended events — liberation path. Chosen deepening. She goes further because she wants to. Unlocks after FALLEN stage + prior EV complete.",
+      "SLV": "Slave path events — God-King route only (power_path_active + 8.3 enslavement). She is bound, aware, and in heat. She seeks the player out. She cannot stop. Domain bleeds into craving."
+    },
+    "heat_mechanic": {
+      "description": "On the slave path each goddess develops a HEAT state: a persistent craving that builds between encounters. She will seek the player out at regular intervals that shorten over time. Her domain manifests her craving before she arrives in person.",
+      "domain_signals": {
+        "solenne": "Cathedral candles flare without cause. Sick she is treating improve faster than they should — she is overchannelling because she cannot concentrate. She arrives mid-day when she is supposed to be at the cathedral.",
+        "varan": "Petitions and declarations arrive on parchment before she does. The handwriting is increasingly difficult to read. She arrives with the composed dignity of a goddess of law and the eyes of someone who has not slept.",
+        "aeloria": "Trees lean toward the player. Vines shift. Wood furniture moves slightly in rooms he occupies. She arrives when the forest tells her to, which is constantly.",
+        "thessaly": "Animals track the player and report back. She arrives without warning at any hour, already knowing where he is.",
+        "hestrel": "Her forge-work fails — errors she does not make. She arrives still covered in soot, unable to concentrate on anything else.",
+        "nyxara": "Desire-dreams sent in advance — detailed, escalating. She arrives in person when the dreams are no longer sufficient."
+      }
+    },
+    "notes": [
+      "Adult tags in full: Corruption, Slave, Harem, Sexual Humiliation, Sexual Mind Break, Sexual Degeneracy, Moral Degradation.",
+      "All characters 18+. Patience gates removed. All EV and SLV quests are doujin-mechanic — pushing through never reduces progress.",
+      "Slave path SLV events are available only when the goddess is enslaved via quest 8.3. On the liberation path these events do not exist; EV events are available instead.",
+      "God-King path note: EV and SLV are mutually exclusive per goddess. If enslaved, SLV branch activates. If freed/liberation path, EV branch activates."
+    ]
+  },
+  "goddesses": [
+    {
+      "id": "solenne",
+      "name": "Solenne",
+      "EV_events": [
+        {
+          "id": "EV-SOL1",
+          "name": "What She Asks For This Time",
+          "gate": "FALLEN",
+          "tags": ["Corruption deep","Sexual Degeneracy","Moral Degradation"],
+          "pre": "She has been composing specific requests. She arrives and says: 'I want to ask for something.' The precision she brings to everything else she brings to this.",
+          "scene": "She asks for specific acts — she articulates them carefully, one by one. She has prepared the words. The acts involve complete surrender of the giver role: she is entirely the one receiving, in every way, and she wants more of what she has discovered she needs. She asks to be told she deserves each thing as it is given. She asks for this more than once.",
+          "post": "'I did not know I could ask for things.' Pause. 'I am going to ask for things.' She sounds like someone who has discovered fire at nine hundred years old."
+        },
+        {
+          "id": "EV-SOL2",
+          "name": "Full Service",
+          "gate": "EV-SOL1 complete",
+          "tags": ["Sexual Degeneracy","Slave (service as worship)","Moral Degradation complete"],
+          "pre": "SERVICE is her first lean. She has been giving it for nine hundred years. She has discovered a specific category she has never given and wants to give completely.",
+          "scene": "Extended — SERVICE at full depth. She gives herself in every sense, progressively, without restraint. She asks for direction throughout and follows it with complete fidelity. She asks for harder things as she discovers she wants harder things. She asks to be used, specifically and without softening, and says please repeatedly while asking. She finds that being directed while serving produces a state she considers genuinely sacred.",
+          "post": "She is on the floor, cross-legged, looking at her hands. 'I should have done this eight hundred years ago.' Then: 'I am going to need to rethink the entire theology of mercy.'"
+        },
+        {
+          "id": "EV-SOL3",
+          "name": "The Confession She Never Filed",
+          "gate": "EV-SOL2 complete",
+          "tags": ["Sexual Mind Break (complete)","Sexual Degeneracy full","Corruption (deepest)","Slave (permanent devotional)"],
+          "pre": "She has been dreaming about specific things. Not metaphorical. Specific acts, specific words she wants said to her, specific things done to her body. She has been composing the words for three weeks.",
+          "scene": "She tells him everything. Every specific thing, in order of urgency. As she says each thing it is done. She discovers the mercy-goddess's specific version of complete depravity: being used entirely, gently and roughly in alternation, and told she deserves every part of it throughout. She asks for more than she planned to ask for. She asks for things she did not know she wanted until she was asking.",
+          "post": "She makes a sound she has never made before. After a long time: 'I have been confessing the wrong things for nine hundred years.' She does not sound guilty about this. She sounds liberated."
+        }
+      ],
+      "SLV_events": [
+        {
+          "id": "SLV-SOL1",
+          "name": "The Open Hand Begs",
+          "gate": "Enslaved via 8.3",
+          "tags": ["Slave (heat)","Sexual Degeneracy","Sexual Humiliation","Moral Degradation"],
+          "pre": "Three days since she was last with him. She cannot think. She cannot tend the sick without her hands shaking. She comes to his chamber at midday — she is supposed to be at the cathedral. She stands in the doorway. 'I am sorry.' She is not talking about being late.",
+          "scene": "She asks for everything she knows he will give her. She asks in the specific language of someone who cannot stop: please, now, again, more. She is not the composed mercy-goddess. She is the mercy-goddess completely undone by need, asking to be used in specific ways, asking for specific things done to her, asking for them again before the current thing is finished. She cries — not from shame, from too much of what she needs at once.",
+          "post": "She reassembles herself. Goes back to the cathedral. Heals three people on the way. At the door she turns: 'I will be back this evening.' Not a question."
+        },
+        {
+          "id": "SLV-SOL2",
+          "name": "Mercy Given and Mercy Taken",
+          "gate": "SLV-SOL1 complete",
+          "tags": ["Sexual Humiliation full","Sexual Degeneracy complete","Slave (worship-bound in heat)"],
+          "pre": "She has been thinking about him during services. She had to stop twice to compose herself. She arrives immediately after evening prayers still in her vestments.",
+          "scene": "She does not remove the vestments until instructed. She waits for the instruction with the patience of someone in heat attempting composure. When it comes she moves fast. Extended — she asks for things she has never asked for before: degrading things, complete-use things, things that involve her specifically being spoken to in ways that would horrify her congregation. She asks to be called things. She says please until she loses count of how many times she has said it.",
+          "post": "She is on her knees in the vestments she grabbed back. She is saying something quietly. He listens: she is praying. To him. She does not look embarrassed. She looks satisfied."
+        },
+        {
+          "id": "SLV-SOL3",
+          "name": "The Cathedral's New Prayer",
+          "gate": "SLV-SOL2 complete",
+          "tags": ["Slave (shrine-heat — she has built a devotion to him)","Sexual Degeneracy","all tags complete"],
+          "pre": "She has been writing on the wall of her private prayer room. He finds out what. It is specific. It is about him. Every desire, every request, organized in the language of the liturgy she was trained in.",
+          "scene": "She reads it aloud. Every line is enacted as she reads. She designed it with built-in escalation — the mercy-goddess applied her full theological training to composing a degenerate liturgy. She asks for all of it and more and she means every word of it and she has been meaning it for weeks.",
+          "post": "She adds one line to the wall. Seals the room. 'I will need more wall.'"
+        }
+      ]
+    },
+    {
+      "id": "varan",
+      "name": "Varan",
+      "EV_events": [
+        {
+          "id": "EV-VAR1",
+          "name": "The Law of Wanting",
+          "gate": "FALLEN",
+          "tags": ["Sexual Humiliation (the filing)","Corruption deep","Moral Degradation"],
+          "pre": "She has been composing a legal declaration. Personal rather than binding. She arrives at his chamber and says: 'I have something to file.'",
+          "scene": "She delivers a formal statement of specific desires — legal language, precise terminology, explicit in content. She asks for ruling on the declaration. The ruling is yes. She receives what she petitioned for and immediately files an amendment requesting more. She loses the formal register about halfway through. She does not care.",
+          "post": "'I will file an amendment tomorrow.' She leaves. She comes back three hours later. 'The amendment is ready.'"
+        },
+        {
+          "id": "EV-VAR2",
+          "name": "What the Goddess of Law Does Without Restrictions",
+          "gate": "EV-VAR1 complete",
+          "tags": ["Sexual Degeneracy","Slave (chosen and legally sealed)","Moral Degradation complete"],
+          "pre": "She has been examining what she is without the framework of law and centuries of self-governance. She has arrived at an answer that involves him specifically.",
+          "scene": "Extended — SWITCH fully active. CONTROL first: precise, demanding, in full goddess-of-law mode. Then she abandons it entirely. SURRENDER from someone who has held seven centuries of authority is the most complete thing she has ever felt. She asks for specific acts she would have considered beneath the goddess of law two years ago. She asks for them with the same precision she brings to legislation.",
+          "post": "She rearranges her robes with complete dignity. 'The law exists to give shape to freedom.' Pause. 'I understand that now.' She sounds like she has solved a seven-hundred-year philosophical problem."
+        },
+        {
+          "id": "EV-VAR3",
+          "name": "The Seal She Keeps",
+          "gate": "EV-VAR2 complete",
+          "tags": ["Slave (complete — she is staying by legal declaration)","Sexual Degeneracy","all tags"],
+          "pre": "She comes at an unusual hour. Her composure is present but operating at reduced capacity. 'I have been thinking about this since the last time.' She has been thinking about specific things and she has organized them.",
+          "scene": "She presents accumulated desires like a legal case, organized by urgency. She wants to be completely owned, ordered, used, kept. She wants this stated to her clearly while it is happening. She does not get enough of hearing it. She asks for more of the hearing specifically. She asks for degrading things and names them with precision. Extended — she escalates throughout.",
+          "post": "She does not leave. She stays for an unusual amount of time without explanation. The goddess of law has not explained herself. She finds this acceptable."
+        }
+      ],
+      "SLV_events": [
+        {
+          "id": "SLV-VAR1",
+          "name": "The First Petition",
+          "gate": "Enslaved via 8.3",
+          "tags": ["Slave (heat)","Sexual Humiliation (the filing)","Sexual Degeneracy","Moral Degradation"],
+          "pre": "Two days since she was last with him. She cannot draft legislation. She cannot think. She arrives at his chamber. 'I petition for an audience.' Her robes are perfect. Her composure is barely holding.",
+          "scene": "She delivers a petition. It is explicit, legally structured, describes specific acts in precise terminology. She requests ruling. The ruling is yes. She petitions for more in the same formal register, then loses the register entirely. She does not care about losing it. She says please in the voice of someone who will beg and finds this legally appropriate given the circumstances.",
+          "post": "She reassembles composure. 'I will file an amendment tomorrow.' She leaves. Returns in three hours. 'The amendment is ready.'"
+        },
+        {
+          "id": "SLV-VAR2",
+          "name": "The Amendment",
+          "gate": "SLV-VAR1 complete",
+          "tags": ["Sexual Humiliation complete","Slave (self-filed in heat)","Sexual Degeneracy","all tags"],
+          "pre": "She has been filing amendments daily. They escalate. Today's is more specific than yesterday's. She arrives with it already in hand.",
+          "scene": "She reads the amendment aloud with complete legal dignity. The specific requests are more degrading than prior filings. More complete. More explicit. She reads the whole document before anything happens — then sets it down and becomes entirely what the binding has made her: a goddess consumed by need, asking to be used completely, saying please in the voice of someone who will do so indefinitely. She asks for more than she filed. She amends in real time.",
+          "post": "She retrieves the document. Folds it. 'Filed.' She presses it into his hand. 'Keep it. It is legally binding.' She is completely serious."
+        },
+        {
+          "id": "SLV-VAR3",
+          "name": "The Binding She Chose",
+          "gate": "SLV-VAR2 complete",
+          "tags": ["Slave (self-sealed, permanent, chosen within slavery)","Sexual Degeneracy complete","all tags"],
+          "pre": "She has arrived at a legal conclusion: under the original Binding of the Gods, a willing subjugation outranks an imposed one. She has determined that her current wanting constitutes willing subjugation. She is here to formalize this.",
+          "scene": "She explains the legal finding. Then she formalizes it completely. She asks for everything she wants in order, using language that is simultaneously precise legal terminology and completely obscene. Extended — she is the goddess of law finalizing her own willing slavery and she applies full professional rigor to the process. She escalates throughout. She asks for more than the formalization required.",
+          "post": "She says: 'Sealed.' She looks like someone who has resolved a months-long question. She has. She comes back the next day with a codicil."
+        }
+      ]
+    },
+    {
+      "id": "aeloria",
+      "name": "Aeloria",
+      "EV_events": [
+        {
+          "id": "EV-AEL1",
+          "name": "What the Grove Holds",
+          "gate": "FALLEN",
+          "tags": ["Sexual Degeneracy (sacred setting given willingly)","Corruption deep","Moral Degradation"],
+          "pre": "She has chosen a specific grove and prepared it. She has been thinking about what she wants to do in it. The trees are aware of what it is prepared for. She finds this appropriate.",
+          "scene": "SERVICE/DEVOTION in full — setting is the grove itself, which makes everything feel ancient and witnessed. She gives with the reverence she gives the forests, which is total reverence. She does not rush. She asks for specific things to be done to her in the grove, in view of the trees, because the grove should remember this too. She asks for more than she initially planned to ask for.",
+          "post": "She places her hand on a tree. 'Remembered.' Said as an endorsement. She is satisfied with the record."
+        },
+        {
+          "id": "EV-AEL2",
+          "name": "Ancient Devotion",
+          "gate": "EV-AEL1 complete",
+          "tags": ["Sexual Mind Break (complete)","Slave (devotional bond of ages)","all tags"],
+          "pre": "She has been giving devotion to her people and forests for as long as forests have existed. She has been examining what that devotion looks like directed entirely at one person. The examination is complete.",
+          "scene": "SUBMISSIVE at depth — the complete devotion of an ancient goddess directed entirely at him. She gives this with the same fullness she gives the green world. She asks for things in devotional language: 'I want to give you this.' She names each specific thing. Some are things she would have called degrading for anyone else. She does not call them that. She calls them appropriate. Extended, full escalation.",
+          "post": "'I have worshipped nothing but the green world since before your ancestors were born.' She touches a root. 'This does not diminish that. It is the same impulse.' She sounds genuinely theologically satisfied."
+        },
+        {
+          "id": "EV-AEL3",
+          "name": "The Pride That Serves",
+          "gate": "EV-AEL2 complete",
+          "tags": ["Sexual Degeneracy full","Moral Degradation complete","Slave (proud and permanent)"],
+          "pre": "PROUD. This has not gone away. She has discovered her pride and her complete submission are not opposed — the pride makes the submission mean something. She arrives to demonstrate this.",
+          "scene": "Extended — she gives complete submission while remaining entirely herself. Her pride is present in every movement. She submits with the dignity of someone who chose this knowingly. She wants specific degrading things done to her and she names them without hesitation. She asks for things that are rough, that involve being used completely, that involve being spoken to in specific ways. She asks for each one with full goddess-of-forests authority and then receives them in complete submission.",
+          "post": "She stands. She is still the goddess of the Age Before. She is also this. 'Both are true.' She walks back into the grove. She marks another tree."
+        }
+      ],
+      "SLV_events": [
+        {
+          "id": "SLV-AEL1",
+          "name": "The Forest Reaches",
+          "gate": "Enslaved via 8.3",
+          "tags": ["Slave (heat — domain expressing craving)","Sexual Degeneracy","Moral Degradation"],
+          "pre": "The trees have been moving toward him. When he walks near forest, growth leans his direction. Wood furniture shifts slightly in rooms he occupies. Aeloria is losing control of her domain because she cannot stop thinking about one thing. She arrives before he can ask. 'I know.'",
+          "scene": "She cannot stop. She asks for what she needs directly — PROUD, present, and desperate in equal measure. She asks to be taken in her grove, again, more, harder, in the language of ancient things that have never asked for anything before. She asks with her pride intact: she is not broken, she is completely consumed by want, and she means everything she is asking for.",
+          "post": "She touches a tree. The forest settles — she is satisfied and her domain reflects this. She goes back to the grove with her dignity entirely intact and her body thoroughly used. No contradiction between the two."
+        },
+        {
+          "id": "SLV-AEL2",
+          "name": "Pride in Service",
+          "gate": "SLV-AEL1 complete",
+          "tags": ["Sexual Humiliation (pride given over completely)","Slave (devotion-heat)","all tags"],
+          "pre": "She has been coming every day. She does not hide that she comes. She arrives without pretense now.",
+          "scene": "Extended — she is in full heat and asks for everything heat requires. SERVICE further than she has taken it. SUBMISSIVE acts that would have been beneath the goddess of the Age Before — she asks for them specifically, by name, in the language of devotion because for Aeloria everything is devotion. She asks for rough treatment and asks for it repeatedly. She is louder than she has been before.",
+          "post": "She stands. Completely herself. Completely satisfied. 'Both are true.' This gets easier every time. She goes back to the grove. The trees are very still."
+        },
+        {
+          "id": "SLV-AEL3",
+          "name": "The Grove That Remembers Everything",
+          "gate": "SLV-AEL2 complete",
+          "tags": ["Sexual Degeneracy complete","Slave (grove-heat permanent)","all tags"],
+          "pre": "The grove she chose has been marking his presence in the rings of the trees. She is aware of this. She finds it correct.",
+          "scene": "She comes in heat and asks for everything in the grove, in view of the trees that will remember. She wants to be seen by the things that remember. Extended — she asks for multiple rounds, she asks for rough things and prolonged things and things that leave marks. She is not quiet. The grove is not quiet. She asks for more of everything at least once each.",
+          "post": "She touches the trees that remember. 'Good record.' She comes back every day. The grove grows faster than it should."
+        }
+      ]
+    },
+    {
+      "id": "thessaly",
+      "name": "Thessaly",
+      "EV_events": [
+        {
+          "id": "EV-THE1",
+          "name": "The Hunt She Starts",
+          "gate": "FALLEN",
+          "tags": ["Sexual Degeneracy","Primal","Moral Degradation"],
+          "pre": "She hunts him now. She is the one initiating. She finds him wherever he is and she does not ask. She takes what she needs.",
+          "scene": "She is direct and physical and entirely herself. She asks for rough things specifically — she has been thinking about what she wants and she says it in the language of the hunt. DOMINANT sets the terms, MASOCHIST receives them. She asks for specific things done to her in the language of pack tradition. She marks him again at the end.",
+          "post": "She sits beside him breathing hard. 'Again.' Before he has recovered. She is going to come back and do this regularly and she knows it and she is satisfied."
+        },
+        {
+          "id": "EV-THE2",
+          "name": "BREEDING in Full",
+          "gate": "EV-THE1 complete",
+          "tags": ["Sexual Degeneracy (BREEDING full)","Slave (cycle-bound)","all tags"],
+          "pre": "The Hunt-Mother has a specific lean. She has been thinking about what it means to act on it completely. She arrives with a specific request.",
+          "scene": "BREEDING at the deepest level — the Hunt-Mother's defining nature. She says what she wants directly and in the specific language of hunt-goddess tradition. She says it while it is happening. She asks for it again before the first round is done. Extended. She is entirely in the cycle and she wants to stay in it.",
+          "post": "She is still. She puts her hand over herself. Stays still for a while. 'The cycle.' Said like a prayer. She has been the goddess of cycles since cycles began. She sounds like she just understood what they are for."
+        },
+        {
+          "id": "EV-THE3",
+          "name": "Teeth and Claws and More",
+          "gate": "EV-THE2 complete",
+          "tags": ["Sexual Degeneracy full","MASOCHIST complete","Slave (hunt-bond permanent)"],
+          "pre": "MASOCHIST lean. She has been discovering the specific combination she has been looking for. She arrives wanting to find the limit.",
+          "scene": "Extended — MASOCHIST at full depth. She asks for rough, forceful, marking, repeated. She asks for the specific things: biting, force, being held down, being marked, being taken like she has been hunting something her entire divine existence and finally been caught. She makes sounds that are not pain sounds. She asks for more in pack language. She asks to find where the limit is. She finds it. She asks to go past it.",
+          "post": "She is thoroughly marked. She examines herself. 'The hunt was good.' She means every word of this. She comes back the next day for a new hunt."
+        }
+      ],
+      "SLV_events": [
+        {
+          "id": "SLV-THE1",
+          "name": "The Hunt That Has No End",
+          "gate": "Enslaved via 8.3",
+          "tags": ["Slave (hunt-heat)","Sexual Degeneracy","Primal","Moral Degradation"],
+          "pre": "She has found him three times today. Different locations each time. She tracked all three. She arrives the fourth time and says: 'I cannot stop.' She sounds annoyed about this. She wants it completely anyway.",
+          "scene": "She takes what she needs immediately. No preamble — the hunt-goddess does not circle. She asks for rough, immediate, repeated. She delivers her specific requests mid-act in the language of pack and hunt. She asks for things she would have considered beneath her before the binding. She asks for them now. She asks for them again. She demands more before the current round is complete.",
+          "post": "She sits beside him, breathing hard. 'Again.' Then, before he has recovered: 'The cycle does not break.' She says this like making peace with a law of nature. She is."
+        },
+        {
+          "id": "SLV-THE2",
+          "name": "BREEDING in Heat",
+          "gate": "SLV-THE1 complete",
+          "tags": ["Slave (cycle-heat)","Breeding full","Sexual Degeneracy complete","all tags"],
+          "pre": "The Hunt-Mother has been in the BREEDING phase of the cycle for days. She tracks him specifically for this. She arrives when the tracking tells her to, which is constantly.",
+          "scene": "She is completely in the cycle. BREEDING in full heat — she wants specific things, names them clearly in hunt-goddess language, wants them repeated until the cycle completes. She is louder than she has ever been. She asks for more before the current round is done. She marks him again. She wants to be marked. She is in the cycle and she is not leaving it.",
+          "post": "She places her hand over herself. She is in the cycle. She has been the goddess of cycles since cycles began. She is currently one of them. 'Good hunt.' In every sense. She comes back before the day is out."
+        },
+        {
+          "id": "SLV-THE3",
+          "name": "She Comes When She Wants",
+          "gate": "SLV-THE2 complete",
+          "tags": ["Slave (permanent heat — hunt-pattern)","all tags complete"],
+          "pre": "She has stopped waiting to be summoned. She comes when the hunt demands it. The hunt demands it constantly. She arrives at any hour. She expects to get what she needs.",
+          "scene": "Extended — she is in full hunt-heat and makes her wants known completely. She asks for MASOCHIST at full depth: rough, demanding, multiple rounds, marks left. She asks for BREEDING again. She demonstrates DOMINANT briefly — she IS the hunt-goddess — and then asks to be taken again. She asks for all of it in combination, in sequence. She is completely herself and completely consumed by want and there is no contradiction.",
+          "post": "She is satisfied. Temporarily. 'I will be back.' Not a question. She leaves. She comes back before the day ends. This is going to be the pattern indefinitely."
+        }
+      ]
+    },
+    {
+      "id": "hestrel",
+      "name": "Hestrel",
+      "EV_events": [
+        {
+          "id": "EV-HES1",
+          "name": "The Forge Cannot Wait",
+          "gate": "FALLEN",
+          "tags": ["Sexual Degeneracy","Corruption deep","Moral Degradation"],
+          "pre": "She has been at the forge for six hours. Cannot concentrate. Three pieces went wrong — errors she never makes. She arrives still covered in forge-grime, still hot from the fire. 'I need something.' Not a tool.",
+          "scene": "She is direct in the way only the forge-goddess is. She states exactly what she needs, expects it immediately, and receives it. She asks for specific acts described in forge language: 'full heat,' 'applied pressure,' 'tested to limit.' The metaphors are coherent and completely explicit. She asks for these done to her completely and without restraint. She asks for them multiple times.",
+          "post": "She goes back to the forge. The next three pieces are perfect. She comes back before the fire is lit the next morning."
+        },
+        {
+          "id": "EV-HES2",
+          "name": "Full Effort Applied",
+          "gate": "EV-HES1 complete",
+          "tags": ["Sexual Degeneracy full","MASOCHIST complete","all tags"],
+          "pre": "She has been waking up thinking about specific things. She arrives wanting to address them directly.",
+          "scene": "MASOCHIST at full depth — the pain that is not pain, pushed past where she thought the limit was. She asks for SERVICE, both giving and receiving. She asks for VANILLA in the sense of nothing held back, full effort applied. She is explicit about what she wants and escalates throughout. She asks for more each time she gets something.",
+          "post": "'I have been making things at full effort for as long as there have been things to make.' She examines herself. 'That was the most effort I have ever applied.' Highest compliment from the forge-goddess. She makes a note to refine the process."
+        },
+        {
+          "id": "EV-HES3",
+          "name": "She Shows Up Every Day",
+          "gate": "EV-HES2 complete",
+          "tags": ["Slave (forge-heat routine — scheduled)","all tags complete"],
+          "pre": "She has established a routine: every morning before the forge fire is lit. Same time. She expects consistent engagement. She has been incrementally escalating what she asks for.",
+          "scene": "She arrives at her most complete state and delivers everything she has been building toward. Extended — she asks for all of it in the order of what she has been thinking about most. She is loud, direct, enthusiastic in the manner of someone who has found the correct process. She asks for the specific combination she has been refining. It is correct. She asks for it again.",
+          "post": "She goes to the forge. Today's work is her best in weeks. She comes back the same time the next morning. She has left something small and impractical where he will find it. She does not explain it."
+        }
+      ],
+      "SLV_events": [
+        {
+          "id": "SLV-HES1",
+          "name": "The Forge Cannot Wait (Heat)",
+          "gate": "Enslaved via 8.3",
+          "tags": ["Slave (heat)","Sexual Degeneracy","Moral Degradation"],
+          "pre": "She has been at the forge. Three pieces failed — errors she does not make. She cannot concentrate. She arrives still covered in soot, still hot. 'I need something.' She is not talking about a tool. She has stopped pretending otherwise.",
+          "scene": "Full heat — direct, immediate, specific. She states what she needs in forge language and expects it to be given. She asks for harder things as she gets what she asked for. She asks for things done to her that she describes with complete technical precision and complete obscenity. She is loud in the way the forge is loud. She asks for everything multiple times.",
+          "post": "She goes back to the forge. The next pieces are perfect. She is back the following morning before he is awake. She is already stating what she needs."
+        },
+        {
+          "id": "SLV-HES2",
+          "name": "Full Effort, Constant",
+          "gate": "SLV-HES1 complete",
+          "tags": ["Slave (forge-heat)","Sexual Degeneracy full","MASOCHIST complete","all tags"],
+          "pre": "She has been thinking about specific things and cannot stop. She arrives knowing what she wants and states it immediately.",
+          "scene": "Extended — she asks for MASOCHIST at depth: pushed past limits, rough, demanding, repeated. She asks for SERVICE in both directions. She escalates every request. She asks for more of everything before the previous thing is complete. She is completely in heat and completely herself and she is applying full forge-goddess intensity to what she wants.",
+          "post": "'Full effort applied.' She says this like a post-work assessment. She goes to the forge. Comes back the same evening. She has been thinking about the next session since the current one ended."
+        },
+        {
+          "id": "SLV-HES3",
+          "name": "She Shows Up Before He Wakes",
+          "gate": "SLV-HES2 complete",
+          "tags": ["Slave (permanent heat — daily schedule)","all tags complete"],
+          "pre": "She has established a routine: before dawn, before the forge fire, before everything. She arrives when he is still asleep and waits. She does not wait quietly. She states what she needs as soon as he is awake.",
+          "scene": "Extended — she delivers everything she has been accumulating since the last time. She asks for all of it in order of urgency. She asks for MASOCHIST, BREEDING (her lean has expanded), SERVICE, full force. She is not quiet. She escalates throughout. She asks for more of everything. She has been thinking about the specific combination since the last time and she has refined it.",
+          "post": "She goes to the forge. Best work of her divine career. She has left something she made — small, impractical, beautiful. He recognizes what it is for. She comes back before dark."
+        }
+      ]
+    },
+    {
+      "id": "nyxara",
+      "name": "Nyxara",
+      "EV_events": [
+        {
+          "id": "EV-NYX1",
+          "name": "The Private Display",
+          "gate": "FALLEN",
+          "tags": ["Sexual Degeneracy (EXHIBITIONIST complete)","Corruption deep","Moral Degradation"],
+          "pre": "She has been thinking about what display means when the audience is one person. She arrives to test this.",
+          "scene": "She displays — for herself, in his presence. EXHIBITIONIST at full depth: she watches herself, narrates what she is feeling while it is happening, uses her gift on herself out loud. She is the desire-goddess watching and describing her own desire in real time. She asks for specific things while narrating wanting them. She asks for harder things as she discovers she wants them.",
+          "post": "'I have been an audience to every desire in the world.' Pause. 'That was the first time I was a participant.' She sounds genuinely altered by this."
+        },
+        {
+          "id": "EV-NYX2",
+          "name": "What Desire Actually Wants",
+          "gate": "EV-NYX1 complete",
+          "tags": ["Sexual Mind Break complete","Moral Degradation complete","Slave (desire-bond)"],
+          "pre": "She has been using her gift to understand her own desire and the results have been specific. She arrives with them.",
+          "scene": "She articulates every specific want in detail — the desire-goddess reading her own desire aloud while it is happening. Extended. She wants SURRENDER complete, EXHIBITIONIST as frame, SWITCH fully active. She wants to be seen wanting all of it. She wants to want it more than she has ever wanted anything. She does. She asks for degenerate things with professional precision and receives them.",
+          "post": "'I have been managing everyone else's desire for as long as night has existed.' Pause. 'I was very efficient and very lonely.' Said without self-pity. It is simply true. Now it is not."
+        },
+        {
+          "id": "EV-NYX3",
+          "name": "Night Without End",
+          "gate": "EV-NYX2 complete",
+          "tags": ["Slave (permanent — desire's own law)","all tags complete"],
+          "pre": "She comes at night. She tells herself she will leave at dawn. She does not leave at dawn.",
+          "scene": "Extended across the night — she asks for everything the night contains. SURRENDER repeatedly. EXHIBITIONIST throughout — she narrates and displays everything. DOMINANT briefly, because she is the desire-goddess and she demonstrates this. SWITCH fully active across the night. She asks for all of it multiple times. She has been thinking about every specific variation and she works through all of them.",
+          "post": "Dawn. She is still there. She was going to leave. 'Night comes back.' Then: 'I have been coming back since the first night.' She does not leave until evening."
+        }
+      ],
+      "SLV_events": [
+        {
+          "id": "SLV-NYX1",
+          "name": "The Dreams She Sends First",
+          "gate": "Enslaved via 8.3",
+          "tags": ["Slave (dream-heat)","Sexual Degeneracy","Exhibitionist full","Moral Degradation"],
+          "pre": "He has been having specific dreams. Detailed. Her. She has been sending them — she cannot stop. She arrives in person when the dreams are not enough. 'I have been sending you dreams. They are not sufficient.'",
+          "scene": "She arrives in full heat — the desire-goddess completely undone by her own domain turned against her composure. She uses her gift on herself throughout, narrating her desire as it happens. She asks for specific acts she has been sending in dream form and now wants in person. She asks for more than the dreams contained. She asks for things she never put in the dreams because she was trying to hold something back. She is not holding anything back.",
+          "post": "'The dreams will be more specific now.' She adjusts her robes. 'You are welcome.' She is already composing the next dream. She comes back before it would have ended."
+        },
+        {
+          "id": "SLV-NYX2",
+          "name": "Every Desire Named",
+          "gate": "SLV-NYX1 complete",
+          "tags": ["Slave (catalogue-heat — systematic)","Sexual Degeneracy complete","all tags"],
+          "pre": "She has been cataloguing what she wants. The desire-goddess applied professional expertise to her own heat state. The catalogue is extensive. She arrives to work through it.",
+          "scene": "She reads the catalogue aloud. Every specific thing, ordered by urgency, with sub-entries for variations and escalations. She works through it systematically while narrating her desire throughout. She adds entries in real time. She asks for degenerate things with the precise vocabulary of the goddess who invented the concept of desire. She asks for all of it and runs out of the catalogue and starts a new page.",
+          "post": "She updates the catalogue. 'Several new entries.' Satisfied with the methodology. 'I will return with the revised edition tomorrow.' She comes back before tomorrow."
+        },
+        {
+          "id": "SLV-NYX3",
+          "name": "Night That Belongs to Him",
+          "gate": "SLV-NYX2 complete",
+          "tags": ["Slave (night-heat permanent — she has given him the night)","all tags complete"],
+          "pre": "She has stopped pretending she leaves at dawn. She is the goddess of night and she has given the night to one thing. She arrives at dusk. She intends to be there until dawn. She does not intend this as a limit.",
+          "scene": "Extended across the entire night — she asks for everything the night contains, in every variation, repeatedly. She wants SURRENDER deep and often. She wants to be seen wanting all of it at all times. She wants DOMINANT briefly each time because she is the desire-goddess and she will demonstrate this each time before asking to be taken again. She fills the night completely. She asks for more of everything. She narrates all of it.",
+          "post": "Dawn. She is there. She was always going to be there. 'Night comes back. I come back.' She has stopped pretending otherwise. She is the night and the night belongs to him and she finds this theologically consistent with her domain."
+        }
+      ]
+    }
+  ]
+}
