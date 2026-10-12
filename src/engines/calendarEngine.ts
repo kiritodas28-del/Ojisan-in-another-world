@@ -58,6 +58,7 @@ import { tickInfamyDecay } from './infamyEngine';
 import { resetSynergyDailyCounts } from './synergyEngine';
 import { resetCaptiveDailyInteractions } from './tamingEngine';
 import { tickTithe } from './titheEngine';
+import { applyMpRestOnSleep } from './statEngine';  // Phase 29c.2
 
 // ─── Phase ordering ───────────────────────────────────────────────────────────
 
@@ -254,6 +255,10 @@ export function resolveSleep(
 
   // Full restore for all party members; reset player fatigue
   let state = applyFullRestoreToParty(gameState);
+  // Phase 29c.2: restore MP for player + all contacts on sleep
+  const mpRest = applyMpRestOnSleep(state);
+  state = mpRest.state;
+  events.push(...mpRest.events);
   // applyFullRestoreToParty already zeros vitals.fatigue on all characters;
   // the player's own fatigue field on vitals is the authoritative value.
 

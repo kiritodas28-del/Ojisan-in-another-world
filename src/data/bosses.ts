@@ -123,6 +123,7 @@ const bossBogMatriarch: HumanoidEnemyCharacter = {
       hp:      { current: 240, max: 240 },
       stamina: { current: 150, max: 150 },
       cpw:     { current: 0,   max: 0   },
+      mp:      { current: 140, max: 140 },  // Phase 29: Mixed race baseline ~100, boss-level wis bonus
       arousal: 0, fatigue: 0,
     },
     stats: { str: 22, agi: 12, wis: 14, def: 18, lck: 10 },
@@ -191,6 +192,7 @@ const bossMagmaOni: HumanoidEnemyCharacter = {
       hp:      { current: 380, max: 380 },
       stamina: { current: 200, max: 200 },
       cpw:     { current: 0,   max: 0   },
+      mp:      { current: 200, max: 200 },  // Phase 29: Demon race baseline 180, boss-level bump
       arousal: 0, fatigue: 0,
     },
     stats: { str: 34, agi: 8, wis: 10, def: 22, lck: 8 },
@@ -253,6 +255,7 @@ const bossYukiQueen: HumanoidEnemyCharacter = {
       hp:      { current: 280, max: 280 },
       stamina: { current: 180, max: 180 },
       cpw:     { current: 0,   max: 0   },
+      mp:      { current: 260, max: 260 },  // Phase 29: Mixed race 100 baseline, elite-tier wis×28 bonus
       arousal: 0, fatigue: 0,
     },
     stats: { str: 10, agi: 22, wis: 28, def: 12, lck: 18 },
@@ -321,6 +324,7 @@ const bossTideSuccubus: HumanoidEnemyCharacter = {
       hp:      { current: 300, max: 300 },
       stamina: { current: 200, max: 200 },
       cpw:     { current: 0,   max: 0   },
+      mp:      { current: 320, max: 320 },  // Phase 29: Succubus baseline 160, tier-4 boss amplified
       arousal: 0, fatigue: 0,
     },
     stats: { str: 11, agi: 20, wis: 26, def: 10, lck: 24 },
@@ -390,6 +394,7 @@ const bossWarlordIncubus: HumanoidEnemyCharacter = {
       hp:      { current: 360, max: 360 },
       stamina: { current: 220, max: 220 },
       cpw:     { current: 0,   max: 0   },
+      mp:      { current: 280, max: 280 },  // Phase 29: Incubus baseline 160, tier-4 boss amplified
       arousal: 0, fatigue: 0,
     },
     stats: { str: 22, agi: 18, wis: 20, def: 15, lck: 22 },

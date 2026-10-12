@@ -1789,32 +1789,32 @@
 
 ---
 
-## Phase 29: MP Pool — extend `statEngine`
+## Phase 29: MP Pool — extend `statEngine` — **COMPLETE** (2026-10-12)
 
 > Every character gains a `mp` pool added to `CharacterVitals`. The player also gains `mpBurnout` and `anomalousMp` fields. `statEngine.ts` owns derivation and overdraw/recovery logic. No separate engine file.
 > World bible reference: `magic.mp_scale_placeholder`.
 
 ### 29a. State changes
 
-- [ ] **29a.1** Add `mp: { current: number; max: number }` to `CharacterVitals` in `gameState.ts` — default `{ current: 0, max: 0 }`; 0 is correct for monsters; non-zero set at character creation / spawn. Add to the `CharacterVitals` comment block. Export is unaffected.
-- [ ] **29a.2** Add `mpBurnout: number` to `PlayerCharacter` in `gameState.ts` — range [0, 100]; accumulated by overdraw; permanently reduces effective `mp.max` by `mpBurnout` percent. Default 0.
-- [ ] **29a.3** Add `anomalousMp: boolean` to `PlayerCharacter` in `gameState.ts` — `true` for the protagonist (unattuned Earth-origin MP); set by `characterCreationEngine.createCharacter()`; makes Temple Rite awakening rolls use a separate unpredictable outcome table (see Phase 30). Default `false`.
+- [x] **29a.1** Add `mp: { current: number; max: number }` to `CharacterVitals` in `gameState.ts` — default `{ current: 0, max: 0 }`; 0 is correct for monsters; non-zero set at character creation / spawn. Add to the `CharacterVitals` comment block. Export is unaffected.
+- [x] **29a.2** Add `mpBurnout: number` to `PlayerCharacter` in `gameState.ts` — range [0, 100]; accumulated by overdraw; permanently reduces effective `mp.max` by `mpBurnout` percent. Default 0.
+- [x] **29a.3** Add `anomalousMp: boolean` to `PlayerCharacter` in `gameState.ts` — `true` for the protagonist (unattuned Earth-origin MP); set by `characterCreationEngine.createCharacter()`; makes Temple Rite awakening rolls use a separate unpredictable outcome table (see Phase 30). Default `false`.
 
 ### 29b. statEngine extension
 
-- [ ] **29b.1** Add `MP_RACE_BASELINE` constant map in `statEngine.ts` — per `Race` enum value, baseline MP max for an unawakened adult. Human = 100; high_elf/dark_elf/demon/devil/vampire = 180; dwarf/high_orc = 110; angel = 2000; god = `Infinity` (sentinel; never stored on `CharacterVitals`). Unlisted races default to 100.
-- [ ] **29b.2** Implement `deriveMaxMp(race: Race, level: number, mpBurnout: number): number` in `statEngine.ts` — `floor(baselineForRace × (1 + level × 0.08)) × (1 - mpBurnout / 100)`, clamped min 10.
-- [ ] **29b.3** Implement `spendMp(state: GameState, targetId: string, amount: number): { state: GameState; events: GameEvent[] }` pure function in `statEngine.ts` — if `amount > current`: excess is overdraw; drains HP at 1 HP per 2 overdraw MP (floor); if HP would reach 0, clamped at 1 HP and `overdrawCollapse: true` set in event; increments player `mpBurnout` by `clamp(excess / 50, 0, 2)` per call, capped at 100. Emits `MP_SPENT` always; `MP_OVERDRAW` on overdraw; `MP_BURNOUT_GAINED` when `mpBurnout` increases.
-- [ ] **29b.4** Implement `restoreMp(state: GameState, targetId: string, amount: number): { state: GameState; events: GameEvent[] }` pure function in `statEngine.ts` — adds amount to `vitals.mp.current`, capped at `deriveMaxMp()` result. Emits `MP_RESTORED`.
-- [ ] **29b.5** Implement `applyMpRestOnSleep(state: GameState): { state: GameState; events: GameEvent[] }` in `statEngine.ts` — restores all characters' MP to their current derived max. Called by `calendarEngine.resolveSleep()` alongside Stamina/CPW restore.
+- [x] **29b.1** Add `MP_RACE_BASELINE` constant map in `statEngine.ts` — per `Race` enum value, baseline MP max for an unawakened adult. Human = 100; high_elf/dark_elf/demon/devil/vampire = 180; dwarf/high_orc = 110; angel = 2000; god = `Infinity` (sentinel; never stored on `CharacterVitals`). Unlisted races default to 100.
+- [x] **29b.2** Implement `deriveMaxMp(race: Race, level: number, mpBurnout: number): number` in `statEngine.ts` — `floor(baselineForRace × (1 + level × 0.08)) × (1 - mpBurnout / 100)`, clamped min 10.
+- [x] **29b.3** Implement `spendMp(state: GameState, targetId: string, amount: number): { state: GameState; events: GameEvent[] }` pure function in `statEngine.ts` — if `amount > current`: excess is overdraw; drains HP at 1 HP per 2 overdraw MP (floor); if HP would reach 0, clamped at 1 HP and `overdrawCollapse: true` set in event; increments player `mpBurnout` by `clamp(excess / 50, 0, 2)` per call, capped at 100. Emits `MP_SPENT` always; `MP_OVERDRAW` on overdraw; `MP_BURNOUT_GAINED` when `mpBurnout` increases.
+- [x] **29b.4** Implement `restoreMp(state: GameState, targetId: string, amount: number): { state: GameState; events: GameEvent[] }` pure function in `statEngine.ts` — adds amount to `vitals.mp.current`, capped at `deriveMaxMp()` result. Emits `MP_RESTORED`.
+- [x] **29b.5** Implement `applyMpRestOnSleep(state: GameState): { state: GameState; events: GameEvent[] }` in `statEngine.ts` — restores all characters' MP to their current derived max. Called by `calendarEngine.resolveSleep()` alongside Stamina/CPW restore.
 
 ### 29c. Events, wiring, and mock
 
-- [ ] **29c.1** Add MP `GameEvent` variants to `gameState.ts`: `MP_SPENT ({ targetId, amount, fromCurrent, toCurrent })`, `MP_OVERDRAW ({ targetId, overdrawAmount, hpDrained, overdrawCollapse: boolean })`, `MP_BURNOUT_GAINED ({ newBurnout: number })`, `MP_RESTORED ({ targetId, amount, newCurrent: number })`.
-- [ ] **29c.2** Wire `applyMpRestOnSleep()` into `calendarEngine.resolveSleep()` — called alongside `applyFullRestoreToParty()`.
-- [ ] **29c.3** Update `characterCreationEngine.createCharacter()` — set `player.vitals.mp` using `deriveMaxMp(race, 1, 0)` for starting values; set `anomalousMp: true`; set `mpBurnout: 0`.
-- [ ] **29c.4** Update `npcPopulationEngine.ts` NPC build path — set `vitals.mp` using `deriveMaxMp(race, 1, 0)` on every newly spawned humanoid. Monsters pass level 0 and burnout 0.
-- [ ] **29c.5** Update `mockGameState.ts` — add `mp: { current: 200, max: 200 }` to player vitals; `mpBurnout: 0`; `anomalousMp: true`. Add `mp: { current: 180, max: 180 }` to mock NPC vitals.
+- [x] **29c.1** Add MP `GameEvent` variants to `gameState.ts`: `MP_SPENT ({ targetId, amount, fromCurrent, toCurrent })`, `MP_OVERDRAW ({ targetId, overdrawAmount, hpDrained, overdrawCollapse: boolean })`, `MP_BURNOUT_GAINED ({ newBurnout: number })`, `MP_RESTORED ({ targetId, amount, newCurrent: number })`.
+- [x] **29c.2** Wire `applyMpRestOnSleep()` into `calendarEngine.resolveSleep()` — called alongside `applyFullRestoreToParty()`.
+- [x] **29c.3** Update `characterCreationEngine.createCharacter()` — set `player.vitals.mp` using `deriveMaxMp(race, 1, 0)` for starting values; set `anomalousMp: true`; set `mpBurnout: 0`.
+- [x] **29c.4** Update `npcPopulationEngine.ts` NPC build path — set `vitals.mp` using `deriveMaxMp(race, 1, 0)` on every newly spawned humanoid. Monsters pass level 0 and burnout 0.
+- [x] **29c.5** Update `mockGameState.ts` — add `mp: { current: 200, max: 200 }` to player vitals; `mpBurnout: 0`; `anomalousMp: true`. Add `mp: { current: 180, max: 180 }` to mock NPC vitals.
 
 ---
 

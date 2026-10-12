@@ -431,6 +431,8 @@ export function spawnMonster(
       pool && pool.length ? pool[Math.floor(Math.random() * pool.length)] : undefined;
 
     const hpMax = scaled.hpMax;
+    // Phase 29: mp seeded from wis×4 (approx species baseline at region tier; deriveMaxMp is for players/NPCs)
+    const enemyMpMax = scaled.wis * 4;
     const base = {
       id:            uid,
       name:          `${monsterType} (Tier ${regionTier})`,
@@ -439,6 +441,7 @@ export function spawnMonster(
         hp:      { current: hpMax, max: hpMax },
         stamina: { current: 120, max: 120 },
         cpw:     { current: 0,   max: 0   },
+        mp:      { current: enemyMpMax, max: enemyMpMax },
         arousal: 0,
         fatigue: 0,
       } satisfies CharacterVitals,
@@ -562,6 +565,7 @@ export function spawnHumanoidEnemy(regionTier: RegionTier): HumanoidEnemyCharact
       hp:      { current: hpMax, max: hpMax },
       stamina: { current: 100, max: 100 },
       cpw:     { current: 0,   max: 0   },
+      mp:      { current: wis * 4, max: wis * 4 },  // Phase 29: wis×4 approx for humanoid enemies
       arousal: 0,
       fatigue: 0,
     } satisfies CharacterVitals,

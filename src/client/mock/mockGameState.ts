@@ -18,10 +18,12 @@ import type {
 import { createEmptyDialogueState } from '../../state/gameState';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
-const fullVitals = (hp: number, stamina: number, cpw: number) => ({
+// Phase 29c.5: mp parameter added; default 100 (human baseline)
+const fullVitals = (hp: number, stamina: number, cpw: number, mp = 100) => ({
   hp:      { current: hp,      max: hp      },
   stamina: { current: stamina, max: stamina  },
   cpw:     { current: cpw,     max: cpw      },
+  mp:      { current: mp,      max: mp       },
   arousal: 0,
   fatigue: 0,
 });
@@ -35,7 +37,8 @@ const mockPlayer: PlayerCharacter = {
   id:            'player-001',
   name:          'Kenji',
   characterType: 'PLAYER',
-  vitals:        { ...fullVitals(85, 160, 40), fatigue: 1 },
+  // Phase 29c.5: mp 200 (Human baseline level-3 ≈ 100 × 1.24 = 124, rounded up to 200 for demo richness)
+  vitals:        { ...fullVitals(85, 160, 40, 200), fatigue: 1 },
   stats:         baseStats(14, 12, 8, 10, 9),
   // Task 14.16: WEAKENED active so StatusIconRow renders in CombatView (1 turn remaining)
   activeStatusEffects: [{ defId: 'WEAKENED', remainingTurns: 1, stacks: 1 }],
@@ -66,6 +69,8 @@ const mockPlayer: PlayerCharacter = {
   technique:   12,
   virility:    14,
   alignmentScore: 0,  // Phase 23a: neutral Pragmatist at game start
+  mpBurnout:    0,     // Phase 29c.5: no overdraw damage accumulated yet
+  anomalousMp:  true,  // Phase 29c.5: protagonist is Earth-origin (anomalous MP)
   battlePoints: 6,
   ardorPoints:  4,
   unspentBP: 2,
@@ -98,7 +103,7 @@ const mockElara: NpcCharacter = {
   id:            'npc-elara',
   name:          'Elara',
   characterType: 'NPC',
-  vitals:        { ...fullVitals(70, 140, 30), fatigue: 1 },
+  vitals:        { ...fullVitals(70, 140, 30, 150), fatigue: 1 },  // Elf mp=150
   stats:         baseStats(8, 14, 16, 7, 11),
   activeStatusEffects: [],
 
@@ -126,7 +131,7 @@ const mockBram: NpcCharacter = {
   id:            'npc-bram',
   name:          'Bram',
   characterType: 'NPC',
-  vitals:        { ...fullVitals(95, 180, 20), fatigue: 1 },
+  vitals:        { ...fullVitals(95, 180, 20, 100), fatigue: 1 },  // Human mp=100
   stats:         baseStats(18, 10, 6, 15, 7),
   activeStatusEffects: [],
 

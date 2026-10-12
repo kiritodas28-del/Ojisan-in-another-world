@@ -12,7 +12,7 @@ const mockWolf: AnyCharacter = {
   id:            'enemy-wolf-1',
   name:          'Forest Wolf',
   characterType: 'MONSTER',
-  vitals:        { hp: { current: 28, max: 45 }, stamina: { current: 60, max: 60 }, cpw: { current: 0, max: 0 }, arousal: 0, fatigue: 0 },
+  vitals:        { hp: { current: 28, max: 45 }, stamina: { current: 60, max: 60 }, cpw: { current: 0, max: 0 }, mp: { current: 0, max: 0 }, arousal: 0, fatigue: 0 },
   stats:         { str: 12, agi: 14, wis: 4, def: 6, lck: 5 },
   activeStatusEffects: [],
   monsterType:          'Beast',
@@ -29,7 +29,7 @@ const mockBandit: AnyCharacter = {
   id:            'enemy-bandit-1',
   name:          'Forest Bandit',
   characterType: 'ENEMY_HUMANOID',
-  vitals:        { hp: { current: 40, max: 55 }, stamina: { current: 80, max: 80 }, cpw: { current: 10, max: 20 }, arousal: 0, fatigue: 0 },
+  vitals:        { hp: { current: 40, max: 55 }, stamina: { current: 80, max: 80 }, cpw: { current: 10, max: 20 }, mp: { current: 100, max: 100 }, arousal: 0, fatigue: 0 },
   stats:         { str: 13, agi: 10, wis: 7, def: 9, lck: 6 },
   // BURNING replaces 'bleed' (not in catalog); stacks 2 = two fire DoTs per tick
   activeStatusEffects: [{ defId: 'BURNING', remainingTurns: 2, stacks: 2 }],

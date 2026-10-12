@@ -24,6 +24,7 @@ import type {
   GameState, GameEvent, CharacterCreationOptions,
 } from '../state/gameState';
 import { equipJob, equipClass, type JobDef, type ClassDef } from './jobEngine';
+import { deriveMaxMp } from './statEngine'; // Phase 29c.3
 
 // ─── Catalog interfaces ───────────────────────────────────────────────────────
 export interface SubClassDef {
@@ -108,7 +109,25 @@ export function createCharacter(
   // ── 7. Snapshot options onto GameState
   state = { ...state, characterCreation: options };
 
-  // ── 8. Emit creation events
+  // ── 8. Phase 29c.3: seed starting MP, mpBurnout, anomalousMp on the player
+  // Race is set by the new-game init flow before createCharacter() is called.
+  // anomalousMp = true for the protagonist (Earth-origin, unattuned MP).
+  const startRace   = state.player.race as string;
+  const startMpMax  = deriveMaxMp(startRace, 1, 0);
+  state = {
+    ...state,
+    player: {
+      ...state.player,
+      mpBurnout:  0,
+      anomalousMp: true,
+      vitals: {
+        ...state.player.vitals,
+        mp: { current: startMpMax, max: startMpMax },
+      },
+    },
+  };
+
+  // ── 9. Emit creation events
   events.push({ type: 'NEW_GAME_STARTED', options });
   events.push({ type: 'CHARACTER_CREATION_COMPLETE', playerName: options.playerName });
 

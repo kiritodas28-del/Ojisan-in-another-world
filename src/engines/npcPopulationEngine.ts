@@ -34,6 +34,7 @@ import { spawnFemale, spawnMale } from '../spawn-engine/spawnEngine';
 import { POPULATION_CONFIGS } from '../spawn-engine/config/populationConfig';
 import { drawName } from '../data/namePool';
 import { Occupation } from '../spawn-engine/types/enums';
+import { deriveMaxMp } from './statEngine'; // Phase 29c.4
 
 // ─── Contact cap ──────────────────────────────────────────────────────────────
 
@@ -121,10 +122,14 @@ export function buildServiceNpc(
   const npcId = `service_${locationId}_${role.toLowerCase()}_${uuidv4().slice(0, 8)}`;
 
   // Minimal vitals — service NPCs are never in combat
+  // Phase 29c.4: mp seeded from race baseline at level 1, 0 burnout
+  const serviceRace = overrides.race as unknown as string ?? 'HUMAN';
+  const serviceMpMax = deriveMaxMp(serviceRace, 1, 0);
   const vitals: NpcCharacter['vitals'] = {
     hp:      { current: 100, max: 100 },
     stamina: { current: 200, max: 200 },
     cpw:     { current: 0, max: 0 },
+    mp:      { current: serviceMpMax, max: serviceMpMax },
     arousal: 0,
     fatigue: 0,
   };
@@ -248,10 +253,15 @@ function spawnNpcFromClass(
   // Placeholder name — replaced on individuation (Task 4.2)
   const placeholderName = `Unknown ${classDef.npcClass}`;
 
+  // Phase 29c.4: derive mp from spawn-engine race at level 1, 0 burnout
+  const npcRaceStr = rawCharacter.race as unknown as string ?? 'HUMAN';
+  const npcMpMax   = deriveMaxMp(npcRaceStr, 1, 0);
+
   const vitals: NpcCharacter['vitals'] = {
     hp:      { current: 80, max: 80 },
     stamina: { current: 150, max: 200 },
     cpw:     { current: 50, max: 100 },
+    mp:      { current: npcMpMax, max: npcMpMax },
     arousal: 0,
     fatigue: 0,
   };

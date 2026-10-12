@@ -62,6 +62,8 @@ export type { SynergyState, SynergyPairState };
 export type { CharacterCreationOptions };
 // Phase 26 schema types
 export type { TitheState, AetherSocket, LocationFeatureKey, CoreStatKey };
+// Phase 29 schema types  
+export type { CharacterVitals };
 // SaveMeta is defined in saveEngine.ts; re-exported here so UI layers
 // can import it from the central state module without a direct engine import.
 export type { SaveMeta } from '../engines/saveEngine';
@@ -83,10 +85,14 @@ export interface CombatStats {
 
 // ─── Character vitals ─────────────────────────────────────────────────────────
 // Used for player, companions, NPCs, and enemies alike.
+// Phase 29: `mp` added — Magic Power. World bible: magic.mp_scale_placeholder.
+// Every being has MP; it is the substrate of all magic and path awakening.
+// 0 is the correct default for monsters (they use miasma, not MP).
 export interface CharacterVitals {
   hp:      { current: number; max: number };   // 0–max
   stamina: { current: number; max: number };   // 0–200
   cpw:     { current: number; max: number };   // Crest Power (0 for monsters)
+  mp:      { current: number; max: number };   // Magic Power — 0 for monsters; derived by deriveMaxMp() in statEngine
   arousal: number;                              // 0–100 (intimacy context)
   fatigue: number;                              // days without sleep (0–5+); enemies always 0
 }
@@ -294,6 +300,16 @@ type PlayerCharacter = HumanoidCharacter & {
   // Range [-100, +100]. Negative = Sovereign tendency, positive = Purifier,
   // near-zero = Pragmatist. Does NOT lock the player into a path.
   alignmentScore: number;
+
+  // Phase 29 — MP system
+  // Accumulated MP overdraw damage. Range [0, 100]. Each overdraw call increments
+  // this by clamp(excess/50, 0, 2). Permanently reduces effective mp.max by this
+  // percent via deriveMaxMp(). Never clears naturally (requires special events).
+  mpBurnout: number;
+  // True for the protagonist (Earth-origin MP — anomalous, unattuned to Verendel).
+  // Set to true by characterCreationEngine.createCharacter(); false on all NPCs.
+  // Makes Temple Rite awakening rolls draw from the anomalous outcome table (Phase 30).
+  anomalousMp: boolean;
 
   // Skill points
   battlePoints: number;  // total earned BP
@@ -1269,4 +1285,14 @@ export type GameEvent =
   | { type: 'CITY_GATE_BLOCKED';  nodeId: string; regionId: string; bountyTier: string }
   | { type: 'PARDON_GRANTED';     regionId: string; questId: string }
   | { type: 'STRONGHOLD_BUILT';   regionId: string }
+  // Phase 29 — MP events
+  // MP_SPENT:         MP was consumed from a character's pool (any amount, any target).
+  // MP_OVERDRAW:      Spend request exceeded current MP; excess drained from HP instead.
+  //                   overdrawCollapse=true when HP was clamped at 1 (would have reached 0).
+  // MP_BURNOUT_GAINED: Player mpBurnout incremented this call; newBurnout is the new total.
+  // MP_RESTORED:      MP was added back to a character's pool (sleep recovery, potions, skills).
+  | { type: 'MP_SPENT';          targetId: string; amount: number; fromCurrent: number; toCurrent: number }
+  | { type: 'MP_OVERDRAW';       targetId: string; overdrawAmount: number; hpDrained: number; overdrawCollapse: boolean }
+  | { type: 'MP_BURNOUT_GAINED'; newBurnout: number }
+  | { type: 'MP_RESTORED';       targetId: string; amount: number; newCurrent: number }
   ;
