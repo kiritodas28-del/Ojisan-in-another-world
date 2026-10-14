@@ -34,6 +34,7 @@ import {
   giveGift,
   resolveLootDrop,
   getItemDef,
+  removeItem,
 } from './economyEngine';
 import { QUEST_CATALOG } from '../data/quests';
 import {
@@ -129,8 +130,10 @@ import {
   unlockClassNode,
   resetClassTree,
   promoteJob,
+  unlockPath,
   type JobDef,
   type ClassDef,
+  type PathAwakeningTrigger,
 } from './jobEngine';
 import {
   evaluateSynergyUnlocks,
@@ -153,6 +156,7 @@ import {
   type SubClassDef,
   type TraitDef,
 } from './characterCreationEngine';
+import { awardCharterXP } from './charterEngine';
 // Task 3c.4 / 8.8 — calendar engine wired for ADVANCE_PHASE and SLEEP intents
 import { advancePhase, resolveSleep } from './calendarEngine';
 // Task 9.1 — relationship engine wired for social-action sub-intents under TALK
@@ -255,6 +259,12 @@ export type PlayerIntent =
   | { type: 'RESET_CLASS_TREE';  classDef: ClassDef; spPool: 'AP' | 'BP' }
   | { type: 'PROMOTE_JOB';       currentJobDef: JobDef; promotedJobDef: JobDef }
   // ── Phase 24: Synergy intents ─────────────────────────────────────────────
+  // Phase 30: Path Awakening intent
+  // UNLOCK_PATH: awaken the player into a new job archetype.
+  //   trigger 'STONE': a Path Stone is consumed from inventory (itemId required).
+  //   trigger 'TEMPLE_RITE': no item consumed; anomalous MP roll fires at a Temple.
+  //   seed: optional deterministic roll override (tests / scripted story beats).
+  | { type: 'UNLOCK_PATH'; pathId: string; trigger: 'STONE' | 'TEMPLE_RITE'; itemId?: string; seed?: number }
   | { type: 'ACTIVATE_SYNERGY';   synergyDef: SynergyDef }
   | { type: 'EVALUATE_SYNERGIES'; catalog: SynergyDef[] }
   // ── Phase 24: New-game init intent (Task 3c.4) ────────────────────────────
@@ -1241,6 +1251,44 @@ export function dispatch(state: GameState, intent: PlayerIntent): DispatchResult
   }
 
   // ── ACTIVATE_SYNERGY (Phase 24) ─────────────────────────────────────────────
+  // ── UNLOCK_PATH (Phase 30) ──────────────────────────────────────────────────────────────────
+  // Awakens the player into a new job archetype.
+  // STONE: consumes a Path Stone from inventory before calling unlockPath().
+  //        If the stone is absent, returns a narrative error without unlocking.
+  // TEMPLE_RITE: no item consumed; anomalous roll fires for anomalousMp players.
+  if (intent.type === 'UNLOCK_PATH') {
+    if (intent.trigger === 'STONE') {
+      const stoneId = intent.itemId ?? 'path_stone';
+      try {
+        const removeResult = removeItem(state, stoneId, 1, 'CONSUMED');
+        state  = removeResult.state;
+        events = [...events, ...removeResult.events];
+      } catch {
+        narrative.push(`You need a Path Stone to awaken into this path.`);
+        return { state, events, narrative };
+      }
+    }
+
+    const result = unlockPath(state, intent.pathId, intent.trigger as PathAwakeningTrigger, intent.seed);
+    state  = result.state;
+    events = [...events, ...result.events];
+    state  = processEventQueue(state, events);
+
+    const failureEvent = result.events.find(e => e.type === 'PATH_UNLOCK_FAILED');
+    if (failureEvent) {
+      narrative.push(`The Temple Rite rejects your foreign essence. The path remains sealed.`);
+    } else {
+      const unlockEvent = result.events.find(e => e.type === 'PATH_UNLOCKED');
+      const wasAnomalous =
+        unlockEvent && (unlockEvent as { anomalousRite?: boolean }).anomalousRite === true;
+      narrative.push(wasAnomalous
+        ? `The path awakens within you — but wrongly. Something ancient stirs in your blood.`
+        : `A new path has awakened within you.`,
+      );
+    }
+    return { state, events, narrative };
+  }
+
   if (intent.type === 'ACTIVATE_SYNERGY') {
     try {
       const result = activateSynergy(state, intent.synergyDef);
@@ -1560,6 +1608,13 @@ export function processEventQueue(state: GameState, events: GameEvent[]): GameSt
               state = result.state;
             }
           });
+        }
+        // Phase 31 (task 31c.3): award charter XP on every combat kill.
+        // Bosses (enemies with a phase script) award 50 XP; standard enemies award 10.
+        {
+          const charterResult = awardCharterXP(state, event.isBoss ? 50 : 10);
+          state = charterResult.state;
+          events.push(...charterResult.events);
         }
         break;
       }

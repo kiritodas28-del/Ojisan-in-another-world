@@ -28,6 +28,7 @@ import { individuateContact } from './npcPopulationEngine';
 import { QUEST_CATALOG }                from '../data/quests';
 import { incrementAchievementCounter }  from './achievementEngine';
 import { shiftAlignment, getDominantAlignment } from './alignmentEngine';
+import { CHARTER_XP_THRESHOLDS } from './charterEngine';
 
 // ─── Re-exports for consumers that previously imported from here ──────────────
 // The canonical types now live in gameState.ts. Re-export so that any
@@ -80,6 +81,18 @@ export function evaluateCondition(
     // Phase 23a (task 23a.13): gate dialogue on dominant moral alignment.
     case 'ALIGNMENT': {
       return getDominantAlignment(gameState) === condition.dominantAlignment;
+    }
+    // Phase 31 (task 31c.4): gate dialogue on minimum charter rank.
+    // Compares player's total charterXP against the rank's threshold directly,
+    // so the condition remains valid even before charterRank is recomputed.
+    case 'CHARTER_RANK': {
+      return gameState.player.charterXP >= CHARTER_XP_THRESHOLDS[condition.minRank];
+    }
+    // Phase 32 (task 32.7): gate dialogue on minimum divinity score.
+    // condition.min is the raw numeric threshold (authors use DIVINITY_MILESTONES
+    // values as the canonical source; anything >= min passes).
+    case 'DIVINITY': {
+      return gameState.player.divinity >= condition.min;
     }
   }
 }

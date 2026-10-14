@@ -29,6 +29,8 @@ import { addItem } from './economyEngine';
 import type { RegionId } from '../state/gameState';
 import { QUEST_CATALOG, type QuestDef, type QuestReward } from '../data/quests';
 import { shiftAlignment } from './alignmentEngine';
+import { awardCharterXP } from './charterEngine';
+import { awardDivinity } from './statEngine';
 
 // ─── 11.6 — Catalog lookup ────────────────────────────────────────────────────
 
@@ -319,6 +321,21 @@ export function grantQuestReward(
       }
       break; // only one alignment flag per reward
     }
+  }
+
+  // Phase 31 (task 31c.2): charter XP from quest rewards.
+  // Runs after alignment so all side-effect events stay in phase order.
+  if (reward.charterXP) {
+    const charterResult = awardCharterXP(state, reward.charterXP);
+    state = charterResult.state;
+    events.push(...charterResult.events);
+  }
+
+  // Phase 32 (task 32.6): divinity from quest rewards.
+  if (reward.divinity) {
+    const divinityResult = awardDivinity(state, reward.divinity);
+    state = divinityResult.state;
+    events.push(...divinityResult.events);
   }
 
   return { state, events };

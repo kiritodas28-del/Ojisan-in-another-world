@@ -71,6 +71,10 @@ const mockPlayer: PlayerCharacter = {
   alignmentScore: 0,  // Phase 23a: neutral Pragmatist at game start
   mpBurnout:    0,     // Phase 29c.5: no overdraw damage accumulated yet
   anomalousMp:  true,  // Phase 29c.5: protagonist is Earth-origin (anomalous MP)
+  unlockedPathIds: ['warrior'],  // Phase 30c.4: Warrior is the mock scenario starting path
+  charterRank: 'WANDERER',       // Phase 31: new players start at Wanderer rank
+  charterXP:   0,                // Phase 31: no charter XP accumulated yet
+  divinity:    0,                // Phase 32: no divine favour accumulated yet
   battlePoints: 6,
   ardorPoints:  4,
   unspentBP: 2,

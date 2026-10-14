@@ -62,6 +62,8 @@ export interface KilledEnemy {
   xpReward:     number;
   /** Task 24.29: optional infamy delta for the encounter's region. +N = gain, -N = lose. */
   infamyDelta?: number;
+  /** Phase 31: true when this enemy has a boss phase script (bossPhaseScripts entry). */
+  isBoss?:      boolean;
 }
 
 // ─── Narrative log entry ──────────────────────────────────────────────────────
@@ -605,6 +607,12 @@ function recordEnemyKill(enemy: AnyCharacter, state: CombatState): void {
 
   state.killedEnemies.push({ id: enemy.id, lootTableId, xpReward });
 
+  // Phase 31 (task 31c.3): detect boss by presence in bossPhaseScripts.
+  const isBoss = Object.prototype.hasOwnProperty.call(state.bossPhaseScripts, enemy.id);
+  if (isBoss) {
+    state.killedEnemies[state.killedEnemies.length - 1].isBoss = true;
+  }
+
   // Infamy delta: guard kills raise infamy; criminal kills lower it (Task 24.29).
   // Faction field is optional on lootTable; absent = neutral monster, no delta.
   const faction = (lootTable as { faction?: string } | null)?.faction;
@@ -656,19 +664,23 @@ function emitDefeatOutcome(
 
 /**
  * Called when all enemies are dead (PLAYER_VICTORY).
- * Emits one ENEMY_DEFEATED event per kill recorded in killedEnemies[].
+ * Emits one ENEMY_KILLED event per kill recorded in killedEnemies[].
  * Dispatcher handles: XP grant, loot resolution, reputation delta, quest progress.
+ * Phase 31 (task 31c.3): xpReward and isBoss forwarded so the dispatcher's
+ * ENEMY_KILLED handler can call awardCharterXP(10) for standard or (50) for boss.
  */
 function emitVictoryEvents(
   state:  CombatState,
   events: GameEvent[],
 ): void {
   for (const kill of state.killedEnemies) {
+    // Phase 31 fix: was incorrectly emitting ENEMY_KILLED_IN_INTIMACY (task 7.10 bug).
     events.push({
-      type:        'ENEMY_KILLED_IN_INTIMACY',
-      enemyId:     kill.id,
-      lootTableId: kill.lootTableId ?? '',
-      xpReward:    kill.xpReward,
+      type:      'ENEMY_KILLED',
+      targetId:  kill.id,
+      regionId:  state.regionId,
+      xpReward:  kill.xpReward,
+      isBoss:    kill.isBoss ?? false,
     });
     // Task 24.29: emit INFAMY_DELTA for faction kills (guard / criminal).
     if (kill.infamyDelta !== undefined && kill.infamyDelta !== 0) {

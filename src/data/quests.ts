@@ -32,12 +32,17 @@ export interface ObjectiveDef {
 // `flagsSet` writes to gameState.flags[key] = true for story progression gates.
 // `reputationEvents` is a list of event keys from REPUTATION_EVENT_TABLE applied
 // in the current region; use sparingly (quests primarily grant COMPLETE_BOARD_QUEST).
+// `charterXP` (Phase 31): optional Charter XP award on completion.
+//   Set on quests that advance Wayfarer Charter standing (board bounties, storyline
+//   missions, exploration contracts). Omit on quests with no charter relevance.
 export interface QuestReward {
   readonly gold:             number;
   readonly xp:               number;
   readonly items:            string[];                          // itemIds to add to inventory
   readonly flagsSet:         Record<string, boolean>;           // flags to set on completion
   readonly reputationEvents: string[];                          // keys from REPUTATION_EVENT_TABLE
+  readonly charterXP?:       number;                           // Phase 31: optional charter XP
+  readonly divinity?:         number;                           // Phase 32: optional divinity award
 }
 
 // ─── Quest definition ─────────────────────────────────────────────────────────

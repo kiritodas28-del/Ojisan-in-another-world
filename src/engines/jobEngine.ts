@@ -31,6 +31,7 @@ import type {
   JobArchetypeState, JobResourceSystem, ClassProgressionState,
   AnyCharacter,
 } from '../state/gameState';
+import { applyStatus } from './statusEffectEngine';
 
 // ─── Catalog interfaces (implemented in src/data/jobCatalog.ts) ───────────────
 export interface JobDef {
@@ -81,6 +82,111 @@ export function createDefaultClassProgressionState(): ClassProgressionState {
   return { spSpentPerClass: {}, unlockedNodesPerClass: {} };
 }
 
+// ─── Phase 30: Path Awakening ─────────────────────────────────────────────────
+
+/**
+ * The mechanism by which a player gains access to a job archetype.
+ *   STONE        — a Path Stone item is consumed from inventory.
+ *   TEMPLE_RITE  — performed at a Temple; anomalous MP triggers a d10 outcome table.
+ *   BLOODLINE    — granted by racial affinity at a story beat (programmatic only).
+ *   STORY_EVENT  — granted by a script or character-creation flow (no roll, no cost).
+ */
+export type PathAwakeningTrigger = 'STONE' | 'TEMPLE_RITE' | 'BLOODLINE' | 'STORY_EVENT';
+
+/** Returns true when the player has already been awakened into the given job id. */
+export function hasPathUnlocked(state: GameState, pathId: string): boolean {
+  return state.player.unlockedPathIds.includes(pathId);
+}
+
+/**
+ * Attempts to awaken the player into a new job archetype.
+ *
+ * STONE / BLOODLINE / STORY_EVENT: always succeed (idempotent on repeat).
+ * TEMPLE_RITE + anomalousMp === true: rolls d10 via (seed % 10) + 1:
+ *   1–3  → unlock; emits PATH_UNLOCKED { anomalousRite: true }  (narrative anomaly)
+ *   4–6  → unlock; emits PATH_UNLOCKED { anomalousRite: false } (normal outcome)
+ *   7–9  → unlock; applies 'anomalous_rite_surge' status effect to the player;
+ *            emits PATH_UNLOCKED + STATUS_APPLIED
+ *   10   → rejected; emits PATH_UNLOCK_FAILED { reason: 'ANOMALOUS_REJECTION' }
+ *
+ * seed: deterministic override for tests/story events; defaults to Date.now().
+ * Idempotent: calling again on an already-unlocked path is a silent no-op.
+ */
+export function unlockPath(
+  state:   GameState,
+  pathId:  string,
+  trigger: PathAwakeningTrigger,
+  seed?:   number,
+): { state: GameState; events: GameEvent[] } {
+  // Idempotent — already awakened
+  if (hasPathUnlocked(state, pathId)) return { state, events: [] };
+
+  const events: GameEvent[] = [];
+
+  // Non-rite triggers and non-anomalous players always unlock cleanly
+  if (trigger !== 'TEMPLE_RITE' || !state.player.anomalousMp) {
+    const newState = {
+      ...state,
+      player: { ...state.player, unlockedPathIds: [...state.player.unlockedPathIds, pathId] },
+    };
+    events.push({ type: 'PATH_UNLOCKED', pathId, trigger, anomalousRite: false });
+    return { state: newState, events };
+  }
+
+  // Anomalous Temple Rite: d10 outcome table
+  const roll = ((seed ?? Date.now()) % 10) + 1; // 1–10
+
+  if (roll <= 3) {
+    // 1–3: Anomalous awakening — functional but unsettling to the world
+    const newState = {
+      ...state,
+      player: { ...state.player, unlockedPathIds: [...state.player.unlockedPathIds, pathId] },
+    };
+    events.push({ type: 'PATH_UNLOCKED', pathId, trigger, anomalousRite: true });
+    return { state: newState, events };
+  }
+
+  if (roll <= 6) {
+    // 4–6: Normal outcome despite anomalous MP
+    const newState = {
+      ...state,
+      player: { ...state.player, unlockedPathIds: [...state.player.unlockedPathIds, pathId] },
+    };
+    events.push({ type: 'PATH_UNLOCKED', pathId, trigger, anomalousRite: false });
+    return { state: newState, events };
+  }
+
+  if (roll <= 9) {
+    // 7–9: Unlock, but anomalous_rite_surge status applied to the player.
+    // try/catch: catalog may not yet have this entry (Phase 25 deferred data);
+    // the path still unlocks even if the status application fails.
+    const newPlayer = { ...state.player, unlockedPathIds: [...state.player.unlockedPathIds, pathId] };
+    let newState    = { ...state, player: newPlayer };
+    events.push({ type: 'PATH_UNLOCKED', pathId, trigger, anomalousRite: false });
+    try {
+      const { character: updPlayer, events: statusEvents } =
+        applyStatus(newPlayer as AnyCharacter, 'anomalous_rite_surge');
+      newState = { ...newState, player: updPlayer as typeof state.player };
+      events.push(...statusEvents);
+    } catch {
+      // 'anomalous_rite_surge' not yet in catalog — unlock proceeds without side effect
+    }
+    return { state: newState, events };
+  }
+
+  // 10: Anomalous rejection — path sealed this attempt
+  events.push({ type: 'PATH_UNLOCK_FAILED', pathId, trigger, reason: 'ANOMALOUS_REJECTION' });
+  return { state, events };
+}
+
+/**
+ * Returns every JobDef the player has NOT yet been awakened into.
+ * Used by the skill-tree UI to populate the 'Awaken' screen.
+ */
+export function getUnlockablePaths(state: GameState, catalog: JobDef[]): JobDef[] {
+  return catalog.filter(def => !state.player.unlockedPathIds.includes(def.id));
+}
+
 // ─── Equip a job archetype ────────────────────────────────────────────────────
 /**
  * Equip a job archetype.  Resets job resource pools to the new job's max.
@@ -90,6 +196,13 @@ export function equipJob(
   state:  GameState,
   jobDef: JobDef,
 ): { state: GameState; events: GameEvent[] } {
+  // Phase 30 guard: job must be awakened before equipping.
+  if (!hasPathUnlocked(state, jobDef.id)) {
+    throw new Error(
+      `Path "${jobDef.id}" is not awakened. Call unlockPath() with this jobId before equipping.`,
+    );
+  }
+
   const newResources: JobResourceSystem = {
     poolA: { current: jobDef.poolAMax, max: jobDef.poolAMax, label: jobDef.poolALabel },
     poolB: jobDef.poolBMax !== undefined && jobDef.poolBLabel !== undefined

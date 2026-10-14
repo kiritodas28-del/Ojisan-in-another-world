@@ -64,6 +64,8 @@ export type { CharacterCreationOptions };
 export type { TitheState, AetherSocket, LocationFeatureKey, CoreStatKey };
 // Phase 29 schema types  
 export type { CharacterVitals };
+// Phase 31 schema types
+export type { CharterRank };
 // SaveMeta is defined in saveEngine.ts; re-exported here so UI layers
 // can import it from the central state module without a direct engine import.
 export type { SaveMeta } from '../engines/saveEngine';
@@ -144,6 +146,12 @@ export interface InventorySlot {
 // Re-exported from statEngine.ts; duplicated here so all engine imports from
 // the central state module work without a separate statEngine import.
 export type CoreStatKey = 'str' | 'dex' | 'agi' | 'int' | 'wil' | 'per' | 'end';
+
+// ─── Charter rank (Phase 31) ──────────────────────────────────────────────────
+// The player's standing with the Wayfarers' Charter, earned through combat,
+// quests, and exploration. charterRank is derived from charterXP by
+// charterEngine.deriveCharterRank(); thresholds are in charterEngine.ts.
+export type CharterRank = 'WANDERER' | 'SCOUT' | 'WAYFARER' | 'RANGER' | 'CHAMPION' | 'LEGEND';
 
 // ─── Tithe / weekly quota system (Task 26.4) ──────────────────────────────────
 // Tracks mandatory Aether Tithe payments to the Enclave.
@@ -310,6 +318,25 @@ type PlayerCharacter = HumanoidCharacter & {
   // Set to true by characterCreationEngine.createCharacter(); false on all NPCs.
   // Makes Temple Rite awakening rolls draw from the anomalous outcome table (Phase 30).
   anomalousMp: boolean;
+
+  // Phase 30 — Path Awakening
+  // List of JobDef.id strings the player has been awakened into.
+  // Seeded at character creation via unlockPath(state, jobId, 'STORY_EVENT').
+  // equipJob() throws if the target jobId is absent from this list.
+  unlockedPathIds: string[];
+
+  // Phase 31 — Charter Rank
+  // Standing with the Wayfarers' Charter. charterRank is derived from charterXP
+  // by charterEngine.deriveCharterRank() and updated by awardCharterXP().
+  // Both are initialised to 'WANDERER' / 0 at character creation.
+  charterRank: CharterRank;
+  charterXP:   number;
+
+  // Phase 32 — Divinity Score
+  // Accumulated divine favour [0, ∞). Awarded by quests and story events.
+  // Gates the island approach (≥ 5000) and island entry (≥ 8000).
+  // Thresholds are provisional; see statEngine.DIVINITY_MILESTONES.
+  divinity: number;
 
   // Skill points
   battlePoints: number;  // total earned BP
@@ -799,7 +826,11 @@ export type DialogueCondition =
   | { type: 'ITEM_IN_INV'; itemId: string }
   | { type: 'COMPANION';   companionId: string; inParty: boolean }
   // Phase 23a: condition on dominant moral alignment (task 23a.3)
-  | { type: 'ALIGNMENT';  dominantAlignment: 'PURIFIER' | 'PRAGMATIST' | 'SOVEREIGN' };
+  | { type: 'ALIGNMENT';      dominantAlignment: 'PURIFIER' | 'PRAGMATIST' | 'SOVEREIGN' }
+  // Phase 31: gate dialogue on minimum charter rank (task 31a.3)
+  | { type: 'CHARTER_RANK';   minRank: CharterRank }
+  // Phase 32: gate dialogue on minimum divinity score (task 32.2)
+  | { type: 'DIVINITY';       min: number };
 
 // A single choice the player can make at a node.
 export interface DialogueChoice {
@@ -1112,7 +1143,7 @@ export type GameEvent =
   // ITEM_COLLECTED:       emitted by economyEngine when an item enters inventory.
   // DIALOGUE_COMPLETED:   emitted by dialogueEngine when a tree reaches an END node.
   // TRAVEL_NODE_REACHED:  emitted by worldEngine on node arrival.
-  | { type: 'ENEMY_KILLED';         targetId: string; regionId: string }
+  | { type: 'ENEMY_KILLED';         targetId: string; regionId: string; xpReward?: number; isBoss?: boolean }
   | { type: 'ITEM_COLLECTED';       itemId: string; quantity: number }
   | { type: 'DIALOGUE_COMPLETED';   speakerNpcId: string; treeId: string }
   // TRAVEL_NODE_REACHED is defined in the World/travel section below (Phase 17 canonical)
@@ -1295,4 +1326,22 @@ export type GameEvent =
   | { type: 'MP_OVERDRAW';       targetId: string; overdrawAmount: number; hpDrained: number; overdrawCollapse: boolean }
   | { type: 'MP_BURNOUT_GAINED'; newBurnout: number }
   | { type: 'MP_RESTORED';       targetId: string; amount: number; newCurrent: number }
+  // Phase 30 — Path Awakening events
+  // PATH_UNLOCKED: player gained access to a new job archetype.
+  //   anomalousRite: true when a Temple Rite produced an anomalous (1–3 roll) outcome.
+  //   trigger is stored as string to avoid a circular import with jobEngine.ts.
+  // PATH_UNLOCK_FAILED: Temple Rite d10 roll came up 10 (anomalous rejection).
+  //   reason is a string key; quest/dialogue reacts to 'ANOMALOUS_REJECTION'.
+  | { type: 'PATH_UNLOCKED';      pathId: string; trigger: string; anomalousRite?: boolean }
+  | { type: 'PATH_UNLOCK_FAILED'; pathId: string; trigger: string; reason?: string }
+  // Phase 31 — Charter Rank events
+  // CHARTER_XP_AWARDED: emitted by charterEngine.awardCharterXP() on every gain.
+  // CHARTER_RANK_UP:    emitted when charterXP crosses a new rank threshold.
+  | { type: 'CHARTER_XP_AWARDED'; amount: number; newTotal: number }
+  | { type: 'CHARTER_RANK_UP';    from: CharterRank; to: CharterRank }
+  // Phase 32 — Divinity Score events
+  // DIVINITY_GAINED:           emitted by statEngine.awardDivinity() on every gain.
+  // DIVINITY_MILESTONE_REACHED: emitted when divinity crosses a milestone threshold.
+  | { type: 'DIVINITY_GAINED';            amount: number; newTotal: number }
+  | { type: 'DIVINITY_MILESTONE_REACHED'; milestone: string; value: number }
   ;

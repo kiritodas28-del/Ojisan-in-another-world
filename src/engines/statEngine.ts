@@ -362,6 +362,61 @@ export function spendMp(
   return { state, events };
 }
 
+// ═══════════════════════════════════════════════════════════════════════════════
+// PHASE 32 — DIVINITY SCORE
+// Accumulated divine favour on the player. Awarded by story quests and
+// world events. Gates the island approach and entry in the late-game arc.
+// All thresholds are provisional (world bible: divinity.gate_placeholders).
+// ═══════════════════════════════════════════════════════════════════════════════
+
+// ─── 32.3 — Milestone thresholds ────────────────────────────────────────────────────────
+/**
+ * Named milestones for the divinity progression.
+ * Key = milestone id (used in DIVINITY_MILESTONE_REACHED events and
+ * dialogue condition checks); value = threshold to cross.
+ * Provisional per task 32.3 — tune once encounter data is authored.
+ */
+export const DIVINITY_MILESTONES: Record<string, number> = {
+  ISLAND_APPROACH: 5000,
+  ISLAND_ENTRY:    8000,
+};
+
+// ─── 32.4 — awardDivinity ─────────────────────────────────────────────────────────────
+/**
+ * Increments `player.divinity` by `amount` and emits:
+ *   DIVINITY_GAINED            — always.
+ *   DIVINITY_MILESTONE_REACHED — for each milestone the new total crosses or meets
+ *                                that the old total did not already satisfy.
+ *
+ * Pure: returns a new state; never mutates the input.
+ */
+export function awardDivinity(
+  state:  GameState,
+  amount: number,
+): { state: GameState; events: GameEvent[] } {
+  const oldTotal = state.player.divinity;
+  const newTotal = oldTotal + amount;
+
+  const events: GameEvent[] = [
+    { type: 'DIVINITY_GAINED', amount, newTotal },
+  ];
+
+  // Check every milestone: emit if old total was below threshold and new total meets it.
+  for (const [milestone, threshold] of Object.entries(DIVINITY_MILESTONES)) {
+    if (oldTotal < threshold && newTotal >= threshold) {
+      events.push({ type: 'DIVINITY_MILESTONE_REACHED', milestone, value: threshold });
+    }
+  }
+
+  return {
+    state: {
+      ...state,
+      player: { ...state.player, divinity: newTotal },
+    },
+    events,
+  };
+}
+
 // ─── Task 29b.4 — restoreMp ──────────────────────────────────────────────────────
 
 /**

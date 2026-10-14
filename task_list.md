@@ -1818,69 +1818,71 @@
 
 ---
 
-## Phase 30: Path Awakening — extend `jobEngine`
+## Phase 30: Path Awakening — extend `jobEngine` — **COMPLETE** (2026-10-13)
 
 > Only `PlayerCharacter` tracks unlocked paths; NPCs are spawned with racial affinities already in effect (no runtime gate needed on them). All awakening logic is added to `jobEngine.ts` as new exported functions.
 
 ### 30a. State changes
 
-- [ ] **30a.1** Add `unlockedPathIds: string[]` to `PlayerCharacter` in `gameState.ts` — list of `JobDef.id` strings the player has been awakened into. Seeded at character creation. `jobEngine.equipJob()` guard: throws if `jobId` not in `unlockedPathIds`.
-- [ ] **30a.2** Define `PathAwakeningTrigger` union type in `jobEngine.ts` and export it: `'STONE' | 'TEMPLE_RITE' | 'BLOODLINE' | 'STORY_EVENT'`.
+- [x] **30a.1** Add `unlockedPathIds: string[]` to `PlayerCharacter` in `gameState.ts` — list of `JobDef.id` strings the player has been awakened into. Seeded at character creation. `jobEngine.equipJob()` guard: throws if `jobId` not in `unlockedPathIds`.
+- [x] **30a.2** Define `PathAwakeningTrigger` union type in `jobEngine.ts` and export it: `'STONE' | 'TEMPLE_RITE' | 'BLOODLINE' | 'STORY_EVENT'`.
 
 ### 30b. jobEngine extension
 
-- [ ] **30b.1** Implement `hasPathUnlocked(state: GameState, pathId: string): boolean` pure helper in `jobEngine.ts`.
-- [ ] **30b.2** Implement `unlockPath(state: GameState, pathId: string, trigger: PathAwakeningTrigger): { state: GameState; events: GameEvent[] }` in `jobEngine.ts` — idempotent (no-op if already unlocked); appends `pathId` to `player.unlockedPathIds`; emits `PATH_UNLOCKED`. For `trigger === 'TEMPLE_RITE'` AND `player.anomalousMp === true`, roll d10: 1–3 → unlocks with `anomalousRite: true` on event; 4–6 → unlocks normally; 7–9 → unlocks but applies a random status effect (id `'anomalous_rite_surge'`, defined in status effect catalog); 10 → emits `PATH_UNLOCK_FAILED` instead. Anomalous outcome content is handled by downstream quest/dialogue reactions to the event — engine stays pure.
-- [ ] **30b.3** Implement `getUnlockablePaths(state: GameState, catalog: JobDef[]): JobDef[]` in `jobEngine.ts` — returns all `JobDef` entries whose `id` is not in `player.unlockedPathIds`. Race affinity is not enforced mechanically here; the catalog carries affinity notes for UI display.
-- [ ] **30b.4** Guard `equipJob()` in `jobEngine.ts` — add `if (!hasPathUnlocked(state, jobId)) throw new Error(...)` at the top of the function body.
+- [x] **30b.1** Implement `hasPathUnlocked(state: GameState, pathId: string): boolean` pure helper in `jobEngine.ts`.
+- [x] **30b.2** Implement `unlockPath(state: GameState, pathId: string, trigger: PathAwakeningTrigger): { state: GameState; events: GameEvent[] }` in `jobEngine.ts` — idempotent (no-op if already unlocked); appends `pathId` to `player.unlockedPathIds`; emits `PATH_UNLOCKED`. For `trigger === 'TEMPLE_RITE'` AND `player.anomalousMp === true`, roll d10: 1–3 → unlocks with `anomalousRite: true` on event; 4–6 → unlocks normally; 7–9 → unlocks but applies a random status effect (id `'anomalous_rite_surge'`, defined in status effect catalog); 10 → emits `PATH_UNLOCK_FAILED` instead. Anomalous outcome content is handled by downstream quest/dialogue reactions to the event — engine stays pure.
+- [x] **30b.3** Implement `getUnlockablePaths(state: GameState, catalog: JobDef[]): JobDef[]` in `jobEngine.ts` — returns all `JobDef` entries whose `id` is not in `player.unlockedPathIds`. Race affinity is not enforced mechanically here; the catalog carries affinity notes for UI display.
+- [x] **30b.4** Guard `equipJob()` in `jobEngine.ts` — add `if (!hasPathUnlocked(state, jobId)) throw new Error(...)` at the top of the function body.
 
 ### 30c. Event wiring and mock
 
-- [ ] **30c.1** Add `PATH_UNLOCKED ({ pathId: string; trigger: PathAwakeningTrigger; anomalousRite?: boolean })` and `PATH_UNLOCK_FAILED ({ pathId: string; trigger: PathAwakeningTrigger; reason?: string })` to `GameEvent` union in `gameState.ts`.
-- [ ] **30c.2** Add `UNLOCK_PATH` to `PlayerIntent` union in `dispatcher.ts`; handler calls `unlockPath()` with trigger `'STONE'` (stone consumed from inventory) or `'TEMPLE_RITE'` per a `trigger` field on the intent payload.
-- [ ] **30c.3** Update `characterCreationEngine.createCharacter()` — call `unlockPath(state, options.jobId, 'STORY_EVENT')` to seed `unlockedPathIds` with the starting path.
-- [ ] **30c.4** Update `mockGameState.ts` — add `unlockedPathIds: ['warrior']` (or whichever starter job id the mock uses) to the player block.
+- [x] **30c.1** Add `PATH_UNLOCKED ({ pathId: string; trigger: PathAwakeningTrigger; anomalousRite?: boolean })` and `PATH_UNLOCK_FAILED ({ pathId: string; trigger: PathAwakeningTrigger; reason?: string })` to `GameEvent` union in `gameState.ts`.
+- [x] **30c.2** Add `UNLOCK_PATH` to `PlayerIntent` union in `dispatcher.ts`; handler calls `unlockPath()` with trigger `'STONE'` (stone consumed from inventory) or `'TEMPLE_RITE'` per a `trigger` field on the intent payload.
+- [x] **30c.3** Update `characterCreationEngine.createCharacter()` — call `unlockPath(state, options.jobId, 'STORY_EVENT')` to seed `unlockedPathIds` with the starting path.
+- [x] **30c.4** Update `mockGameState.ts` — add `unlockedPathIds: ['warrior']` (or whichever starter job id the mock uses) to the player block.
 
 ---
 
 ## Phase 31: Charter Rank
 
 > `charterRank` + `charterXP` live on `PlayerCharacter`. Implemented in a new `charterEngine.ts`. No separate `GameState` root block — everything on `player`.
+> **Completed 2026-10-14.**
 
 ### 31a. State changes
 
-- [ ] **31a.1** Define `CharterRank` union type in `gameState.ts` and export it: `type CharterRank = 'WANDERER' | 'SCOUT' | 'WAYFARER' | 'RANGER' | 'CHAMPION' | 'LEGEND'`.
-- [ ] **31a.2** Add `charterRank: CharterRank` and `charterXP: number` to `PlayerCharacter` in `gameState.ts` — defaults `'WANDERER'` and `0`.
-- [ ] **31a.3** Add `{ type: 'CHARTER_RANK'; minRank: CharterRank }` variant to `DialogueCondition` union in `gameState.ts`.
+- [x] **31a.1** Define `CharterRank` union type in `gameState.ts` and export it: `type CharterRank = 'WANDERER' | 'SCOUT' | 'WAYFARER' | 'RANGER' | 'CHAMPION' | 'LEGEND'`.
+- [x] **31a.2** Add `charterRank: CharterRank` and `charterXP: number` to `PlayerCharacter` in `gameState.ts` — defaults `'WANDERER'` and `0`.
+- [x] **31a.3** Add `{ type: 'CHARTER_RANK'; minRank: CharterRank }` variant to `DialogueCondition` union in `gameState.ts`.
 
 ### 31b. charterEngine.ts
 
-- [ ] **31b.1** Create `src/engines/charterEngine.ts` — define `CHARTER_XP_THRESHOLDS: Record<CharterRank, number>`: WANDERER 0, SCOUT 500, WAYFARER 1500, RANGER 4000, CHAMPION 10000, LEGEND 25000 (all provisional).
-- [ ] **31b.2** Implement `deriveCharterRank(xp: number): CharterRank` pure helper — walks thresholds descending; returns highest tier whose threshold ≤ xp.
-- [ ] **31b.3** Implement `awardCharterXP(state: GameState, amount: number): { state: GameState; events: GameEvent[] }` — adds amount to `player.charterXP`; calls `deriveCharterRank()`; if rank changed, updates `player.charterRank` and emits `CHARTER_RANK_UP`; always emits `CHARTER_XP_AWARDED`.
+- [x] **31b.1** Create `src/engines/charterEngine.ts` — define `CHARTER_XP_THRESHOLDS: Record<CharterRank, number>`: WANDERER 0, SCOUT 500, WAYFARER 1500, RANGER 4000, CHAMPION 10000, LEGEND 25000 (all provisional).
+- [x] **31b.2** Implement `deriveCharterRank(xp: number): CharterRank` pure helper — walks thresholds descending; returns highest tier whose threshold ≤ xp.
+- [x] **31b.3** Implement `awardCharterXP(state: GameState, amount: number): { state: GameState; events: GameEvent[] }` — adds amount to `player.charterXP`; calls `deriveCharterRank()`; if rank changed, updates `player.charterRank` and emits `CHARTER_RANK_UP`; always emits `CHARTER_XP_AWARDED`.
 
 ### 31c. Event and wiring
 
-- [ ] **31c.1** Add `CHARTER_XP_AWARDED ({ amount: number; newTotal: number })` and `CHARTER_RANK_UP ({ from: CharterRank; to: CharterRank })` to `GameEvent` union in `gameState.ts`.
-- [ ] **31c.2** Extend `QuestReward` in `src/data/quests.ts` — add optional `charterXP?: number` field. Update `questEngine.grantQuestReward()` to call `awardCharterXP()` when set.
-- [ ] **31c.3** Wire `awardCharterXP()` into `combatEngine.emitVictoryEvents()` — 10 XP per standard enemy kill, 50 per boss kill.
-- [ ] **31c.4** Add `evaluateDialogueCondition()` branch in `dialogueEngine.ts` for `CHARTER_RANK` condition type — compare using the `CHARTER_XP_THRESHOLDS` order.
-- [ ] **31c.5** Update `mockGameState.ts` — add `charterRank: 'WANDERER'`, `charterXP: 0` to player block.
+- [x] **31c.1** Add `CHARTER_XP_AWARDED ({ amount: number; newTotal: number })` and `CHARTER_RANK_UP ({ from: CharterRank; to: CharterRank })` to `GameEvent` union in `gameState.ts`.
+- [x] **31c.2** Extend `QuestReward` in `src/data/quests.ts` — add optional `charterXP?: number` field. Update `questEngine.grantQuestReward()` to call `awardCharterXP()` when set.
+- [x] **31c.3** Wire `awardCharterXP()` into `combatEngine.emitVictoryEvents()` — 10 XP per standard enemy kill, 50 per boss kill. Also fixed the pre-existing bug where `emitVictoryEvents` was emitting `ENEMY_KILLED_IN_INTIMACY` instead of `ENEMY_KILLED` (task 7.10).
+- [x] **31c.4** Add `evaluateDialogueCondition()` branch in `dialogueEngine.ts` for `CHARTER_RANK` condition type — compare using the `CHARTER_XP_THRESHOLDS` order.
+- [x] **31c.5** Update `mockGameState.ts` — add `charterRank: 'WANDERER'`, `charterXP: 0` to player block.
 
 ---
 
 ## Phase 32: Divinity Score
 
 > Single numeric field on `PlayerCharacter`. Award function added to `statEngine.ts`.
+> **Completed 2026-10-14.**
 
-- [ ] **32.1** Add `divinity: number` to `PlayerCharacter` in `gameState.ts` — range [0, ∞); default 0.
-- [ ] **32.2** Add `{ type: 'DIVINITY'; min: number }` variant to `DialogueCondition` union in `gameState.ts`.
-- [ ] **32.3** Add `DIVINITY_MILESTONES` const to `statEngine.ts`: `{ ISLAND_APPROACH: 5000, ISLAND_ENTRY: 8000 }` (provisional).
-- [ ] **32.4** Implement `awardDivinity(state: GameState, amount: number): { state: GameState; events: GameEvent[] }` pure function in `statEngine.ts` — adds amount; checks milestone crossings; emits `DIVINITY_GAINED` always, `DIVINITY_MILESTONE_REACHED` on crossing.
-- [ ] **32.5** Add `DIVINITY_GAINED ({ amount: number; newTotal: number })` and `DIVINITY_MILESTONE_REACHED ({ milestone: string; value: number })` to `GameEvent` union in `gameState.ts`.
-- [ ] **32.6** Extend `QuestReward` in `src/data/quests.ts` — add optional `divinity?: number` field. Update `questEngine.grantQuestReward()` to call `awardDivinity()` when set.
-- [ ] **32.7** Add `evaluateDialogueCondition()` branch in `dialogueEngine.ts` for `DIVINITY` condition type.
-- [ ] **32.8** Update `mockGameState.ts` — add `divinity: 0` to player block.
+- [x] **32.1** Add `divinity: number` to `PlayerCharacter` in `gameState.ts` — range [0, ∞); default 0.
+- [x] **32.2** Add `{ type: 'DIVINITY'; min: number }` variant to `DialogueCondition` union in `gameState.ts`.
+- [x] **32.3** Add `DIVINITY_MILESTONES` const to `statEngine.ts`: `{ ISLAND_APPROACH: 5000, ISLAND_ENTRY: 8000 }` (provisional).
+- [x] **32.4** Implement `awardDivinity(state: GameState, amount: number): { state: GameState; events: GameEvent[] }` pure function in `statEngine.ts` — adds amount; checks milestone crossings; emits `DIVINITY_GAINED` always, `DIVINITY_MILESTONE_REACHED` on crossing.
+- [x] **32.5** Add `DIVINITY_GAINED ({ amount: number; newTotal: number })` and `DIVINITY_MILESTONE_REACHED ({ milestone: string; value: number })` to `GameEvent` union in `gameState.ts`.
+- [x] **32.6** Extend `QuestReward` in `src/data/quests.ts` — add optional `divinity?: number` field. Update `questEngine.grantQuestReward()` to call `awardDivinity()` when set.
+- [x] **32.7** Add `evaluateDialogueCondition()` branch in `dialogueEngine.ts` for `DIVINITY` condition type.
+- [x] **32.8** Update `mockGameState.ts` — add `divinity: 0` to player block.
 
 ---
 

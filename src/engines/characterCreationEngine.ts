@@ -23,7 +23,7 @@
 import type {
   GameState, GameEvent, CharacterCreationOptions,
 } from '../state/gameState';
-import { equipJob, equipClass, type JobDef, type ClassDef } from './jobEngine';
+import { equipJob, equipClass, unlockPath, type JobDef, type ClassDef } from './jobEngine';
 import { deriveMaxMp } from './statEngine'; // Phase 29c.3
 
 // ─── Catalog interfaces ───────────────────────────────────────────────────────
@@ -97,6 +97,14 @@ export function createCharacter(
   }
 
   // ── 5. Equip starting job
+  // Phase 30c.3: Seed unlockedPathIds; awaken starting job path.
+  // Must precede equipJob() — equipJob() now guards on hasPathUnlocked().
+  // STORY_EVENT trigger: no roll, no resource cost; always succeeds.
+  state = { ...state, player: { ...state.player, unlockedPathIds: [] } };
+  const pathResult = unlockPath(state, jobDef.id, 'STORY_EVENT');
+  state  = pathResult.state;
+  events.push(...pathResult.events);
+
   const jobResult = equipJob(state, jobDef);
   state  = jobResult.state;
   events.push(...jobResult.events);
