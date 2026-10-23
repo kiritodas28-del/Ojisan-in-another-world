@@ -435,7 +435,9 @@ export function buyItem(
   // Task 24.30: compound the infamy shop surcharge on top of the reputation multiplier.
   // surcharge is 1.0 (neutral) when infamy tier is NONE; climbs to 2.0 at CONDEMNED.
   const infamySurcharge = getShopSurcharge(gameState, shopRegionId as import('../state/gameState').RegionId);
-  const unitPrice    = Math.ceil(def.baseBuyValue * multiplier * infamySurcharge);
+  // Phase 35c.3: apply seasonal market price multiplier after reputation + infamy.
+  // RAINY +5%, WINTER +15%, SUMMER -5%, SPRING baseline 1.0.
+  const unitPrice    = Math.ceil(def.baseBuyValue * multiplier * infamySurcharge * gameState.seasonModifiers.marketPriceMultiplier);
   const totalCost    = unitPrice * quantity;
 
   if (gameState.player.gold < totalCost) {

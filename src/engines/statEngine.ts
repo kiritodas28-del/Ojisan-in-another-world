@@ -459,8 +459,9 @@ export function applyMpRestOnSleep(
   state: GameState,
 ): { state: GameState; events: GameEvent[] } {
   const events: GameEvent[] = [];
-  // Stub multiplier — Phase 35c.4 will replace with state.seasonModifiers.mpRecoveryMultiplier
-  const SEASON_MULTIPLIER = 1.0;
+  // Phase 35c.4: seasonal MP recovery bonus applied on sleep.
+  // WINTER gives +20% (mpRecoveryMultiplier: 1.2); all other seasons are 1.0 baseline.
+  const SEASON_MULTIPLIER = state.seasonModifiers.mpRecoveryMultiplier;
 
   // Restore player MP
   const playerRace  = state.player.race as string;

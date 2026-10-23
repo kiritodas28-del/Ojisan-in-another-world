@@ -32,6 +32,7 @@ import type {
   AnyCharacter,
 } from '../state/gameState';
 import { applyStatus } from './statusEffectEngine';
+import { isGodFree } from './godStatusEngine';
 
 // ─── Catalog interfaces (implemented in src/data/jobCatalog.ts) ───────────────
 export interface JobDef {
@@ -122,6 +123,34 @@ export function unlockPath(
   if (hasPathUnlocked(state, pathId)) return { state, events: [] };
 
   const events: GameEvent[] = [];
+
+  // Phase 36 (task 36c.1): Temple Rite patron-god gate.
+  // When a Temple Rite is attempted, look up which faith has this path in its
+  // alignedPathIds and check whether that faith's patron god is FREE.
+  // faithCatalog lives in ojisan-data (not engine-core), so we lazy-require
+  // to avoid a package boundary violation. The try/catch means the gate
+  // only fires once catalog data is authored (Phase 42b); it is a no-op
+  // before then, which is the correct pre-data behaviour.
+  if (trigger === 'TEMPLE_RITE') {
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const { FAITH_CATALOG } = require('../data/faithCatalog') as {
+        FAITH_CATALOG: Record<string, { godPatronIds: string[]; alignedPathIds: string[] }>;
+      };
+      const patronGodId = _resolvePatronGodForPath(pathId, FAITH_CATALOG);
+      if (patronGodId !== undefined && !isGodFree(state, patronGodId)) {
+        events.push({
+          type:    'PATH_UNLOCK_FAILED',
+          pathId,
+          trigger,
+          reason:  'GOD_UNAVAILABLE',
+        });
+        return { state, events };
+      }
+    } catch {
+      // faithCatalog not yet available (data phase deferred); proceed without gate.
+    }
+  }
 
   // Non-rite triggers and non-anomalous players always unlock cleanly
   if (trigger !== 'TEMPLE_RITE' || !state.player.anomalousMp) {
@@ -469,4 +498,24 @@ export function getSPSpentOnClass(state: GameState, classId: string): number {
 }
 export function isClassNodeUnlocked(state: GameState, classId: string, nodeId: string): boolean {
   return (state.classProgress.unlockedNodesPerClass[classId] ?? []).includes(nodeId);
+}
+
+// ─── Internal helper: patron god lookup (Phase 36c.1) ────────────────────────
+
+/**
+ * Scans FAITH_CATALOG to find which god (if any) is patron of the given path.
+ * Returns the first godPatronIds entry from the FaithDef whose alignedPathIds
+ * contains pathId. Returns undefined when no match exists (path has no faith
+ * patron yet, or catalog alignedPathIds not yet populated in Phase 42b).
+ */
+function _resolvePatronGodForPath(
+  pathId:  string,
+  catalog: Record<string, { godPatronIds: string[]; alignedPathIds: string[] }>,
+): string | undefined {
+  for (const faith of Object.values(catalog)) {
+    if (faith.alignedPathIds.includes(pathId)) {
+      return faith.godPatronIds[0];
+    }
+  }
+  return undefined;
 }

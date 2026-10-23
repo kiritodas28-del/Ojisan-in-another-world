@@ -66,6 +66,12 @@ export type { TitheState, AetherSocket, LocationFeatureKey, CoreStatKey };
 export type { CharacterVitals };
 // Phase 31 schema types
 export type { CharterRank };
+// Phase 33 schema types
+export type { FaithId };
+// Phase 35 schema types
+export type { Season, SeasonModifiers };
+// Phase 36 schema types
+export type { GodState };
 // SaveMeta is defined in saveEngine.ts; re-exported here so UI layers
 // can import it from the central state module without a direct engine import.
 export type { SaveMeta } from '../engines/saveEngine';
@@ -152,6 +158,42 @@ export type CoreStatKey = 'str' | 'dex' | 'agi' | 'int' | 'wil' | 'per' | 'end';
 // quests, and exploration. charterRank is derived from charterXP by
 // charterEngine.deriveCharterRank(); thresholds are in charterEngine.ts.
 export type CharterRank = 'WANDERER' | 'SCOUT' | 'WAYFARER' | 'RANGER' | 'CHAMPION' | 'LEGEND';
+
+// ─── Faith affiliation (Phase 33) ────────────────────────────────────────────
+// Every humanoid character carries a faith affiliation seeded at spawn from
+// their race profile default (DEFAULT_FAITH_BY_RACE in faithCatalog.ts).
+// 'none' = explicitly secular; undefined = not yet established (lazy-init).
+export type FaithId = 'radiant_faith' | 'old_wood' | 'stone_covenant' | 'night_court' | 'none';
+
+// ─── Season (Phase 35) ────────────────────────────────────────────────────────
+// Determines global travel, encounter, market, and MP recovery modifiers.
+// Derived by calendarEngine.deriveCurrentSeason(day) and stored on CalendarState.
+// Updated by runDayEndTick(); corresponding SeasonModifiers applied to GameState root.
+export type Season = 'SPRING' | 'SUMMER' | 'RAINY' | 'WINTER';
+
+// ─── Season modifiers (Phase 35) ──────────────────────────────────────────────
+// All multipliers are 1.0 in SPRING (baseline). Recomputed whenever season changes.
+export interface SeasonModifiers {
+  travelCostMultiplier:    number;  // applied to carriage/fast-travel gold cost
+  encounterRateMultiplier: number;  // applied to weather catalog entry weights in advanceWeather()
+  marketPriceMultiplier:   number;  // applied to effectiveBuyPrice in buyItem()
+  mpRecoveryMultiplier:    number;  // applied to MP restored in applyMpRestOnSleep()
+}
+
+// ─── God status (Phase 36) ──────────────────────────────────────────────────────
+// GodId is a plain string alias — engine-core is lore-agnostic.
+// The specific god id strings ('varan', 'solenne', etc.) live in ojisan-data.
+// Gods are seeded at game init via godStatusEngine.createDefaultGodRecord(seed).
+export type GodId = string;
+
+// Runtime state of one god.
+// All optional fields are absent when status === 'FREE'.
+export interface GodState {
+  status:         'FREE' | 'ENSLAVED' | 'DEAD';
+  enslavedById?:  string;  // 'kharrath_ember_conclave' or player.id in Power End
+  enslavedOnDay?: number;  // calendar.day when enslaved
+  killedOnDay?:   number;  // calendar.day when killed
+}
 
 // ─── Tithe / weekly quota system (Task 26.4) ──────────────────────────────────
 // Tracks mandatory Aether Tithe payments to the Enclave.
@@ -287,6 +329,12 @@ type HumanoidCharacter = Character & {
   // CombatStats for engine consumption. Partial<> on stubs; full record after
   // character creation.
   coreStats?: Partial<Record<CoreStatKey, number>>;
+
+  // ── Faith affiliation (Phase 33 / Task 33a.2) ───────────────────────────
+  // Set at spawn via DEFAULT_FAITH_BY_RACE (faithCatalog.ts).
+  // undefined = not yet established (lazy-init; resolves on first spawn/creation).
+  // 'none' = explicitly secular (set by SET_FAITH dialogue effect or story event).
+  faithId?: FaithId;
 };
 
 // ─── Player Character ─────────────────────────────────────────────────────────
@@ -540,6 +588,7 @@ export interface CalendarState {
   phase:            DayPhase;
   actionCount:      number;    // actions taken this phase (resets on advance)
   phaseActionLimit: number;    // default 15
+  season:           Season;    // Phase 35: current season; derived and updated by calendarEngine
 }
 
 // ─── World graph (Phase 17) ──────────────────────────────────────────────────────
@@ -815,7 +864,10 @@ export type DialogueEffect =
   | { type: 'TAKE_ITEM';       itemId: string;  quantity: number }
   | { type: 'START_QUEST';     questDefId: string }
   // Phase 23a: alignment shift effect on a dialogue choice (task 23a.12)
-  | { type: 'ALIGNMENT_SHIFT'; delta: number };
+  | { type: 'ALIGNMENT_SHIFT'; delta: number }
+  // Phase 33: set faith affiliation on player or a contact (task 33a.4)
+  // npcId: 'player' targets the player; any other value targets a contact by npcId.
+  | { type: 'SET_FAITH'; faithId: FaithId; npcId: string };
 
 // Conditions that gate a choice or node from being accessible.
 export type DialogueCondition =
@@ -830,7 +882,11 @@ export type DialogueCondition =
   // Phase 31: gate dialogue on minimum charter rank (task 31a.3)
   | { type: 'CHARTER_RANK';   minRank: CharterRank }
   // Phase 32: gate dialogue on minimum divinity score (task 32.2)
-  | { type: 'DIVINITY';       min: number };
+  | { type: 'DIVINITY';       min: number }
+  // Phase 33: gate dialogue on faith affiliation of contextual NPC or player (task 33a.3)
+  // Evaluated against the npcId arg in evaluateCondition: 'player' checks player.faithId,
+  // any other value checks the matching contact's faithId.
+  | { type: 'FAITH';          faithId: FaithId };
 
 // A single choice the player can make at a node.
 export interface DialogueChoice {
@@ -1074,6 +1130,19 @@ export interface GameState {
 
   // ── Phase 26: loose-ends schema fields ──────────────────────────────────────────
   tithe: TitheState;  // Task 26.5 — Aether Tithe weekly quota system
+
+  // ── Phase 35: seasonal world effects ────────────────────────────────────────────
+  // All multipliers default to 1.0 (SPRING / no modifier). Recomputed whenever
+  // calendar.season changes during runDayEndTick(). Consumers read this directly
+  // rather than calling deriveCurrentSeason() again.
+  seasonModifiers: SeasonModifiers;
+
+  // ── Phase 36: god status tracking ───────────────────────────────────────────────
+  // Live status of every god in the world. Keyed by god id string.
+  // Seeded at game init via godStatusEngine.createDefaultGodRecord(seed).
+  // The specific god id strings are lore data in ojisan-data; this engine field
+  // is generic and operates on whatever string ids it receives.
+  gods: Record<string, GodState>;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -1344,4 +1413,23 @@ export type GameEvent =
   // DIVINITY_MILESTONE_REACHED: emitted when divinity crosses a milestone threshold.
   | { type: 'DIVINITY_GAINED';            amount: number; newTotal: number }
   | { type: 'DIVINITY_MILESTONE_REACHED'; milestone: string; value: number }
+  // Phase 33 — Faith events
+  // FAITH_SET: emitted by dialogueEngine.applyDialogueEffect() when a SET_FAITH effect is applied.
+  //   previousFaithId is undefined when the target had no established faith before this change.
+  | { type: 'FAITH_SET'; targetId: string; faithId: FaithId; previousFaithId: FaithId | undefined }
+  // Phase 35 — Season events
+  // SEASON_CHANGED: emitted by runDayEndTick() when the in-game calendar crosses a
+  // season boundary. day is the first day of the new season (calendar.day + 1,
+  // since day-end fires before the day is incremented by advancePhase).
+  | { type: 'SEASON_CHANGED'; from: Season; to: Season; day: number }
+  // Phase 36 — God status events
+  // GOD_ENSLAVED: a god's status changed to ENSLAVED; fired by godStatusEngine.enslaveGod().
+  //   enslavedById identifies the enslaver ('kharrath_ember_conclave' or player.id).
+  // GOD_FREED:    a god's status changed from ENSLAVED back to FREE; fired by freeGod().
+  // GOD_KILLED:   a god's status permanently changed to DEAD; fired by killGod().
+  // All three events write flags['god_status_<godId>'] and call endingTrackerEngine
+  // via the dispatcher processEventQueue handler (Phase 36c.2).
+  | { type: 'GOD_ENSLAVED'; godId: string; enslavedById: string; day: number }
+  | { type: 'GOD_FREED';    godId: string; day: number }
+  | { type: 'GOD_KILLED';   godId: string; day: number }
   ;

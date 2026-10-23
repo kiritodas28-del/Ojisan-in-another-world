@@ -13,7 +13,7 @@ import type {
   GameState, PlayerCharacter, NpcCharacter, PartyMember,
   TileMap, TileTerrainType, OccupantPositions, QuestLog,
   AlignmentState, InfamyState, EnvironmentState, SpireNetwork,
-  JobArchetypeState, ClassProgressionState, SynergyState,
+  JobArchetypeState, ClassProgressionState, SynergyState, GodState,
 } from '../../state/gameState';
 import { createEmptyDialogueState } from '../../state/gameState';
 
@@ -75,6 +75,7 @@ const mockPlayer: PlayerCharacter = {
   charterRank: 'WANDERER',       // Phase 31: new players start at Wanderer rank
   charterXP:   0,                // Phase 31: no charter XP accumulated yet
   divinity:    0,                // Phase 32: no divine favour accumulated yet
+  faithId:     'radiant_faith',  // Phase 33: Human baseline faith
   battlePoints: 6,
   ardorPoints:  4,
   unspentBP: 2,
@@ -129,6 +130,7 @@ const mockElara: NpcCharacter = {
   npcRelationships:  [],                  // NPC-NPC social graph (9a.2)
   companionLevel:    3,
   companionXP:       310,
+  faithId:           'old_wood',          // Phase 33: Elf default faith
 } as unknown as NpcCharacter;
 
 const mockBram: NpcCharacter = {
@@ -157,6 +159,7 @@ const mockBram: NpcCharacter = {
   npcRelationships:  [],                  // NPC-NPC social graph
   companionLevel:    2,
   companionXP:       180,
+  faithId:           'radiant_faith',     // Phase 33: Human default faith
 } as unknown as NpcCharacter;
 
 // ─── Party ────────────────────────────────────────────────────────────────────
@@ -201,6 +204,7 @@ const mockMeira: NpcCharacter = {
   playerBondType:   undefined,           // no player-exclusive bond yet
   npcRelationships: [],                   // NPC-NPC social graph
   companionLevel: 0, companionXP: 0,
+  faithId: 'radiant_faith',               // Phase 33: Human default faith
 } as unknown as NpcCharacter;
 
 // ─── Mock tile map — village_square ───────────────────────────────────────────
@@ -288,6 +292,7 @@ export const mockGameState: GameState = {
     phase:            'Afternoon',
     actionCount:      7,
     phaseActionLimit: 15,
+    season:           'SPRING',
   },
 
   // Phase 18: offspring records — empty at game start; populated on birth
@@ -437,4 +442,26 @@ export const mockGameState: GameState = {
     quotaGoldPerWeek: 0,  // 0 = inactive until Enclave quest fires
     overdueBy:        0,
   },
+
+  // Phase 35: seasonal world modifiers — SPRING baseline at game start
+  seasonModifiers: {
+    travelCostMultiplier:    1.0,
+    encounterRateMultiplier: 1.0,
+    marketPriceMultiplier:   1.0,
+    mpRecoveryMultiplier:    1.0,
+  },
+
+  // Phase 36: god status — Varan enslaved by Kharrath at Day 0 (pre-game);
+  // all others FREE. This is the Ojisan world-start seed; the engine is lore-agnostic.
+  gods: {
+    varan:    { status: 'ENSLAVED', enslavedById: 'kharrath_ember_conclave', enslavedOnDay: 0 },
+    solenne:  { status: 'FREE' },
+    aeloria:  { status: 'FREE' },
+    thessaly: { status: 'FREE' },
+    durgrim:  { status: 'FREE' },
+    hestrel:  { status: 'FREE' },
+    nyxara:   { status: 'FREE' },
+    kharrath: { status: 'FREE' },
+    malvek:   { status: 'FREE' },
+  } satisfies Record<string, GodState>,
 };

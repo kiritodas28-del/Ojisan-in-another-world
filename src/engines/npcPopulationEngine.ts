@@ -33,8 +33,9 @@ import type { BondType } from '../spawn-engine/types/enums';
 import { spawnFemale, spawnMale } from '../spawn-engine/spawnEngine';
 import { POPULATION_CONFIGS } from '../spawn-engine/config/populationConfig';
 import { drawName } from '../data/namePool';
-import { Occupation } from '../spawn-engine/types/enums';
+import { Occupation, Race } from '../spawn-engine/types/enums';
 import { deriveMaxMp } from './statEngine'; // Phase 29c.4
+import { DEFAULT_FAITH_BY_RACE } from '../data/faithCatalog'; // Phase 33
 
 // ─── Contact cap ──────────────────────────────────────────────────────────────
 
@@ -182,6 +183,9 @@ export function buildServiceNpc(
     // Companion fields (service NPCs are never companions)
     companionLevel: 0,
     companionXP:    0,
+
+    // Phase 33 (task 33c.1): seed faith affiliation from race default.
+    faithId: DEFAULT_FAITH_BY_RACE[overrides.race as unknown as Race] ?? 'radiant_faith',
   };
 }
 
@@ -313,6 +317,9 @@ function spawnNpcFromClass(
 
     companionLevel: 0,
     companionXP:    0,
+
+    // Phase 33 (task 33c.1): seed faith affiliation from race default.
+    faithId: DEFAULT_FAITH_BY_RACE[rawCharacter.race as unknown as Race] ?? 'radiant_faith',
   };
 }
 

@@ -1761,6 +1761,43 @@ export function processEventQueue(state: GameState, events: GameEvent[]): GameSt
       }
 
       // ── All other events pass through until their phase wires them ─────────
+      // ── Phase 36: God status events ──────────────────────────────────────────
+      // GOD_ENSLAVED / GOD_FREED / GOD_KILLED:
+      //   1. Write a story flag: flags['god_status_<godId>'] = event.type
+      //      (e.g. 'GOD_ENSLAVED', 'GOD_FREED', 'GOD_KILLED').
+      //      Quest and dialogue conditions read this flag to gate scenes.
+      //   2. TODO (Phase 37): call endingTrackerEngine.updateEndingAxis().
+      //      Stubbed here as a comment; wire once endingTrackerEngine exists.
+      case 'GOD_ENSLAVED': {
+        const flagKey = `god_status_${event.godId}`;
+        state = {
+          ...state,
+          flags: { ...state.flags, [flagKey]: 'GOD_ENSLAVED' },
+        };
+        // Phase 37 stub: endingTrackerEngine.updateEndingAxis(state, 'goddess', ...)
+        break;
+      }
+
+      case 'GOD_FREED': {
+        const flagKey = `god_status_${event.godId}`;
+        state = {
+          ...state,
+          flags: { ...state.flags, [flagKey]: 'GOD_FREED' },
+        };
+        // Phase 37 stub: endingTrackerEngine.updateEndingAxis(state, 'goddess', ...)
+        break;
+      }
+
+      case 'GOD_KILLED': {
+        const flagKey = `god_status_${event.godId}`;
+        state = {
+          ...state,
+          flags: { ...state.flags, [flagKey]: 'GOD_KILLED' },
+        };
+        // Phase 37 stub: endingTrackerEngine.updateEndingAxis(state, 'goddess', ...)
+        break;
+      }
+
       default:
         break;
     }

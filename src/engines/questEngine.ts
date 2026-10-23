@@ -31,6 +31,7 @@ import { QUEST_CATALOG, type QuestDef, type QuestReward } from '../data/quests';
 import { shiftAlignment } from './alignmentEngine';
 import { awardCharterXP } from './charterEngine';
 import { awardDivinity } from './statEngine';
+import { enslaveGod, freeGod, killGod } from './godStatusEngine';
 
 // ─── 11.6 — Catalog lookup ────────────────────────────────────────────────────
 
@@ -336,6 +337,34 @@ export function grantQuestReward(
     const divinityResult = awardDivinity(state, reward.divinity);
     state = divinityResult.state;
     events.push(...divinityResult.events);
+  }
+
+  // Phase 36 (task 36a+): god status effects from quest rewards.
+  // Iterates godStatusEffects[] and calls the appropriate godStatusEngine mutation.
+  // Guard failures (already enslaved/dead/free) are not fatal; the quest completes
+  // regardless. Engine logs the anomaly so data authors can catch mismatched states.
+  if (reward.godStatusEffects) {
+    for (const effect of reward.godStatusEffects) {
+      try {
+        if (effect.action === 'ENSLAVE' && effect.enslaverId) {
+          const r = enslaveGod(state, effect.godId, effect.enslaverId);
+          state = r.state; events.push(...r.events);
+        } else if (effect.action === 'FREE') {
+          const r = freeGod(state, effect.godId);
+          state = r.state; events.push(...r.events);
+        } else if (effect.action === 'KILL') {
+          const r = killGod(state, effect.godId);
+          state = r.state; events.push(...r.events);
+        }
+      } catch (err) {
+        // eslint-disable-next-line no-console
+        console.warn(
+          `grantQuestReward: godStatusEffect guard failed for '${effect.godId}' ` +
+          `(action: '${effect.action}'):`,
+          err,
+        );
+      }
+    }
   }
 
   return { state, events };

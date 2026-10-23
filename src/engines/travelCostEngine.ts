@@ -68,7 +68,9 @@ export function hireCarriage(
     throw new Error(`You can't hire a carriage to that location — it isn't directly connected.`);
   }
 
-  const cost = phases * CARRIAGE_COST_PER_PHASE;
+  // Phase 35c.1: scale carriage gold cost by the current seasonal travel multiplier.
+  // RAINY season adds 40%; WINTER adds 10%; SPRING/SUMMER are baseline.
+  const cost = Math.ceil(phases * CARRIAGE_COST_PER_PHASE * state.seasonModifiers.travelCostMultiplier);
   if (state.player.gold < cost) {
     throw new Error(
       `The carriage driver wants ${cost}g for the trip. You only have ${state.player.gold}g.`,

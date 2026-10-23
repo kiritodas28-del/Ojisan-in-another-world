@@ -43,6 +43,15 @@ export interface QuestReward {
   readonly reputationEvents: string[];                          // keys from REPUTATION_EVENT_TABLE
   readonly charterXP?:       number;                           // Phase 31: optional charter XP
   readonly divinity?:         number;                           // Phase 32: optional divinity award
+  // Phase 36 (task 36a+): optional god status effects applied on quest completion.
+  // Data-driven parallel to reputationEvents; questEngine.grantQuestReward() iterates
+  // and calls godStatusEngine for each entry.
+  // enslaverId is required when action is 'ENSLAVE'.
+  readonly godStatusEffects?: ReadonlyArray<{
+    readonly godId:       string;
+    readonly action:      'ENSLAVE' | 'FREE' | 'KILL';
+    readonly enslaverId?: string;
+  }>;
 }
 
 // ─── Quest definition ─────────────────────────────────────────────────────────

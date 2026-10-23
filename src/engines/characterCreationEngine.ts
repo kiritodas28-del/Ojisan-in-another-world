@@ -25,6 +25,8 @@ import type {
 } from '../state/gameState';
 import { equipJob, equipClass, unlockPath, type JobDef, type ClassDef } from './jobEngine';
 import { deriveMaxMp } from './statEngine'; // Phase 29c.3
+import { Race } from '../spawn-engine/types/enums'; // Phase 33
+import { DEFAULT_FAITH_BY_RACE } from '../data/faithCatalog'; // Phase 33
 
 // ─── Catalog interfaces ───────────────────────────────────────────────────────
 export interface SubClassDef {
@@ -117,7 +119,7 @@ export function createCharacter(
   // ── 7. Snapshot options onto GameState
   state = { ...state, characterCreation: options };
 
-  // ── 8. Phase 29c.3: seed starting MP, mpBurnout, anomalousMp on the player
+  // ── 9. Phase 29c.3: seed starting MP, mpBurnout, anomalousMp on the player
   // Race is set by the new-game init flow before createCharacter() is called.
   // anomalousMp = true for the protagonist (Earth-origin, unattuned MP).
   const startRace   = state.player.race as string;
@@ -135,7 +137,16 @@ export function createCharacter(
     },
   };
 
-  // ── 9. Emit creation events
+  // ── 9b. Phase 33c.2: seed faithId from race default
+  state = {
+    ...state,
+    player: {
+      ...state.player,
+      faithId: DEFAULT_FAITH_BY_RACE[state.player.race as Race] ?? 'radiant_faith',
+    },
+  };
+
+  // ── 10. Emit creation events
   events.push({ type: 'NEW_GAME_STARTED', options });
   events.push({ type: 'CHARACTER_CREATION_COMPLETE', playerName: options.playerName });
 

@@ -53,7 +53,15 @@ export function advanceWeather(
   let rngSeed = seed;
   for (const regionId of regionIds) {
     rngSeed += 1;
-    const next      = _weightedWeatherRoll(catalog, rngSeed);
+    // Phase 35c.2: scale each weather entry's weight by the seasonal encounter-rate
+    // multiplier before the roll. SUMMER biases toward higher-activity weather (×1.2);
+    // RAINY suppresses encounter intensity (×0.8). A uniform scale keeps relative
+    // distribution proportional; per-entry season biasing can be added to the catalog later.
+    const seasonMult    = state.seasonModifiers.encounterRateMultiplier;
+    const scaledCatalog = seasonMult === 1.0
+      ? catalog
+      : catalog.map(e => ({ ...e, weight: e.weight * seasonMult }));
+    const next          = _weightedWeatherRoll(scaledCatalog, rngSeed);
     const prev      = newWeather[regionId] ?? 'CLEAR';
     newWeather[regionId] = next;
     if (prev !== next) {

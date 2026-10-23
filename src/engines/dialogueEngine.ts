@@ -94,6 +94,15 @@ export function evaluateCondition(
     case 'DIVINITY': {
       return gameState.player.divinity >= condition.min;
     }
+    // Phase 33 (task 33c.3): gate dialogue on faith affiliation.
+    // 'player' checks the player's own faithId; any other npcId checks the matching contact.
+    case 'FAITH': {
+      if (npcId === 'player') {
+        return gameState.player.faithId === condition.faithId;
+      }
+      const contact = gameState.contacts.find(c => c.character.npcId === npcId);
+      return (contact?.character.faithId ?? undefined) === condition.faithId;
+    }
   }
 }
 
@@ -191,6 +200,37 @@ export function applyDialogueEffect(
       const result = shiftAlignment(gameState, effect.delta);
       events.push({ type: 'DIALOGUE_EFFECT_APPLIED', effect }, ...result.events);
       return { state: result.state, events };
+    }
+
+    // Phase 33 (task 33c.4): set faith affiliation on the player or a contact.
+    // npcId 'player' targets the player; any other value targets a contact by npcId.
+    // Emits FAITH_SET before DIALOGUE_EFFECT_APPLIED so listeners see the full picture.
+    case 'SET_FAITH': {
+      const prevFaith =
+        effect.npcId === 'player'
+          ? gameState.player.faithId
+          : gameState.contacts.find(c => c.character.npcId === effect.npcId)?.character.faithId;
+
+      let state = gameState;
+      if (effect.npcId === 'player') {
+        state = { ...state, player: { ...state.player, faithId: effect.faithId } };
+      } else {
+        const updatedContacts = state.contacts.map(c =>
+          c.character.npcId === effect.npcId
+            ? { ...c, character: { ...c.character, faithId: effect.faithId } }
+            : c,
+        );
+        state = { ...state, contacts: updatedContacts };
+      }
+
+      events.push({
+        type:            'FAITH_SET',
+        targetId:        effect.npcId,
+        faithId:         effect.faithId,
+        previousFaithId: prevFaith,
+      });
+      events.push({ type: 'DIALOGUE_EFFECT_APPLIED', effect });
+      return { state, events };
     }
   }
 }

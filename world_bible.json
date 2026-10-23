@@ -110,7 +110,7 @@
       "All lifespans and adulthood ages",
       "Child takes the mother's people and legal status unless the father acknowledges and frees them",
       "Kin-right adoption of captives among high orcs",
-      "Sealed contracts binding MP (devils)",
+      "Devil contracts as a formalised MP-chain binding: same mechanism as mortal enslavement, different legal form",
       "The Quiet Table (vampire elder council)",
       "Dark elf registered indenture system",
       "Realm-by-realm half-race stances",
@@ -393,6 +393,12 @@
       "cheap_version": "Charm and persuasion only influence and cost little.",
       "law": "A grave crime in most realms (provisional).",
       "slavery_note": "Too costly to use as a basis for slavery or armies, but usable on single high-value targets (provisional)."
+    },
+    "binding": {
+      "mechanism": "Enslaving any being — mortal or divine — works via MP-chain binding: suppressing and redirecting the target's MP flow. For mortals, physical restraints plus suppression runes suffice. For gods, the same principle applies at vastly greater MP scale: a god-level ward must suppress the god's entire pool. Devil contracts are a formalised legal variant (binding the signatory's future MP flow to an obligation). No separate discipline of 'contract magic' exists; all binding is a lore application of rune magic at appropriate scale.",
+      "mortals": "Slavers use physical restraints combined with suppression runes engraved by a Runesmith. MP flow is dampened, not severed; the enslaved person retains enough MP to remain healthy and functional.",
+      "gods": "A god-level ward must suppress the god's entire MP pool — orders of magnitude greater than any mortal's. Only the Creator's original Binding of the Gods clause achieves this. Kharrath's Ember Conclave exploited an ancient loophole in that clause to imprison Varan.",
+      "designer_note": "Use existing tamingEngine (humanoid capture) and the godStatusEngine gods block (Phase 36) for all enslavement. No separate contractEngine required."
     }
   },
   "peoples": [

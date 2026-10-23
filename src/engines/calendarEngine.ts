@@ -38,6 +38,7 @@
 import type {
   GameState, CalendarState, DayPhase, GameEvent,
   LocationPopulationDef, NpcScheduleDef,
+  Season, SeasonModifiers,
 } from '../state/gameState';
 import {
   applyPhaseRecoveryToParty,
@@ -59,6 +60,45 @@ import { resetSynergyDailyCounts } from './synergyEngine';
 import { resetCaptiveDailyInteractions } from './tamingEngine';
 import { tickTithe } from './titheEngine';
 import { applyMpRestOnSleep } from './statEngine';  // Phase 29c.2
+
+// ─── Phase 35 — Season derivation and modifiers ─────────────────────────────
+
+/**
+ * Derives the current in-game season from the day counter.
+ * The calendar cycles every 365 days (day mod 365):
+ *   SPRING  days   1 –  91
+ *   SUMMER  days  92 – 182
+ *   RAINY   days 183 – 273
+ *   WINTER  days 274 – 365
+ * Thresholds are provisional (PRD §4.7 — task 35b.1).
+ * Pure: reads only the day number; never mutates state.
+ */
+export function deriveCurrentSeason(day: number): Season {
+  const dayOfYear = ((day - 1) % 365) + 1; // maps to 1–365, cycles on multi-year runs
+  if (dayOfYear <= 91)  return 'SPRING';
+  if (dayOfYear <= 182) return 'SUMMER';
+  if (dayOfYear <= 273) return 'RAINY';
+  return 'WINTER';
+}
+
+/**
+ * Modifier table for each season. All values are provisional per task 35b.2.
+ * GameState.seasonModifiers is updated at day-end from this table so consumer
+ * engines read one field rather than calling deriveCurrentSeason() themselves.
+ *
+ * SPRING:  baseline; all multipliers 1.0.
+ * SUMMER:  more encounters (+20%); slight market discount (harvest abundance).
+ * RAINY:   travel more costly (+40%); fewer random encounters (poor visibility);
+ *          slight market mark-up (disrupted supply chains).
+ * WINTER:  travel moderately more costly (+10%); market mark-up (+15%);
+ *          better magical recovery during long cold nights (+20% MP on sleep).
+ */
+export const SEASON_MODIFIER_TABLE: Record<Season, SeasonModifiers> = {
+  SPRING: { travelCostMultiplier: 1.0, encounterRateMultiplier: 1.0, marketPriceMultiplier: 1.0,  mpRecoveryMultiplier: 1.0 },
+  SUMMER: { travelCostMultiplier: 1.0, encounterRateMultiplier: 1.2, marketPriceMultiplier: 0.95, mpRecoveryMultiplier: 1.0 },
+  RAINY:  { travelCostMultiplier: 1.4, encounterRateMultiplier: 0.8, marketPriceMultiplier: 1.05, mpRecoveryMultiplier: 1.0 },
+  WINTER: { travelCostMultiplier: 1.1, encounterRateMultiplier: 1.0, marketPriceMultiplier: 1.15, mpRecoveryMultiplier: 1.2 },
+};
 
 // ─── Phase ordering ───────────────────────────────────────────────────────────
 
@@ -530,6 +570,25 @@ export function runDayEndTick(
     const titheResult = tickTithe(state);
     state = titheResult.state;
     events.push(...titheResult.events);
+  }
+
+  // Step 8e: Season transition check (Phase 35 — task 35b.4)
+  // Derives the current season from the day counter and updates calendar.season
+  // + state.seasonModifiers whenever the season changes. Placed after all step-8
+  // sub-steps so new modifiers take effect from the next morning onward.
+  // Note: calendar.day has NOT been incremented yet (that happens in advancePhase()
+  // after runDayEndTick() returns), so we derive from the day that is ending.
+  {
+    const newSeason = deriveCurrentSeason(state.calendar.day);
+    if (newSeason !== state.calendar.season) {
+      const fromSeason = state.calendar.season;
+      state = {
+        ...state,
+        calendar:        { ...state.calendar, season: newSeason },
+        seasonModifiers: SEASON_MODIFIER_TABLE[newSeason],
+      };
+      events.push({ type: 'SEASON_CHANGED', from: fromSeason, to: newSeason, day: state.calendar.day });
+    }
   }
 
   // Step 9: NPC-NPC social tick

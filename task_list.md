@@ -1,6 +1,6 @@
 # Ojisan -- Execution Task List
 
-**Task list version:** 4.2 (updated 2026-10-10)
+**Task list version:** 4.4 (updated 2026-10-20)
 **Tracks:** requirements_analysis.md v1.3, PRD v1.9
 
 ---
@@ -1892,24 +1892,24 @@
 
 ### 33a. State changes
 
-- [ ] **33a.1** Define `FaithId` type in `gameState.ts` and export it: `type FaithId = 'radiant_faith' | 'old_wood' | 'stone_covenant' | 'night_court' | 'none'`.
-- [ ] **33a.2** Add `faithId: FaithId | undefined` to `HumanoidCharacter` in `gameState.ts` — `undefined` = not yet established; `'none'` = explicitly secular. Set by spawn-engine from race profile defaults (33b.2).
-- [ ] **33a.3** Add `{ type: 'FAITH'; faithId: FaithId }` variant to `DialogueCondition` union in `gameState.ts`.
-- [ ] **33a.4** Add `{ type: 'SET_FAITH'; faithId: FaithId; npcId: string }` variant to `DialogueEffect` union in `gameState.ts` — `npcId: 'player'` targets the player; any other value targets an NPC in contacts.
+- [x] **33a.1** Define `FaithId` type in `gameState.ts` and export it: `type FaithId = 'radiant_faith' | 'old_wood' | 'stone_covenant' | 'night_court' | 'none'`.
+- [x] **33a.2** Add `faithId: FaithId | undefined` to `HumanoidCharacter` in `gameState.ts` — `undefined` = not yet established; `'none'` = explicitly secular. Set by spawn-engine from race profile defaults (33b.2).
+- [x] **33a.3** Add `{ type: 'FAITH'; faithId: FaithId }` variant to `DialogueCondition` union in `gameState.ts`.
+- [x] **33a.4** Add `{ type: 'SET_FAITH'; faithId: FaithId; npcId: string }` variant to `DialogueEffect` union in `gameState.ts` — `npcId: 'player'` targets the player; any other value targets an NPC in contacts.
 
 ### 33b. Faith catalog and spawn wiring
 
-- [ ] **33b.1** Create `src/data/faithCatalog.ts` — define `FaithDef` interface: `{ id: FaithId; name: string; godPatronIds: GodId[]; alignedPathIds: string[]; templeRiteXpBonus: number }`. Author all four: Radiant Faith (Solenne + Varan; +15% rite XP), Old Wood (Aeloria + Thessaly; +20%), Stone Covenant (Durgrim + Hestrel; +10%), Night Court (Nyxara + Malvek + Kharrath; +5%).
-- [ ] **33b.2** Add `DEFAULT_FAITH_BY_RACE` const to `faithCatalog.ts` — maps each `Race` enum value to a `FaithId` default (human → radiant_faith; high_elf/wood_elf/dark_elf → old_wood; dwarf → stone_covenant; demon/devil/succubus_incubus/vampire → night_court; high_orc/beastfolk/dragonkin → old_wood; angel → radiant_faith; god → none).
+- [x] **33b.1** Create `src/data/faithCatalog.ts` — define `FaithDef` interface: `{ id: FaithId; name: string; godPatronIds: GodId[]; alignedPathIds: string[]; templeRiteXpBonus: number }`. Author all four: Radiant Faith (Solenne + Varan; +15% rite XP), Old Wood (Aeloria + Thessaly; +20%), Stone Covenant (Durgrim + Hestrel; +10%), Night Court (Nyxara + Malvek + Kharrath; +5%).
+- [x] **33b.2** Add `DEFAULT_FAITH_BY_RACE` const to `faithCatalog.ts` — maps each `Race` enum value to a `FaithId` default (human → radiant_faith; high_elf/wood_elf/dark_elf → old_wood; dwarf → stone_covenant; demon/devil/succubus_incubus/vampire → night_court; high_orc/beastfolk/dragonkin → old_wood; angel → radiant_faith; god → none).
 
 ### 33c. Engine wiring
 
-- [ ] **33c.1** Update `npcPopulationEngine.ts` NPC build path — set `faithId` from `DEFAULT_FAITH_BY_RACE[npc.race]` on every newly spawned humanoid.
-- [ ] **33c.2** Update `characterCreationEngine.createCharacter()` — set `player.faithId` from `DEFAULT_FAITH_BY_RACE[options.race ?? 'human']`.
-- [ ] **33c.3** Add `evaluateDialogueCondition()` branch in `dialogueEngine.ts` for `FAITH` condition — checks `state.player.faithId` for player-targeted; checks the relevant contact's `faithId` for NPC-targeted.
-- [ ] **33c.4** Add `applyDialogueEffect()` branch in `dialogueEngine.ts` for `SET_FAITH` — writes `faithId` to player or targeted NPC character; emits `FAITH_SET`.
-- [ ] **33c.5** Add `FAITH_SET ({ targetId: string; faithId: FaithId; previousFaithId: FaithId | undefined })` to `GameEvent` union in `gameState.ts`.
-- [ ] **33c.6** Update `mockGameState.ts` — set `faithId: 'radiant_faith'` on player; set appropriate `faithId` on all mock NPC entries.
+- [x] **33c.1** Update `npcPopulationEngine.ts` NPC build path — set `faithId` from `DEFAULT_FAITH_BY_RACE[npc.race]` on every newly spawned humanoid.
+- [x] **33c.2** Update `characterCreationEngine.createCharacter()` — set `player.faithId` from `DEFAULT_FAITH_BY_RACE[options.race ?? 'human']`.
+- [x] **33c.3** Add `evaluateDialogueCondition()` branch in `dialogueEngine.ts` for `FAITH` condition — checks `state.player.faithId` for player-targeted; checks the relevant contact's `faithId` for NPC-targeted.
+- [x] **33c.4** Add `applyDialogueEffect()` branch in `dialogueEngine.ts` for `SET_FAITH` — writes `faithId` to player or targeted NPC character; emits `FAITH_SET`.
+- [x] **33c.5** Add `FAITH_SET ({ targetId: string; faithId: FaithId; previousFaithId: FaithId | undefined })` to `GameEvent` union in `gameState.ts`.
+- [x] **33c.6** Update `mockGameState.ts` — set `faithId: 'radiant_faith'` on player; set appropriate `faithId` on all mock NPC entries.
 
 ---
 
@@ -1917,7 +1917,7 @@
 
 > No new engine. The world bible is updated to establish that enslaving any being (mortal or divine) uses the same MP-chain mechanism at the appropriate scale. Devil contracts are a formalised legal variant of the same. Existing `tamingEngine` patterns + the Phase 36 `gods` state block together cover all enslavement cases — no separate `contractEngine.ts` is needed.
 
-- [ ] **34.1** Update `world_bible_and_game_lore_starter.json` — add `"binding"` sub-key inside the `"magic"` object:
+- [x] **34.1** Update `world_bible_and_game_lore_starter.json` — add `"binding"` sub-key inside the `"magic"` object:
   ```json
   "binding": {
     "mechanism": "Enslaving any being — mortal or divine — works via MP-chain binding: suppressing and redirecting the target's MP flow. For mortals, physical restraints plus suppression runes suffice. For gods, the same principle applies at vastly greater MP scale: a god-level ward must suppress the god's entire pool. Devil contracts are a formalised legal variant (binding the signatory's future MP flow to an obligation). No separate discipline of 'contract magic' exists; all binding is a lore application of rune magic at appropriate scale.",
@@ -1926,8 +1926,8 @@
     "designer_note": "Use existing tamingEngine (humanoid capture) and the godStatusEngine gods block (Phase 36) for all enslavement. No separate contractEngine required."
   }
   ```
-- [ ] **34.2** Update `world_bible_and_game_lore_starter.json` `provisional_elements` array — replace `"Sealed contracts binding MP (devils)"` with `"Devil contracts as a formalised MP-chain binding: same mechanism as mortal enslavement, different legal form"`.
-- [ ] **34.3** Update `world_bible_and_game_lore_starter.json` `central_mystery_revised.enslaver.how` — append the sentence: `"Mechanically this is a god-level suppression ward — the same MP-chain principle as mortal enslavement, anchored to the Creator's original Binding of the Gods clause, which provides the only ward strong enough to hold a god's entire MP pool."`
+- [x] **34.2** Update `world_bible_and_game_lore_starter.json` `provisional_elements` array — replace `"Sealed contracts binding MP (devils)"` with `"Devil contracts as a formalised MP-chain binding: same mechanism as mortal enslavement, different legal form"`.
+- [x] **34.3** Update `world_bible_and_game_lore_starter.json` `central_mystery_revised.enslaver.how` — append the sentence: `"Mechanically this is a god-level suppression ward — the same MP-chain principle as mortal enslavement, anchored to the Creator's original Binding of the Gods clause, which provides the only ward strong enough to hold a god's entire MP pool."`
 
 ---
 
@@ -1937,25 +1937,25 @@
 
 ### 35a. State changes
 
-- [ ] **35a.1** Define `Season` union type in `gameState.ts` and export it: `type Season = 'SPRING' | 'SUMMER' | 'RAINY' | 'WINTER'`.
-- [ ] **35a.2** Add `season: Season` to `CalendarState` in `gameState.ts` — default `'SPRING'`; derived and updated by `calendarEngine` on each day transition.
-- [ ] **35a.3** Define `SeasonModifiers` interface in `gameState.ts` and export it: `{ travelCostMultiplier: number; encounterRateMultiplier: number; marketPriceMultiplier: number; mpRecoveryMultiplier: number }`.
-- [ ] **35a.4** Add `seasonModifiers: SeasonModifiers` to `GameState` root — default all multipliers `1.0`.
+- [x] **35a.1** Define `Season` union type in `gameState.ts` and export it: `type Season = 'SPRING' | 'SUMMER' | 'RAINY' | 'WINTER'`.
+- [x] **35a.2** Add `season: Season` to `CalendarState` in `gameState.ts` — default `'SPRING'`; derived and updated by `calendarEngine` on each day transition.
+- [x] **35a.3** Define `SeasonModifiers` interface in `gameState.ts` and export it: `{ travelCostMultiplier: number; encounterRateMultiplier: number; marketPriceMultiplier: number; mpRecoveryMultiplier: number }`.
+- [x] **35a.4** Add `seasonModifiers: SeasonModifiers` to `GameState` root — default all multipliers `1.0`.
 
 ### 35b. calendarEngine extension
 
-- [ ] **35b.1** Implement `deriveCurrentSeason(day: number): Season` pure function in `calendarEngine.ts` — day mod 365 divided into four blocks: 1–91 = SPRING, 92–182 = SUMMER, 183–273 = RAINY, 274–365 = WINTER (provisional).
-- [ ] **35b.2** Add `SEASON_MODIFIER_TABLE: Record<Season, SeasonModifiers>` const in `calendarEngine.ts` — SPRING: all 1.0; SUMMER: encounter ×1.2, market ×0.95, rest unchanged; RAINY: travel ×1.4, encounter ×0.8, market ×1.05; WINTER: travel ×1.1, mp_recovery ×1.2, market ×1.15. All provisional.
-- [ ] **35b.3** Add `SEASON_CHANGED ({ from: Season; to: Season; day: number })` to `GameEvent` union in `gameState.ts`.
-- [ ] **35b.4** Update `calendarEngine.runDayEndTick()` — after step 8 (date increment), call `deriveCurrentSeason()`; if result differs from `calendar.season`, update `calendar.season` and `state.seasonModifiers` from `SEASON_MODIFIER_TABLE`; emit `SEASON_CHANGED`.
+- [x] **35b.1** Implement `deriveCurrentSeason(day: number): Season` pure function in `calendarEngine.ts` — day mod 365 divided into four blocks: 1–91 = SPRING, 92–182 = SUMMER, 183–273 = RAINY, 274–365 = WINTER (provisional).
+- [x] **35b.2** Add `SEASON_MODIFIER_TABLE: Record<Season, SeasonModifiers>` const in `calendarEngine.ts` — SPRING: all 1.0; SUMMER: encounter ×1.2, market ×0.95, rest unchanged; RAINY: travel ×1.4, encounter ×0.8, market ×1.05; WINTER: travel ×1.1, mp_recovery ×1.2, market ×1.15. All provisional.
+- [x] **35b.3** Add `SEASON_CHANGED ({ from: Season; to: Season; day: number })` to `GameEvent` union in `gameState.ts`.
+- [x] **35b.4** Update `calendarEngine.runDayEndTick()` — after step 8 (date increment), call `deriveCurrentSeason()`; if result differs from `calendar.season`, update `calendar.season` and `state.seasonModifiers` from `SEASON_MODIFIER_TABLE`; emit `SEASON_CHANGED`.
 
 ### 35c. Consumer wiring
 
-- [ ] **35c.1** Update `travelCostEngine.ts` — multiply computed travel gold cost by `state.seasonModifiers.travelCostMultiplier` before returning.
-- [ ] **35c.2** Update `environmentEngine.advanceWeather()` — multiply each weather catalog entry's `weight` by `state.seasonModifiers.encounterRateMultiplier` before the weighted roll so RAINY season biases heavy-rain weights up.
-- [ ] **35c.3** Update `economyEngine.buyItem()` — multiply `effectiveBuyPrice` by `state.seasonModifiers.marketPriceMultiplier` (applied after the existing reputation discount).
-- [ ] **35c.4** Update `statEngine.applyMpRestOnSleep()` (Phase 29b.5) — multiply restored MP amount by `state.seasonModifiers.mpRecoveryMultiplier`.
-- [ ] **35c.5** Update `mockGameState.ts` — add `season: 'SPRING'` to calendar block; add `seasonModifiers: { travelCostMultiplier: 1.0, encounterRateMultiplier: 1.0, marketPriceMultiplier: 1.0, mpRecoveryMultiplier: 1.0 }` to root.
+- [x] **35c.1** Update `travelCostEngine.ts` — multiply computed travel gold cost by `state.seasonModifiers.travelCostMultiplier` before returning.
+- [x] **35c.2** Update `environmentEngine.advanceWeather()` — multiply each weather catalog entry's `weight` by `state.seasonModifiers.encounterRateMultiplier` before the weighted roll so RAINY season biases heavy-rain weights up.
+- [x] **35c.3** Update `economyEngine.buyItem()` — multiply `effectiveBuyPrice` by `state.seasonModifiers.marketPriceMultiplier` (applied after the existing reputation discount).
+- [x] **35c.4** Update `statEngine.applyMpRestOnSleep()` (Phase 29b.5) — multiply restored MP amount by `state.seasonModifiers.mpRecoveryMultiplier`.
+- [x] **35c.5** Update `mockGameState.ts` — add `season: 'SPRING'` to calendar block; add `seasonModifiers: { travelCostMultiplier: 1.0, encounterRateMultiplier: 1.0, marketPriceMultiplier: 1.0, mpRecoveryMultiplier: 1.0 }` to root.
 
 ---
 
@@ -1965,24 +1965,24 @@
 
 ### 36a. State changes
 
-- [ ] **36a.1** Define `GodId` union type in `gameState.ts` and export it: `type GodId = 'solenne' | 'varan' | 'aeloria' | 'thessaly' | 'durgrim' | 'hestrel' | 'nyxara' | 'kharrath' | 'malvek'`.
-- [ ] **36a.2** Define `GodState` interface in `gameState.ts` and export it: `{ status: 'FREE' | 'ENSLAVED' | 'DEAD'; enslavedById?: string; enslavedOnDay?: number; killedOnDay?: number }`. `enslavedById` is `'kharrath_ember_conclave'` for Varan's pre-game enslavement; `player.id` for a Power End scenario.
-- [ ] **36a.3** Add `gods: Record<GodId, GodState>` to `GameState` root.
-- [ ] **36a.4** Add god status `GameEvent` variants to `gameState.ts`: `GOD_ENSLAVED ({ godId: GodId; enslavedById: string; day: number })`, `GOD_FREED ({ godId: GodId; day: number })`, `GOD_KILLED ({ godId: GodId; day: number })`.
+- [x] **36a.1** Define `GodId` union type in `gameState.ts` and export it: `type GodId = 'solenne' | 'varan' | 'aeloria' | 'thessaly' | 'durgrim' | 'hestrel' | 'nyxara' | 'kharrath' | 'malvek'`.
+- [x] **36a.2** Define `GodState` interface in `gameState.ts` and export it: `{ status: 'FREE' | 'ENSLAVED' | 'DEAD'; enslavedById?: string; enslavedOnDay?: number; killedOnDay?: number }`. `enslavedById` is `'kharrath_ember_conclave'` for Varan's pre-game enslavement; `player.id` for a Power End scenario.
+- [x] **36a.3** Add `gods: Record<GodId, GodState>` to `GameState` root.
+- [x] **36a.4** Add god status `GameEvent` variants to `gameState.ts`: `GOD_ENSLAVED ({ godId: GodId; enslavedById: string; day: number })`, `GOD_FREED ({ godId: GodId; day: number })`, `GOD_KILLED ({ godId: GodId; day: number })`.
 
 ### 36b. godStatusEngine.ts
 
-- [ ] **36b.1** Create `src/engines/godStatusEngine.ts` — implement `createDefaultGodRecord(): Record<GodId, GodState>` — all gods `FREE` except `varan: { status: 'ENSLAVED', enslavedById: 'kharrath_ember_conclave', enslavedOnDay: 0 }`.
-- [ ] **36b.2** Implement `enslaveGod(state, godId, enslaverId): { state, events }` — guard: throws if already ENSLAVED or DEAD; sets status, records `enslavedById` and `enslavedOnDay = calendar.day`; emits `GOD_ENSLAVED`.
-- [ ] **36b.3** Implement `freeGod(state, godId): { state, events }` — guard: throws if not ENSLAVED; sets `status: 'FREE'`, clears enslaved fields; emits `GOD_FREED`.
-- [ ] **36b.4** Implement `killGod(state, godId): { state, events }` — guard: throws if already DEAD; sets `status: 'DEAD'`, records `killedOnDay`; emits `GOD_KILLED`.
-- [ ] **36b.5** Implement `isGodFree(state, godId): boolean` and `getGodStatus(state, godId): GodState` pure read helpers. Export both.
+- [x] **36b.1** Create `src/engines/godStatusEngine.ts` — implement `createDefaultGodRecord(): Record<GodId, GodState>` — all gods `FREE` except `varan: { status: 'ENSLAVED', enslavedById: 'kharrath_ember_conclave', enslavedOnDay: 0 }`.
+- [x] **36b.2** Implement `enslaveGod(state, godId, enslaverId): { state, events }` — guard: throws if already ENSLAVED or DEAD; sets status, records `enslavedById` and `enslavedOnDay = calendar.day`; emits `GOD_ENSLAVED`.
+- [x] **36b.3** Implement `freeGod(state, godId): { state, events }` — guard: throws if not ENSLAVED; sets `status: 'FREE'`, clears enslaved fields; emits `GOD_FREED`.
+- [x] **36b.4** Implement `killGod(state, godId): { state, events }` — guard: throws if already DEAD; sets `status: 'DEAD'`, records `killedOnDay`; emits `GOD_KILLED`.
+- [x] **36b.5** Implement `isGodFree(state, godId): boolean` and `getGodStatus(state, godId): GodState` pure read helpers. Export both.
 
 ### 36c. Cross-engine wiring
 
-- [ ] **36c.1** Update `jobEngine.unlockPath()` — when `trigger === 'TEMPLE_RITE'`, look up the path's patron god from `faithCatalog.ts` (via the `alignedPathIds` field); if that god is not FREE per `isGodFree()`, emit `PATH_UNLOCK_FAILED` with `reason: 'GOD_UNAVAILABLE'` instead of proceeding.
-- [ ] **36c.2** Update `dispatcher.ts` `processEventQueue()` — add handlers for `GOD_ENSLAVED`, `GOD_FREED`, `GOD_KILLED`: each writes the corresponding story flag (`flags['god_status_<godId>']`) and calls `endingTrackerEngine.updateEndingAxis()` (Phase 37) to keep the ending state current.
-- [ ] **36c.3** Update `mockGameState.ts` — add `gods` block initialised from `createDefaultGodRecord()` (varan ENSLAVED, all others FREE).
+- [x] **36c.1** Update `jobEngine.unlockPath()` — when `trigger === 'TEMPLE_RITE'`, look up the path's patron god from `faithCatalog.ts` (via the `alignedPathIds` field); if that god is not FREE per `isGodFree()`, emit `PATH_UNLOCK_FAILED` with `reason: 'GOD_UNAVAILABLE'` instead of proceeding.
+- [x] **36c.2** Update `dispatcher.ts` `processEventQueue()` — add handlers for `GOD_ENSLAVED`, `GOD_FREED`, `GOD_KILLED`: each writes the corresponding story flag (`flags['god_status_<godId>']`) and calls `endingTrackerEngine.updateEndingAxis()` (Phase 37) to keep the ending state current.
+- [x] **36c.3** Update `mockGameState.ts` — add `gods` block initialised from `createDefaultGodRecord()` (varan ENSLAVED, all others FREE).
 
 ---
 
