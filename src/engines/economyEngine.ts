@@ -23,7 +23,7 @@
  */
 
 import type { GameState, GameEvent, InventorySlot } from '../state/gameState';
-import { getReputationTier } from './reputationEngine';
+import { getReputationTier, applyReputationDelta } from './reputationEngine';
 import { resolveGift }       from './relationshipEngine';
 import { resolveLoot }       from './enemySpawnEngine';
 import type { LootTable }    from './enemySpawnEngine';
@@ -658,4 +658,282 @@ export function calcInventorySlotCap(manorTier: number): number {
 /** @deprecated Use getItemDef(id).baseSellValue * discount instead. */
 export function calcSellPrice(item: ItemDef, shopDiscount = 0.5): number {
   return Math.floor(item.baseSellValue * shopDiscount);
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// BANKING  (Phase 38 — Tasks 38b.1–38b.5)
+// ═══════════════════════════════════════════════════════════════════════════════
+// All banking functions are pure transforms: (GameState, ...) -> { state, events }.
+// Any 'bank'-featured WorldNode gives access to all accounts regardless of where
+// the account was first opened. Accounts are lazy-created on first deposit.
+// At most one active loan at a time.
+//
+// Fee rates by reputation tier at borrow time:
+//   Renowned 0.05 / Liked 0.08 / Neutral 0.12 (Disliked / Infamous: refused)
+//
+// Overdue penalty: +2% of principal per overdue day at day-end.
+// Default fires when total accumulated penalty >= original principal.
+// On default: LOAN_DEFAULT emitted, reputation -30 in loan region, loan removed.
+// ═══════════════════════════════════════════════════════════════════════════════
+
+const LOAN_FEE_RATES: Record<string, number> = {
+  Renowned: 0.05,
+  Liked:    0.08,
+  Neutral:  0.12,
+  // Disliked and Infamous are absent — loans refused.
+};
+
+function _nodeHasBank(nodeId: string): boolean {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { WORLD_NODES } = require('../data/worldGraph') as {
+    WORLD_NODES: import('../state/gameState').WorldNode[];
+  };
+  return WORLD_NODES.find(n => n.id === nodeId)?.features?.includes('bank') ?? false;
+}
+
+function _nodeRegion(nodeId: string): string {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { WORLD_NODES } = require('../data/worldGraph') as {
+    WORLD_NODES: import('../state/gameState').WorldNode[];
+  };
+  return WORLD_NODES.find(n => n.id === nodeId)?.regionId ?? nodeId;
+}
+
+/**
+ * Deposits `amount` gold into the player's bank at `nodeId`.
+ * Lazy-creates the account on first deposit.
+ * Guards: node has 'bank' feature; amount > 0; player gold >= amount.
+ * Emits BANK_DEPOSIT + GOLD_CHANGED.
+ */
+export function deposit(
+  gameState: GameState,
+  nodeId:    string,
+  amount:    number,
+): { state: GameState; events: GameEvent[] } {
+  const events: GameEvent[] = [];
+
+  if (!_nodeHasBank(nodeId))     throw new Error(`deposit: node "${nodeId}" has no bank.`);
+  if (amount <= 0)               throw new Error(`deposit: amount must be > 0.`);
+  if (gameState.player.gold < amount) {
+    throw new Error(`deposit: player has ${gameState.player.gold}g but depositing ${amount}g.`);
+  }
+
+  const newGold = gameState.player.gold - amount;
+  let state: GameState = {
+    ...gameState,
+    player: { ...gameState.player, gold: newGold },
+  };
+  events.push({ type: 'GOLD_CHANGED', delta: -amount, newAmount: newGold });
+
+  const accounts = [...state.bank.accounts];
+  const idx = accounts.findIndex(a => a.nodeId === nodeId);
+
+  if (idx !== -1) {
+    const newBalance = accounts[idx].balance + amount;
+    accounts[idx] = { ...accounts[idx], balance: newBalance };
+    events.push({ type: 'BANK_DEPOSIT', nodeId, amount, newBalance });
+  } else {
+    const newBalance = amount;
+    accounts.push({ nodeId, balance: newBalance, openedOnDay: state.calendar.day });
+    events.push({ type: 'BANK_DEPOSIT', nodeId, amount, newBalance });
+  }
+
+  state = { ...state, bank: { ...state.bank, accounts } };
+  return { state, events };
+}
+
+/**
+ * Withdraws `amount` gold from the player's bank.
+ * Any bank node gives access to the total balance across all accounts.
+ * Drains accounts in creation order until the amount is satisfied.
+ * Guards: node has 'bank' feature; amount > 0; total balance >= amount.
+ * Emits BANK_WITHDRAWAL + GOLD_CHANGED.
+ */
+export function withdraw(
+  gameState: GameState,
+  nodeId:    string,
+  amount:    number,
+): { state: GameState; events: GameEvent[] } {
+  const events: GameEvent[] = [];
+
+  if (!_nodeHasBank(nodeId)) throw new Error(`withdraw: node "${nodeId}" has no bank.`);
+  if (amount <= 0)           throw new Error(`withdraw: amount must be > 0.`);
+
+  const totalBalance = gameState.bank.accounts.reduce((s, a) => s + a.balance, 0);
+  if (totalBalance < amount) {
+    throw new Error(`withdraw: bank balance is ${totalBalance}g but withdrawing ${amount}g.`);
+  }
+
+  let remaining = amount;
+  const accounts = gameState.bank.accounts.map(acc => {
+    if (remaining <= 0) return acc;
+    const taken = Math.min(acc.balance, remaining);
+    remaining  -= taken;
+    return { ...acc, balance: acc.balance - taken };
+  });
+
+  const newBalance = accounts.reduce((s, a) => s + a.balance, 0);
+  const newGold    = gameState.player.gold + amount;
+  const state: GameState = {
+    ...gameState,
+    player: { ...gameState.player, gold: newGold },
+    bank:   { ...gameState.bank, accounts },
+  };
+  events.push({ type: 'BANK_WITHDRAWAL', nodeId, amount, newBalance });
+  events.push({ type: 'GOLD_CHANGED', delta: amount, newAmount: newGold });
+
+  return { state, events };
+}
+
+/**
+ * Issues a loan of `amount` gold from the bank at `nodeId`.
+ * Fee rate locked at borrow time from the current reputation tier.
+ * remainingDebt = principal × (1 + feeRate).  dueOnDay = calendar.day + 30.
+ *
+ * Guards:
+ *   - No active loan exists (one at a time).
+ *   - Node has 'bank' feature.
+ *   - Region reputation >= Neutral (Disliked / Infamous refused).
+ *   - amount > 0.
+ * Emits LOAN_TAKEN + GOLD_CHANGED.
+ */
+export function takeLoan(
+  gameState: GameState,
+  nodeId:    string,
+  amount:    number,
+): { state: GameState; events: GameEvent[] } {
+  const events: GameEvent[] = [];
+
+  if (gameState.bank.loans.length > 0) {
+    throw new Error(`takeLoan: repay the existing loan before borrowing again.`);
+  }
+  if (!_nodeHasBank(nodeId)) throw new Error(`takeLoan: node "${nodeId}" has no bank.`);
+  if (amount <= 0)           throw new Error(`takeLoan: amount must be > 0.`);
+
+  const regionId    = _nodeRegion(nodeId);
+  const regionScore = gameState.reputation[regionId] ?? 0;
+  const tier        = getReputationTier(regionScore);
+  const feeRate     = LOAN_FEE_RATES[tier];
+  if (feeRate === undefined) {
+    throw new Error(`takeLoan: reputation in ${regionId} too poor (tier: ${tier}) — loan refused.`);
+  }
+
+  const remainingDebt = Math.ceil(amount * (1 + feeRate));
+  const flatFee       = remainingDebt - amount;
+  const dueOnDay      = gameState.calendar.day + 30;
+
+  const newLoan: import('../state/gameState').LoanState = {
+    nodeId,
+    principal:    amount,
+    flatFeeRate:  feeRate,
+    remainingDebt,
+    dueOnDay,
+    borrowedOnDay: gameState.calendar.day,
+  };
+
+  const newGold = gameState.player.gold + amount;
+  const state: GameState = {
+    ...gameState,
+    player: { ...gameState.player, gold: newGold },
+    bank:   { ...gameState.bank, loans: [newLoan] },
+  };
+  events.push({ type: 'LOAN_TAKEN', nodeId, principal: amount, flatFee, dueOnDay });
+  events.push({ type: 'GOLD_CHANGED', delta: amount, newAmount: newGold });
+
+  return { state, events };
+}
+
+/**
+ * Partial or full repayment against the single active loan.
+ * Repayment accepted at any bank node.
+ * On full repayment the loan entry is removed.
+ * Guards: active loan exists; amount > 0; player gold >= amount; node has 'bank'.
+ * Emits LOAN_REPAID + GOLD_CHANGED.
+ */
+export function repayLoan(
+  gameState: GameState,
+  nodeId:    string,
+  amount:    number,
+): { state: GameState; events: GameEvent[] } {
+  const events: GameEvent[] = [];
+
+  if (!_nodeHasBank(nodeId))          throw new Error(`repayLoan: node "${nodeId}" has no bank.`);
+  if (gameState.bank.loans.length === 0) throw new Error(`repayLoan: no active loan.`);
+  if (amount <= 0)                    throw new Error(`repayLoan: amount must be > 0.`);
+  if (gameState.player.gold < amount) {
+    throw new Error(`repayLoan: player has ${gameState.player.gold}g but paying ${amount}g.`);
+  }
+
+  const loan    = gameState.bank.loans[0];
+  const paid    = Math.min(amount, loan.remainingDebt);
+  const newDebt = loan.remainingDebt - paid;
+  const newGold = gameState.player.gold - paid;
+
+  const updatedLoans: import('../state/gameState').LoanState[] =
+    newDebt <= 0 ? [] : [{ ...loan, remainingDebt: newDebt }];
+
+  const state: GameState = {
+    ...gameState,
+    player: { ...gameState.player, gold: newGold },
+    bank:   { ...gameState.bank, loans: updatedLoans },
+  };
+  events.push({ type: 'LOAN_REPAID', nodeId: loan.nodeId, amountPaid: paid, remaining: newDebt });
+  events.push({ type: 'GOLD_CHANGED', delta: -paid, newAmount: newGold });
+
+  return { state, events };
+}
+
+/**
+ * Day-end tick: accrues overdue interest on the active loan.
+ * Called from calendarEngine.runDayEndTick() step 8f.
+ *
+ * Per overdue day: adds principal × 0.02 to remainingDebt.
+ * Default threshold: total accumulated penalty >= original principal
+ *   (i.e. remainingDebt >= 2× principal × (1 + flatFeeRate) is NOT the check;
+ *    simpler: newDebt − baseDebt >= principal, where baseDebt is the original
+ *    remainingDebt at borrow time = principal × (1 + flatFeeRate)).
+ * On default: LOAN_DEFAULT emitted, -30 rep in loan region, loan removed.
+ * No-op when no active loans or none are past their dueOnDay.
+ */
+export function tickLoanInterest(
+  gameState: GameState,
+): { state: GameState; events: GameEvent[] } {
+  const events: GameEvent[] = [];
+
+  if (gameState.bank.loans.length === 0) return { state: gameState, events };
+
+  let state = gameState;
+  const updatedLoans: import('../state/gameState').LoanState[] = [];
+
+  for (const loan of state.bank.loans) {
+    if (state.calendar.day <= loan.dueOnDay) {
+      updatedLoans.push(loan);  // not overdue yet
+      continue;
+    }
+
+    const penaltyAmount = Math.ceil(loan.principal * 0.02);
+    const newDebt       = loan.remainingDebt + penaltyAmount;
+    events.push({ type: 'LOAN_INTEREST_ACCRUED', nodeId: loan.nodeId, amount: penaltyAmount, newTotal: newDebt });
+
+    const baseDebt     = Math.ceil(loan.principal * (1 + loan.flatFeeRate));
+    const totalPenalty = newDebt - baseDebt;
+
+    if (totalPenalty >= loan.principal) {
+      events.push({ type: 'LOAN_DEFAULT', nodeId: loan.nodeId, totalDebt: newDebt });
+      const regionId  = _nodeRegion(loan.nodeId);
+      const repResult = applyReputationDelta(
+        state,
+        regionId as import('../state/gameState').RegionId,
+        -30,
+      );
+      state  = repResult.state;
+      events.push(...repResult.events);
+      // Loan entry dropped — not added back to updatedLoans
+    } else {
+      updatedLoans.push({ ...loan, remainingDebt: newDebt });
+    }
+  }
+
+  state = { ...state, bank: { ...state.bank, loans: updatedLoans } };
+  return { state, events };
 }

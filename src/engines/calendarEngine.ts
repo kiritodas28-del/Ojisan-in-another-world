@@ -24,6 +24,8 @@
  *   6. Manor passive generation           (manorEngine      — Task 10.10)
  *   7. Daily counter resets               (flirt/touch limits, quest cooldowns, faint recovery)
  *   8. Date increment
+ *   8f. Loan interest                       (economyEngine    — Phase 38)
+ *   8g. Faction standing decay              (factionEngine    — Phase 41)
  *   9. NPC-NPC social tick                (npcSocialEngine.runNpcSocialTick)
  *
  * Actions that count toward phase advance (15 → next phase):
@@ -60,6 +62,9 @@ import { resetSynergyDailyCounts } from './synergyEngine';
 import { resetCaptiveDailyInteractions } from './tamingEngine';
 import { tickTithe } from './titheEngine';
 import { applyMpRestOnSleep } from './statEngine';  // Phase 29c.2
+import { tickLoanInterest } from './economyEngine'; // Phase 38
+import { tickFactionDecay } from './factionEngine';  // Phase 41
+import { FACTION_CATALOG } from '../data/factionCatalog';
 
 // ─── Phase 35 — Season derivation and modifiers ─────────────────────────────
 
@@ -589,6 +594,28 @@ export function runDayEndTick(
       };
       events.push({ type: 'SEASON_CHANGED', from: fromSeason, to: newSeason, day: state.calendar.day });
     }
+  }
+
+  // Step 8f: Loan interest tick (Phase 38 — task 38c.3)
+  // Accrues overdue penalty on any active loan. No-op when bank.loans is empty
+  // or no loan is past its dueOnDay. Runs after season derivation so the
+  // calendar.day used for the due-date check is consistent with the ending day.
+  {
+    const loanResult = tickLoanInterest(state);
+    state = loanResult.state;
+    events.push(...loanResult.events);
+  }
+
+  // Step 8g: Faction standing decay (Phase 41 — task 41c.5)
+  // Only criminal and underground factions with positive scores decay (1 point/day).
+  // All other faction types are permanently stable without player action.
+  // Runs after loan interest and before NPC social tick so the day's full
+  // economic resolution (loans, tithes, resources) lands before faction state
+  // is read by any downstream social-tick logic (currently none; future-proofing).
+  {
+    const factionDecayResult = tickFactionDecay(state, FACTION_CATALOG);
+    state = factionDecayResult.state;
+    events.push(...factionDecayResult.events);
   }
 
   // Step 9: NPC-NPC social tick

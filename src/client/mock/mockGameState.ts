@@ -16,6 +16,8 @@ import type {
   JobArchetypeState, ClassProgressionState, SynergyState, GodState,
 } from '../../state/gameState';
 import { createEmptyDialogueState } from '../../state/gameState';
+import { createDefaultEndingAxes } from '../../engines/endingTrackerEngine';
+import { OJISAN_ENDING_AXIS_DEFAULTS } from '../../data/endingCatalog';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 // Phase 29c.5: mp parameter added; default 100 (human baseline)
@@ -464,4 +466,24 @@ export const mockGameState: GameState = {
     kharrath: { status: 'FREE' },
     malvek:   { status: 'FREE' },
   } satisfies Record<string, GodState>,
+
+  // Phase 37: ending axis tracker — seeded with Ojisan Day-1 defaults.
+  // Varan enslaved by Kharrath; everything else undecided / at rest.
+  endingAxes: createDefaultEndingAxes(OJISAN_ENDING_AXIS_DEFAULTS),
+
+  // Phase 38: banking — empty at game start; accounts and loans created on first use.
+  bank: {
+    accounts: [],
+    loans:    [],
+  },
+
+  // Phase 39: mind control — empty at game start; populated during combat via applyMindControl().
+  activeMindControls: [],
+
+  // Phase 41: faction standings — sparse record, empty at game start.
+  // Entries are created lazily on the first applyFactionDelta() call for each faction id.
+  // The catalog (src/data/factionCatalog.ts) provides default scores per faction;
+  // getFactionStanding() derives a virtual standing from those defaults until
+  // the player first interacts with a faction and triggers lazy-init.
+  factions: {},
 };

@@ -78,6 +78,19 @@ export const WORLD_NODES: WorldNode[] = [
     fastTravelCost: 0,
     isIndoors:      true,    // walled private estate; exposure gate bypassed
   },
+  // Phase 40: Teleportation ward example stub.
+  // Demonstrates wardedAgainstTeleport on a world bible ward-site class (prison).
+  // No edges authored here; connections and region placement deferred to Phase 42h.
+  {
+    id:                    'city_prison',
+    name:                  'City Prison',
+    regionId:              'region_start',   // placeholder; will be reassigned in Phase 42h
+    isSafe:                false,
+    safetyTier:            'HUMANOID_ONLY',
+    fastTravelCost:        0,
+    isIndoors:             true,
+    wardedAgainstTeleport: true,             // ward-site class: prisons
+  },
 ];
 
 // ─── Edge catalog ─────────────────────────────────────────────────────────────
@@ -114,6 +127,9 @@ export const ENEMY_ROAM_DEFS: Record<string, EnemyRoamDef[]> = {
   forest_entrance: [],
   old_mill:        [],
   crossroads:      [],
+
+  // Phase 40: Ward stub — no roaming enemies (connections deferred to Phase 42h).
+  city_prison:     [],
 };
 
 // ─── Lookup helpers ───────────────────────────────────────────────────────────

@@ -348,6 +348,23 @@ export function fastTravel(
 
   const currentNode = getWorldNode(currentNodeId);
   const targetNode  = getWorldNode(targetNodeId);
+
+  // Phase 40: Teleportation ward check.
+  // Wards block all fast-travel (paid or spire). Must run before cost computation
+  // and before the spire try/catch so a warded spire path cannot fall through to
+  // the gold-cost path. Returns state unchanged — no gold deducted.
+  // Outbound fires first; only one event fires per blocked attempt.
+  if (currentNode.wardedAgainstTeleport) {
+    events.push({ type: 'TELEPORT_WARD_BLOCKED', nodeId: currentNodeId, direction: 'OUTBOUND' });
+    narrative.push(`A powerful ward prevents teleportation from this location.`);
+    return { state: gameState, events, narrative };
+  }
+  if (targetNode.wardedAgainstTeleport) {
+    events.push({ type: 'TELEPORT_WARD_BLOCKED', nodeId: targetNodeId, direction: 'INBOUND' });
+    narrative.push(`A powerful ward prevents teleportation to that location.`);
+    return { state: gameState, events, narrative };
+  }
+
   const goldCost    = resolveFastTravelCost(currentNode.regionId, targetNode);
 
   // Guard: sufficient gold

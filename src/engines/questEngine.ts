@@ -32,6 +32,9 @@ import { shiftAlignment } from './alignmentEngine';
 import { awardCharterXP } from './charterEngine';
 import { awardDivinity } from './statEngine';
 import { enslaveGod, freeGod, killGod } from './godStatusEngine';
+import { updateEndingAxis } from './endingTrackerEngine';
+import { applyFactionDelta } from './factionEngine';
+import { FACTION_CATALOG } from '../data/factionCatalog';
 
 // ─── 11.6 — Catalog lookup ────────────────────────────────────────────────────
 
@@ -361,6 +364,38 @@ export function grantQuestReward(
         console.warn(
           `grantQuestReward: godStatusEffect guard failed for '${effect.godId}' ` +
           `(action: '${effect.action}'):`,
+          err,
+        );
+      }
+    }
+  }
+
+  // Phase 37 (task 37c.2): ending axis effect from quest reward.
+  // Runs after godStatusEffects so the GOD_FREED / GOD_ENSLAVED / GOD_KILLED events
+  // (and the dispatcher's ENDING_AXIS_UPDATED write) land first. This allows a quest
+  // to override the dispatcher's default write (e.g. quest 8.3 overrides 'FREED_RESTORED'
+  // to 'FREED_DIMINISHED' by setting goddess axis here after the GOD_FREED event fires).
+  if (reward.endingAxisEffect) {
+    const { axis, value } = reward.endingAxisEffect;
+    const r = updateEndingAxis(state, axis, value);
+    state = r.state;
+    events.push(...r.events);
+  }
+
+  // Phase 41 (task 41c.2): faction standing deltas from quest rewards.
+  // Applies each delta via applyFactionDelta() which handles lazy-init, clamping,
+  // tier recomputation, and event emission. Guard failures (unknown faction id)
+  // are not fatal — the quest completes; a console warning flags catalog errors.
+  if (reward.factionDeltas) {
+    for (const { factionId, delta } of reward.factionDeltas) {
+      try {
+        const r = applyFactionDelta(state, factionId, delta, FACTION_CATALOG);
+        state = r.state;
+        events.push(...r.events);
+      } catch (err) {
+        // eslint-disable-next-line no-console
+        console.warn(
+          `grantQuestReward: factionDelta failed for '${factionId}' (delta: ${delta}):`,
           err,
         );
       }

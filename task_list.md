@@ -1,6 +1,6 @@
 # Ojisan -- Execution Task List
 
-**Task list version:** 4.4 (updated 2026-10-20)
+**Task list version:** 4.5 (updated 2026-10-31)
 **Tracks:** requirements_analysis.md v1.3, PRD v1.9
 
 ---
@@ -1988,36 +1988,26 @@
 
 ## Phase 37: Ending Axis Tracker — `endingTrackerEngine`
 
-> A lightweight `endingAxes` block on `GameState` aggregates all ending-relevant axis states. `endingTrackerEngine.ts` owns mutation and ending resolution. Engines that produce ending-relevant outcomes update axes through the dispatcher event queue.
+> **COMPLETE (2026-10-24).** Design revision: `EndingAxisState` and `EndingId` are Ojisan-specific lore and live in `src/data/endingCatalog.ts`, not engine-core. The engine uses `EndingAxes = Record<string, string>` and accepts the catalog as a parameter.
 
 ### 37a. State changes
 
-- [ ] **37a.1** Define `EndingAxisState` interface in `gameState.ts` and export it:
-  ```ts
-  interface EndingAxisState {
-    goddess:      'ENSLAVED_BY_KHARRATH' | 'FREED_DIMINISHED' | 'FREED_RESTORED' | 'ENSLAVED_BY_PLAYER' | 'KILLED' | 'UNKNOWN';
-    gods:         'ALL_SAFE' | 'PARTIAL_LOSS' | 'MULTIPLE_LOST' | 'UNKNOWN';
-    kharrath:     'DEFEATED' | 'IMPRISONED' | 'ASCENDED' | 'ACTIVE';
-    playerThrone: 'STEPPED_BACK' | 'RULING' | 'UNDECIDED';
-    faith:        'TRUTH' | 'LIE' | 'UNDECIDED';
-    law:          'CROWNS' | 'CHARTER' | 'LEDGER_REFORMED' | 'DIVIDED' | 'UNDECIDED';
-  }
-  ```
-- [ ] **37a.2** Define `EndingId` type in `gameState.ts` and export it: `type EndingId = 'the_restored_pantheon' | 'the_diminished_return' | 'the_silent_victory' | 'the_iron_throne_of_law' | 'the_broken_pantheon' | 'the_dead_sky' | 'the_god_king' | 'the_creator_stirs'`.
-- [ ] **37a.3** Add `endingAxes: EndingAxisState` to `GameState` root — game-start defaults: `goddess: 'ENSLAVED_BY_KHARRATH'` (Varan is enslaved at Day 1), `kharrath: 'ACTIVE'`, all others `'UNKNOWN'` or `'UNDECIDED'`.
-- [ ] **37a.4** Add `ENDING_AXIS_UPDATED ({ axis: keyof EndingAxisState; newValue: string; day: number })` to `GameEvent` union in `gameState.ts`.
+- [x] **37a.1** Define `EndingAxes = Record<string, string>` in `gameState.ts` and export it — lore-agnostic. Also added `EndingCondition { id, requires, requiredFlags? }` interface. `OjisanEndingAxisId` / `OjisanEndingId` type aliases live in `endingCatalog.ts`.
+- [x] **37a.2** `EndingId` and `EndingAxisState` moved to `src/data/endingCatalog.ts` as Ojisan-specific type aliases. `gameState.ts` re-exports `EndingAxes` and `EndingCondition`.
+- [x] **37a.3** Add `endingAxes: EndingAxes` to `GameState` root — seeded via `createDefaultEndingAxes(OJISAN_ENDING_AXIS_DEFAULTS)`. Defaults: `goddess: 'ENSLAVED_BY_KHARRATH'`, `kharrath: 'ACTIVE'`, others `'UNDECIDED'`/`'UNKNOWN'`.
+- [x] **37a.4** Add `ENDING_AXIS_UPDATED { axis: string; newValue: string; day: number }` to `GameEvent` union.
 
 ### 37b. endingTrackerEngine.ts
 
-- [ ] **37b.1** Create `src/engines/endingTrackerEngine.ts` — implement `createDefaultEndingAxes(): EndingAxisState` returning the game-start defaults from 37a.3.
-- [ ] **37b.2** Implement `updateEndingAxis<K extends keyof EndingAxisState>(state: GameState, axis: K, value: EndingAxisState[K]): { state: GameState; events: GameEvent[] }` — updates the axis; emits `ENDING_AXIS_UPDATED`.
-- [ ] **37b.3** Implement `resolveEnding(state: GameState): EndingId | undefined` pure function — evaluates `state.endingAxes` against a `ENDING_CONDITIONS` const (array of `{ id: EndingId; requires: Partial<EndingAxisState> }` entries from the world bible endings); returns the first full match, `undefined` if none yet match.
+- [x] **37b.1** Created `src/engines/endingTrackerEngine.ts` — `createDefaultEndingAxes(seed?)` factory.
+- [x] **37b.2** Implemented `updateEndingAxis(state, axis: string, value: string)` — idempotent; emits `ENDING_AXIS_UPDATED`.
+- [x] **37b.3** Implemented `resolveEnding(state, catalog: EndingCondition[])` — catalog passed as param (lore-agnostic). `OJISAN_ENDING_CONDITIONS` empty stub in `endingCatalog.ts`; filled Phase 51b.1.
 
 ### 37c. Wiring
 
-- [ ] **37c.1** Wire `updateEndingAxis()` in `dispatcher.ts` `processEventQueue()` for `GOD_FREED`, `GOD_ENSLAVED`, `GOD_KILLED` — map to `goddess` axis for Varan; to `gods` axis for other gods (count of enslaved/killed gods drives PARTIAL_LOSS / MULTIPLE_LOST states).
-- [ ] **37c.2** Extend `QuestDef` in `src/data/quests.ts` — add optional `endingAxisEffect?: { axis: keyof EndingAxisState; value: string }` field. Update `questEngine.grantQuestReward()` to call `updateEndingAxis()` when set (for main-quest completions that resolve faith/law/playerThrone axes).
-- [ ] **37c.3** Update `mockGameState.ts` — add `endingAxes` using `createDefaultEndingAxes()`.
+- [x] **37c.1** Filled dispatcher GOD_* stubs — `GOD_ENSLAVED`: Varan → `goddess` (ENSLAVED_BY_KHARRATH or ENSLAVED_BY_PLAYER); protected gods → `gods` recount. `GOD_FREED`: Varan default `FREED_RESTORED` (overrideable by quest `endingAxisEffect`). `GOD_KILLED`: Varan → `KILLED`. Added imports from `endingTrackerEngine` + `endingCatalog`.
+- [x] **37c.2** Created `src/data/endingCatalog.ts` — axis/ending types, `OJISAN_ENDING_AXIS_DEFAULTS`, `OJISAN_PROTECTED_GOD_IDS`, `deriveGodsAxisValue()`, empty `OJISAN_ENDING_CONDITIONS`. Extended `QuestReward.endingAxisEffect?` and wired in `grantQuestReward()`.
+- [x] **37c.3** Updated `mockGameState.ts` — `endingAxes: createDefaultEndingAxes(OJISAN_ENDING_AXIS_DEFAULTS)`.
 
 ---
 
@@ -2027,27 +2017,27 @@
 
 ### 38a. State changes
 
-- [ ] **38a.1** Define `BankAccountState` interface in `gameState.ts` and export it: `{ nodeId: string; balance: number; openedOnDay: number }`.
-- [ ] **38a.2** Define `LoanState` interface in `gameState.ts` and export it: `{ nodeId: string; principal: number; interestRatePercent: number; dueOnDay: number; borrowedOnDay: number; remainingDebt: number; isDefaulted: boolean }`.
-- [ ] **38a.3** Define `BankState` interface in `gameState.ts` and export it: `{ accounts: BankAccountState[]; loans: LoanState[]; totalEverDeposited: number }`.
-- [ ] **38a.4** Add `bank: BankState` to `GameState` root — default `{ accounts: [], loans: [], totalEverDeposited: 0 }`.
-- [ ] **38a.5** Add `'bank'` to `LocationFeatureKey` union in `gameState.ts` — nodes with this feature unlock bank-related intents in the dispatcher.
+- [x] **38a.1** Define `BankAccountState` interface in `gameState.ts` and export it: `{ nodeId: string; balance: number; openedOnDay: number }`.
+- [x] **38a.2** Define `LoanState` interface in `gameState.ts` and export it: `{ nodeId: string; principal: number; interestRatePercent: number; dueOnDay: number; borrowedOnDay: number; remainingDebt: number; isDefaulted: boolean }`.
+- [x] **38a.3** Define `BankState` interface in `gameState.ts` and export it: `{ accounts: BankAccountState[]; loans: LoanState[]; totalEverDeposited: number }`.
+- [x] **38a.4** Add `bank: BankState` to `GameState` root — default `{ accounts: [], loans: [], totalEverDeposited: 0 }`.
+- [x] **38a.5** Add `'bank'` to `LocationFeatureKey` union in `gameState.ts` — nodes with this feature unlock bank-related intents in the dispatcher.
 
 ### 38b. economyEngine extension
 
-- [ ] **38b.1** Implement `openBankAccount(state, nodeId): { state, events }` in `economyEngine.ts` — guard: one account per node; guard: current node must have `'bank'` feature; creates account with `balance: 0`; emits `BANK_ACCOUNT_OPENED`.
-- [ ] **38b.2** Implement `deposit(state, nodeId, amount): { state, events }` — guard: account exists; guard: player gold ≥ amount; deducts gold; credits account; updates `totalEverDeposited`; emits `BANK_DEPOSIT` and `GOLD_CHANGED`.
-- [ ] **38b.3** Implement `withdraw(state, nodeId, amount): { state, events }` — guard: account balance ≥ amount; transfers to player gold; emits `BANK_WITHDRAWAL` and `GOLD_CHANGED`.
-- [ ] **38b.4** Implement `takeLoan(state, nodeId, amount): { state, events }` — guard: no existing defaulted loan at this node; guard: region reputation ≥ Neutral. `interestRatePercent` by reputation tier (Renowned 5%, Liked 8%, Neutral 12%). `dueOnDay = calendar.day + 30`. Adds gold; creates `LoanState` entry; emits `LOAN_TAKEN` and `GOLD_CHANGED`.
-- [ ] **38b.5** Implement `repayLoan(state, nodeId, amount): { state, events }` — partial payments reduce `remainingDebt`; full payment removes the entry; emits `LOAN_REPAID` and `GOLD_CHANGED`.
-- [ ] **38b.6** Implement `tickLoanInterest(state): { state, events }` — called at day-end; for each active non-defaulted loan: if `calendar.day > dueOnDay`, accrue 1% of `remainingDebt` per overdue day (compound; capped at 5× `principal`); when `remainingDebt > 2× principal`, set `isDefaulted: true`, emit `LOAN_DEFAULT`, call `applyReputationDelta(regionId, -50)` as the bank-default reputation penalty.
+- [x] **38b.1** Implement `openBankAccount(state, nodeId): { state, events }` in `economyEngine.ts` — guard: one account per node; guard: current node must have `'bank'` feature; creates account with `balance: 0`; emits `BANK_ACCOUNT_OPENED`.
+- [x] **38b.2** Implement `deposit(state, nodeId, amount): { state, events }` — guard: account exists; guard: player gold ≥ amount; deducts gold; credits account; updates `totalEverDeposited`; emits `BANK_DEPOSIT` and `GOLD_CHANGED`.
+- [x] **38b.3** Implement `withdraw(state, nodeId, amount): { state, events }` — guard: account balance ≥ amount; transfers to player gold; emits `BANK_WITHDRAWAL` and `GOLD_CHANGED`.
+- [x] **38b.4** Implement `takeLoan(state, nodeId, amount): { state, events }` — guard: no existing defaulted loan at this node; guard: region reputation ≥ Neutral. `interestRatePercent` by reputation tier (Renowned 5%, Liked 8%, Neutral 12%). `dueOnDay = calendar.day + 30`. Adds gold; creates `LoanState` entry; emits `LOAN_TAKEN` and `GOLD_CHANGED`.
+- [x] **38b.5** Implement `repayLoan(state, nodeId, amount): { state, events }` — partial payments reduce `remainingDebt`; full payment removes the entry; emits `LOAN_REPAID` and `GOLD_CHANGED`.
+- [x] **38b.6** Implement `tickLoanInterest(state): { state, events }` — called at day-end; for each active non-defaulted loan: if `calendar.day > dueOnDay`, accrue 1% of `remainingDebt` per overdue day (compound; capped at 5× `principal`); when `remainingDebt > 2× principal`, set `isDefaulted: true`, emit `LOAN_DEFAULT`, call `applyReputationDelta(regionId, -50)` as the bank-default reputation penalty.
 
 ### 38c. Events, dispatcher, and mock
 
-- [ ] **38c.1** Add bank `GameEvent` variants to `gameState.ts`: `BANK_ACCOUNT_OPENED ({ nodeId })`, `BANK_DEPOSIT ({ nodeId; amount; newBalance })`, `BANK_WITHDRAWAL ({ nodeId; amount; newBalance })`, `LOAN_TAKEN ({ nodeId; principal; interestRatePercent; dueOnDay })`, `LOAN_REPAID ({ nodeId; amountPaid; remaining })`, `LOAN_INTEREST_ACCRUED ({ nodeId; amount; newTotal })`, `LOAN_DEFAULT ({ nodeId; totalDebt })`.
-- [ ] **38c.2** Add `OPEN_BANK_ACCOUNT`, `DEPOSIT`, `WITHDRAW`, `TAKE_LOAN`, `REPAY_LOAN` to `PlayerIntent` union in `dispatcher.ts`; each handler guards the `'bank'` feature on `world.currentNodeId` and routes to the corresponding function.
-- [ ] **38c.3** Wire `tickLoanInterest()` into `calendarEngine.runDayEndTick()` as a new step after step 8 (date increment) and before step 9 (NPC social tick).
-- [ ] **38c.4** Update `mockGameState.ts` — add `bank: { accounts: [], loans: [], totalEverDeposited: 0 }` to root.
+- [x] **38c.1** Add bank `GameEvent` variants to `gameState.ts`: `BANK_ACCOUNT_OPENED ({ nodeId })`, `BANK_DEPOSIT ({ nodeId; amount; newBalance })`, `BANK_WITHDRAWAL ({ nodeId; amount; newBalance })`, `LOAN_TAKEN ({ nodeId; principal; interestRatePercent; dueOnDay })`, `LOAN_REPAID ({ nodeId; amountPaid; remaining })`, `LOAN_INTEREST_ACCRUED ({ nodeId; amount; newTotal })`, `LOAN_DEFAULT ({ nodeId; totalDebt })`.
+- [x] **38c.2** Add `OPEN_BANK_ACCOUNT`, `DEPOSIT`, `WITHDRAW`, `TAKE_LOAN`, `REPAY_LOAN` to `PlayerIntent` union in `dispatcher.ts`; each handler guards the `'bank'` feature on `world.currentNodeId` and routes to the corresponding function.
+- [x] **38c.3** Wire `tickLoanInterest()` into `calendarEngine.runDayEndTick()` as a new step after step 8 (date increment) and before step 9 (NPC social tick).
+- [x] **38c.4** Update `mockGameState.ts` — add `bank: { accounts: [], loans: [], totalEverDeposited: 0 }` to root.
 
 ---
 
@@ -2055,27 +2045,29 @@
 
 > Mind control is a configurable `SkillEffect` variant in the existing skill system. A `MindControlParams` config object makes all costs, durations, resistance rules, and backlash catalog-driven so other lore can define entirely different mechanics without touching the engine.
 
+> **COMPLETE (2026-10-31).** Implementation notes: `MindControlParams` and `MindControlState` landed in `gameState.ts` (not `skillEngine.ts`) to avoid a circular import — `skillEngine.ts` already imports from `gameState.ts`. `applyMindControl` takes `target: AnyCharacter` directly; the caller resolves the live combatant before calling. `MindControlState` gained `targetWis: number` (WIS snapshot at apply time) so `tickMindControls` can roll resistance breaks without a live combatant lookup. Victory/flee cleanup: controls expire naturally via `tickMindControls`; `PARTY_WIPED` in `processEventQueue` calls `releaseAllMindControls` for the defeat path.
+
 ### 39a. Schema
 
-- [ ] **39a.1** Add `MindControlParams` interface to `skillEngine.ts` and export it: `{ mpCostFlat: number; mpCostPerTargetMpRatio: number; durationTurns: number; backlashHpPct: number; resistBreakChancePerTurn: number; maxTargetMpRatio: number; charmVariant?: boolean }`. `charmVariant: true` = lightweight social influence (Bard/Emissary Path use): no resistance break roll, much lower cost, no backlash; full `false` = hard control.
-- [ ] **39a.2** Add `{ type: 'MIND_CONTROL'; params: MindControlParams }` to `SkillEffect` union in `skillEngine.ts`.
-- [ ] **39a.3** Define `MindControlState` interface in `gameState.ts` and export it: `{ targetId: string; casterId: string; remainingTurns: number; params: MindControlParams; isCharm: boolean }`.
-- [ ] **39a.4** Add `activeMindControls: MindControlState[]` to `GameState` root — default `[]`.
+- [x] **39a.1** Add `MindControlParams` interface to `skillEngine.ts` and export it: `{ mpCostFlat: number; mpCostPerTargetMpRatio: number; durationTurns: number; backlashHpPct: number; resistBreakChancePerTurn: number; maxTargetMpRatio: number; charmVariant?: boolean }`. `charmVariant: true` = lightweight social influence (Bard/Emissary Path use): no resistance break roll, much lower cost, no backlash; full `false` = hard control.
+- [x] **39a.2** Add `{ type: 'MIND_CONTROL'; params: MindControlParams }` to `SkillEffect` union in `skillEngine.ts`.
+- [x] **39a.3** Define `MindControlState` interface in `gameState.ts` and export it: `{ targetId: string; casterId: string; remainingTurns: number; params: MindControlParams; isCharm: boolean }`.
+- [x] **39a.4** Add `activeMindControls: MindControlState[]` to `GameState` root — default `[]`.
 
 ### 39b. skillEngine logic
 
-- [ ] **39b.1** Implement `applyMindControl(state, casterId, targetId, params, isCharm): { state, events }` in `skillEngine.ts` — guard: resolve target's `vitals.mp.current`; if `target mp > caster mp.max × params.maxTargetMpRatio` emit `MIND_CONTROL_RESISTED ({ reason: 'MP_TOO_HIGH' })` and return; deduct `mpCostFlat + (targetMp × mpCostPerTargetMpRatio)` from caster via `spendMp()`; if insufficient caster MP emit `MIND_CONTROL_RESISTED ({ reason: 'INSUFFICIENT_CASTER_MP' })` and return; apply `backlashHpPct × caster.vitals.hp.max` HP drain to caster (skip when `isCharm`); push `MindControlState` entry; emit `MIND_CONTROL_APPLIED`.
-- [ ] **39b.2** Implement `tickMindControls(state): { state, events }` in `skillEngine.ts` — for each `MindControlState`: decrement `remainingTurns`; if `remainingTurns <= 0` emit `MIND_CONTROL_EXPIRED` and remove; else roll `resistBreakChancePerTurn` against `target.stats.wis / 100`; on break emit `MIND_CONTROL_BROKEN` and remove. Skip resistance roll when `isCharm`.
-- [ ] **39b.3** Implement pure helpers `isMindControlled(state, targetId): boolean` and `getMindControl(state, targetId): MindControlState | undefined`. Export both.
-- [ ] **39b.4** Implement `releaseAllMindControls(state): { state, events }` — removes all entries; emits `MIND_CONTROL_EXPIRED` for each. Called at combat end.
+- [x] **39b.1** Implement `applyMindControl(state, casterId, targetId, params, isCharm): { state, events }` in `skillEngine.ts` — guard: resolve target's `vitals.mp.current`; if `target mp > caster mp.max × params.maxTargetMpRatio` emit `MIND_CONTROL_RESISTED ({ reason: 'MP_TOO_HIGH' })` and return; deduct `mpCostFlat + (targetMp × mpCostPerTargetMpRatio)` from caster via `spendMp()`; if insufficient caster MP emit `MIND_CONTROL_RESISTED ({ reason: 'INSUFFICIENT_CASTER_MP' })` and return; apply `backlashHpPct × caster.vitals.hp.max` HP drain to caster (skip when `isCharm`); push `MindControlState` entry; emit `MIND_CONTROL_APPLIED`.
+- [x] **39b.2** Implement `tickMindControls(state): { state, events }` in `skillEngine.ts` — for each `MindControlState`: decrement `remainingTurns`; if `remainingTurns <= 0` emit `MIND_CONTROL_EXPIRED` and remove; else roll `resistBreakChancePerTurn` against `target.stats.wis / 100`; on break emit `MIND_CONTROL_BROKEN` and remove. Skip resistance roll when `isCharm`.
+- [x] **39b.3** Implement pure helpers `isMindControlled(state, targetId): boolean` and `getMindControl(state, targetId): MindControlState | undefined`. Export both.
+- [x] **39b.4** Implement `releaseAllMindControls(state): { state, events }` — removes all entries; emits `MIND_CONTROL_EXPIRED` for each. Called at combat end.
 
 ### 39c. Events and dispatcher wiring
 
-- [ ] **39c.1** Add `GameEvent` variants to `gameState.ts`: `MIND_CONTROL_APPLIED ({ casterId; targetId; durationTurns; isCharm })`, `MIND_CONTROL_RESISTED ({ casterId; targetId; reason: 'MP_TOO_HIGH' | 'INSUFFICIENT_CASTER_MP' })`, `MIND_CONTROL_BROKEN ({ targetId; atTurn: number })`, `MIND_CONTROL_EXPIRED ({ targetId })`.
-- [ ] **39c.2** Add `MIND_CONTROL` and `CHARM` to `PlayerIntent` union in `dispatcher.ts`; both route to `applyMindControl()` with `isCharm` derived from intent type.
-- [ ] **39c.3** Wire `tickMindControls()` into `combatEngine.ts` at the start of each player-turn resolution step (before action selection).
-- [ ] **39c.4** Wire `releaseAllMindControls()` in `dispatcher.ts` `processEventQueue()` — called when `COMBAT_ENCOUNTER` resolves (win, flee, or defeat).
-- [ ] **39c.5** Update `mockGameState.ts` — add `activeMindControls: []` to root.
+- [x] **39c.1** Add `GameEvent` variants to `gameState.ts`: `MIND_CONTROL_APPLIED ({ casterId; targetId; durationTurns; isCharm })`, `MIND_CONTROL_RESISTED ({ casterId; targetId; reason: 'MP_TOO_HIGH' | 'INSUFFICIENT_CASTER_MP' })`, `MIND_CONTROL_BROKEN ({ targetId; atTurn: number })`, `MIND_CONTROL_EXPIRED ({ targetId })`.
+- [x] **39c.2** Add `MIND_CONTROL` and `CHARM` to `PlayerIntent` union in `dispatcher.ts`; both route to `applyMindControl()` with `isCharm` derived from intent type.
+- [x] **39c.3** Wire `tickMindControls()` into `combatEngine.ts` at the start of each player-turn resolution step (before action selection).
+- [x] **39c.4** Wire `releaseAllMindControls()` in `dispatcher.ts` `processEventQueue()` — called when `COMBAT_ENCOUNTER` resolves (win, flee, or defeat).
+- [x] **39c.5** Update `mockGameState.ts` — add `activeMindControls: []` to root.
 
 ---
 
@@ -2083,11 +2075,11 @@
 
 > One boolean flag on `WorldNode`; one guard in `worldEngine.ts`. No new engine needed. Wards block both inbound and outbound teleportation, matching the world bible list (prisons, courthouses, vaults, castles, temples, Charter halls, dwarven holds, Ledger Court halls).
 
-- [ ] **40.1** Add `wardedAgainstTeleport?: boolean` to `WorldNode` type in `gameState.ts` — absent/`undefined` = not warded. Applies to both inbound (FAST_TRAVEL destination) and outbound (current node). Document world bible ward-site list in JSDoc comment.
-- [ ] **40.2** Add `TELEPORT_WARD_BLOCKED ({ nodeId: string; direction: 'INBOUND' | 'OUTBOUND' })` to `GameEvent` union in `gameState.ts`.
-- [ ] **40.3** Update `worldEngine.ts` FAST_TRAVEL handler — before processing: check `wardedAgainstTeleport` on `state.world.currentNodeId` (outbound) and on the destination node (inbound); if either is `true`, emit `TELEPORT_WARD_BLOCKED` and return state unchanged (no gold deducted).
-- [ ] **40.4** Update `spireEngine.ts` spire-travel path — spires bypass gold cost but NOT wards; apply the same outbound/inbound `wardedAgainstTeleport` check before processing a spire-travel intent.
-- [ ] **40.5** Update `worldGraph.ts` stub nodes — add `wardedAgainstTeleport: true` to one example node (e.g. a prison/vault stub) with a JSDoc comment linking to the world bible ward-site list; all other stubs default to absent (not warded). Full ward attribution for all 81+ nodes is part of Phase 42h world data authoring.
+- [x] **40.1** Add `wardedAgainstTeleport?: boolean` to `WorldNode` type in `gameState.ts` — absent/`undefined` = not warded. Applies to both inbound (FAST_TRAVEL destination) and outbound (current node). Document world bible ward-site list in JSDoc comment.
+- [x] **40.2** Add `TELEPORT_WARD_BLOCKED ({ nodeId: string; direction: 'INBOUND' | 'OUTBOUND' })` to `GameEvent` union in `gameState.ts`.
+- [x] **40.3** Update `worldEngine.ts` FAST_TRAVEL handler — before processing: check `wardedAgainstTeleport` on `state.world.currentNodeId` (outbound) and on the destination node (inbound); if either is `true`, emit `TELEPORT_WARD_BLOCKED` and return state unchanged (no gold deducted).
+- [x] **40.4** Update `spireEngine.ts` spire-travel path — spires bypass gold cost but NOT wards; apply the same outbound/inbound `wardedAgainstTeleport` check before processing a spire-travel intent.
+- [x] **40.5** Update `worldGraph.ts` stub nodes — add `wardedAgainstTeleport: true` to one example node (e.g. a prison/vault stub) with a JSDoc comment linking to the world bible ward-site list; all other stubs default to absent (not warded). Full ward attribution for all 81+ nodes is part of Phase 42h world data authoring.
 
 ---
 
@@ -2097,31 +2089,31 @@
 
 ### 41a. State changes
 
-- [ ] **41a.1** Define `FactionTier` union type in `gameState.ts` and export it: `type FactionTier = 'HOSTILE' | 'UNFRIENDLY' | 'NEUTRAL' | 'FRIENDLY' | 'TRUSTED' | 'CHAMPION'`.
-- [ ] **41a.2** Define `FactionStanding` interface in `gameState.ts` and export it: `{ score: number; tier: FactionTier; isMember: boolean; memberRank?: string }`.
-- [ ] **41a.3** Add `factions: Record<string, FactionStanding>` to `GameState` root — default `{}`; entries created lazily on first `applyFactionDelta()` call for that faction id.
-- [ ] **41a.4** Add `{ type: 'FACTION_STANDING'; factionId: string; min: number }` and `{ type: 'FACTION_MEMBER'; factionId: string }` variants to `DialogueCondition` union in `gameState.ts`.
-- [ ] **41a.5** Add `{ type: 'FACTION_DELTA'; factionId: string; delta: number }`, `{ type: 'JOIN_FACTION'; factionId: string; rank?: string }`, and `{ type: 'LEAVE_FACTION'; factionId: string }` variants to `DialogueEffect` union in `gameState.ts`.
+- [x] **41a.1** Define `FactionTier` union type in `gameState.ts` and export it: `type FactionTier = 'HOSTILE' | 'UNFRIENDLY' | 'NEUTRAL' | 'FRIENDLY' | 'TRUSTED' | 'CHAMPION'`.
+- [x] **41a.2** Define `FactionStanding` interface in `gameState.ts` and export it: `{ score: number; tier: FactionTier; isMember: boolean; memberRank?: string }`.
+- [x] **41a.3** Add `factions: Record<string, FactionStanding>` to `GameState` root — default `{}`; entries created lazily on first `applyFactionDelta()` call for that faction id.
+- [x] **41a.4** Add `{ type: 'FACTION_STANDING'; factionId: string; min: number }` and `{ type: 'FACTION_MEMBER'; factionId: string }` variants to `DialogueCondition` union in `gameState.ts`.
+- [x] **41a.5** Add `{ type: 'FACTION_DELTA'; factionId: string; delta: number }`, `{ type: 'JOIN_FACTION'; factionId: string; rank?: string }`, and `{ type: 'LEAVE_FACTION'; factionId: string }` variants to `DialogueEffect` union in `gameState.ts`.
 
 ### 41b. factionEngine.ts
 
-- [ ] **41b.1** Create `src/engines/factionEngine.ts` — define and export `FactionDef` interface: `{ id: string; name: string; type: 'adventurer_guild' | 'mercenary' | 'criminal' | 'religious' | 'knightly_order' | 'academic' | 'political' | 'trade' | 'underground'; description: string; patronGodId?: GodId; tiers: Array<{ tier: FactionTier; minScore: number; label: string }>; memberRanks?: string[]; defaultScore: number }`.
-- [ ] **41b.2** Implement `deriveFactionTier(score: number, def: FactionDef): FactionTier` pure helper — walks `def.tiers` descending by `minScore`; returns the highest tier whose `minScore ≤ score`.
-- [ ] **41b.3** Implement `applyFactionDelta(state, factionId, delta, catalog): { state, events }` — lazy-init entry from `def.defaultScore` if absent; clamp score [-100, 100]; recompute tier; emit `FACTION_STANDING_CHANGED`; if tier boundary crossed also emit `FACTION_TIER_CROSSED`.
-- [ ] **41b.4** Implement `joinFaction(state, factionId, rank, catalog): { state, events }` — guard: `isKnightlyOrderActive(state, factionId, catalog)` must be true for type `'knightly_order'`; sets `isMember: true`, `memberRank: rank`; emits `FACTION_JOINED`.
-- [ ] **41b.5** Implement `leaveFaction(state, factionId): { state, events }` — sets `isMember: false`, clears `memberRank`; emits `FACTION_LEFT`.
-- [ ] **41b.6** Implement `isKnightlyOrderActive(state, factionId, catalog): boolean` — for `type !== 'knightly_order'` always returns `true`; for knightly orders calls `isGodFree(state, def.patronGodId)` from `godStatusEngine`; returns `false` when patron god is ENSLAVED or DEAD. This is the Phase 36c.1 hook.
-- [ ] **41b.7** Implement pure helpers `getFactionStanding(state, factionId, catalog): FactionStanding` (returns existing entry or `{ score: def.defaultScore, tier, isMember: false }`) and `isFactionMember(state, factionId): boolean`.
-- [ ] **41b.8** Implement `tickFactionDecay(state, catalog): { state, events }` — called at day-end; for factions with `type: 'criminal' | 'underground'` only: positive scores above NEUTRAL decay by 1 point/day; all other faction types do not decay. Emits `FACTION_STANDING_CHANGED` for each changed entry.
+- [x] **41b.1** Create `src/engines/factionEngine.ts` — define and export `FactionDef` interface: `{ id: string; name: string; type: 'adventurer_guild' | 'mercenary' | 'criminal' | 'religious' | 'knightly_order' | 'academic' | 'political' | 'trade' | 'underground'; description: string; patronGodId?: GodId; tiers: Array<{ tier: FactionTier; minScore: number; label: string }>; memberRanks?: string[]; defaultScore: number }`.
+- [x] **41b.2** Implement `deriveFactionTier(score: number, def: FactionDef): FactionTier` pure helper — walks `def.tiers` descending by `minScore`; returns the highest tier whose `minScore ≤ score`.
+- [x] **41b.3** Implement `applyFactionDelta(state, factionId, delta, catalog): { state, events }` — lazy-init entry from `def.defaultScore` if absent; clamp score [-100, 100]; recompute tier; emit `FACTION_STANDING_CHANGED`; if tier boundary crossed also emit `FACTION_TIER_CROSSED`.
+- [x] **41b.4** Implement `joinFaction(state, factionId, rank, catalog): { state, events }` — guard: `isKnightlyOrderActive(state, factionId, catalog)` must be true for type `'knightly_order'`; sets `isMember: true`, `memberRank: rank`; emits `FACTION_JOINED`.
+- [x] **41b.5** Implement `leaveFaction(state, factionId): { state, events }` — sets `isMember: false`, clears `memberRank`; emits `FACTION_LEFT`.
+- [x] **41b.6** Implement `isKnightlyOrderActive(state, factionId, catalog): boolean` — for `type !== 'knightly_order'` always returns `true`; for knightly orders calls `isGodFree(state, def.patronGodId)` from `godStatusEngine`; returns `false` when patron god is ENSLAVED or DEAD. This is the Phase 36c.1 hook.
+- [x] **41b.7** Implement pure helpers `getFactionStanding(state, factionId, catalog): FactionStanding` (returns existing entry or `{ score: def.defaultScore, tier, isMember: false }`) and `isFactionMember(state, factionId): boolean`.
+- [x] **41b.8** Implement `tickFactionDecay(state, catalog): { state, events }` — called at day-end; for factions with `type: 'criminal' | 'underground'` only: positive scores above NEUTRAL decay by 1 point/day; all other faction types do not decay. Emits `FACTION_STANDING_CHANGED` for each changed entry.
 
 ### 41c. Events and dispatcher wiring
 
-- [ ] **41c.1** Add `GameEvent` variants to `gameState.ts`: `FACTION_STANDING_CHANGED ({ factionId; delta; newScore; newTier })`, `FACTION_TIER_CROSSED ({ factionId; from: FactionTier; to: FactionTier })`, `FACTION_JOINED ({ factionId; rank?: string })`, `FACTION_LEFT ({ factionId })`.
-- [ ] **41c.2** Extend `QuestReward` in `src/data/quests.ts` — add optional `factionDeltas?: { factionId: string; delta: number }[]` field. Update `questEngine.grantQuestReward()` to call `applyFactionDelta()` for each entry.
-- [ ] **41c.3** Add `evaluateDialogueCondition()` branches in `dialogueEngine.ts` for `FACTION_STANDING` (reads `state.factions[factionId].score`) and `FACTION_MEMBER` (reads `state.factions[factionId].isMember`).
-- [ ] **41c.4** Add `applyDialogueEffect()` branches in `dialogueEngine.ts` for `FACTION_DELTA`, `JOIN_FACTION`, and `LEAVE_FACTION` effects — each routes to the corresponding `factionEngine` function.
-- [ ] **41c.5** Wire `tickFactionDecay()` into `calendarEngine.runDayEndTick()` as a new step after step 8 (date increment), alongside `tickLoanInterest()`.
-- [ ] **41c.6** Update `mockGameState.ts` — add `factions: {}` to root.
+- [x] **41c.1** Add `GameEvent` variants to `gameState.ts`: `FACTION_STANDING_CHANGED ({ factionId; delta; newScore; newTier })`, `FACTION_TIER_CROSSED ({ factionId; from: FactionTier; to: FactionTier })`, `FACTION_JOINED ({ factionId; rank?: string })`, `FACTION_LEFT ({ factionId })`.
+- [x] **41c.2** Extend `QuestReward` in `src/data/quests.ts` — add optional `factionDeltas?: { factionId: string; delta: number }[]` field. Update `questEngine.grantQuestReward()` to call `applyFactionDelta()` for each entry.
+- [x] **41c.3** Add `evaluateDialogueCondition()` branches in `dialogueEngine.ts` for `FACTION_STANDING` (reads `state.factions[factionId].score`) and `FACTION_MEMBER` (reads `state.factions[factionId].isMember`).
+- [x] **41c.4** Add `applyDialogueEffect()` branches in `dialogueEngine.ts` for `FACTION_DELTA`, `JOIN_FACTION`, and `LEAVE_FACTION` effects — each routes to the corresponding `factionEngine` function.
+- [x] **41c.5** Wire `tickFactionDecay()` into `calendarEngine.runDayEndTick()` as a new step after step 8 (date increment), alongside `tickLoanInterest()`.
+- [x] **41c.6** Update `mockGameState.ts` — add `factions: {}` to root.
 
 ### 41d. Faction catalog data
 

@@ -24,7 +24,7 @@ import {
   applyStatus,
   deriveEffectiveStats,
 } from './statusEffectEngine';
-import { applyPassiveSkills } from './skillEngine';
+import { applyPassiveSkills, tickMindControls, isMindControlled } from './skillEngine';
 import { restoreJobResources, detectWeakNodes, applyArmorFracture } from './jobEngine';
 import { applyStatus as _applyStatusEffect } from './statusEffectEngine';
 import { getWeatherModifier } from './environmentEngine';
@@ -814,6 +814,29 @@ export function resolveCombatAction(
       _advanceTurn(state, gameState);
       return { combatState: state, hits, events, log };
     }
+  }
+
+  // ── Phase 39: MIND CONTROL TICK (player turns only) ────────────────────────
+  // tickMindControls() decrements active control durations and rolls resistance
+  // breaks. Only fires on player-controlled turns so the duration clock advances
+  // by player turns, not total actor turns — consistent with “N player turns” in
+  // skill descriptions.
+  // Object.assign matches the existing in-place GameState patch pattern used by
+  // checkCombatantsDowned (downCompanion) and startCombat (restoreJobResources).
+  if (isPlayerControlled(action.actorId, gameState)) {
+    const mcTick = tickMindControls(gameState, state.roundNumber);
+    Object.assign(gameState, mcTick.state);
+    events.push(...mcTick.events);
+  }
+
+  // ── Phase 39: MIND CONTROL — controlled enemy skips their action ─────────────
+  // A mind-controlled enemy is neutralised: no attack, no skills, no items.
+  // They stay in their initiative slot (control does not convert them to allies
+  // or redirect their actions to the player side).
+  if (!isPlayerControlled(action.actorId, gameState) && isMindControlled(gameState, action.actorId)) {
+    log.push({ round: state.roundNumber, actorId: actor.id, message: `${actor.name} is under mind control and cannot act.` });
+    _advanceTurn(state, gameState);
+    return { combatState: state, hits, events, log };
   }
 
   // ── FLEE (Task 7.7) ────────────────────────────────────────────────────────

@@ -72,6 +72,14 @@ export type { FaithId };
 export type { Season, SeasonModifiers };
 // Phase 36 schema types
 export type { GodState };
+// Phase 37 schema types
+export type { EndingAxes, EndingCondition };
+// Phase 38 schema types
+export type { BankAccountState, LoanState, BankState };
+// Phase 39 schema types
+export type { MindControlParams, MindControlState };
+// Phase 41 schema types
+export type { FactionTier, FactionStanding };
 // SaveMeta is defined in saveEngine.ts; re-exported here so UI layers
 // can import it from the central state module without a direct engine import.
 export type { SaveMeta } from '../engines/saveEngine';
@@ -195,6 +203,25 @@ export interface GodState {
   killedOnDay?:   number;  // calendar.day when killed
 }
 
+// ─── Ending tracker (Phase 37) ──────────────────────────────────────────────────
+// EndingAxes is a plain Record<string, string> — fully lore-agnostic.
+// Axis names and their valid values are catalog data in ojisan-data
+// (src/data/endingCatalog.ts). Initialized via
+// endingTrackerEngine.createDefaultEndingAxes(seed) at game start.
+//
+// EndingCondition: one entry in the ending resolution catalog. Each condition
+// specifies a set of axis → value requirements that must ALL match for this
+// ending to resolve. Optional requiredFlags checks gameState.flags values.
+// The full catalog lives in ojisan-data; resolveEnding() accepts it as a
+// parameter so engine-core stays lore-agnostic.
+export type EndingAxes = Record<string, string>;
+
+export interface EndingCondition {
+  readonly id:             string;                                                   // lore-specific ending id
+  readonly requires:       Readonly<Record<string, string>>;                         // axis → value; ALL must match
+  readonly requiredFlags?: Readonly<Record<string, boolean | string | number>>;      // optional flag checks
+}
+
 // ─── Tithe / weekly quota system (Task 26.4) ──────────────────────────────────
 // Tracks mandatory Aether Tithe payments to the Enclave.
 // Introduced when the relevant main quest first activates the system.
@@ -223,7 +250,8 @@ export type LocationFeatureKey =
   | 'shrine'
   | 'market'
   | 'smithy'
-  | 'alchemy_lab';
+  | 'alchemy_lab'
+  | 'bank';           // Phase 38: unlocks DEPOSIT / WITHDRAW / TAKE_LOAN / REPAY_LOAN intents
 
 // ─── Inventory slot (updated) ─────────────────────────────────────────────────
 
@@ -613,6 +641,16 @@ type WorldNode = {
   // Task 26.19: mini-game and location-feature keys present at this node.
   // Engines check this array before allowing FISH / GAMBLE / ARENA / ONSEN intents.
   readonly features?:      LocationFeatureKey[];
+  // Phase 40: Teleportation ward flag. When true, all teleportation TO and FROM
+  // this node is blocked — both FAST_TRAVEL and spire travel.
+  // Absent / undefined = not warded (the default for most nodes).
+  //
+  // World bible ward-site classes:
+  //   Prisons, courthouses, vaults, castles, temples, Charter halls,
+  //   dwarven holds, Ledger Court halls.
+  //
+  // Full attribution for the 81+ world-graph nodes is deferred to Phase 42h data authoring.
+  readonly wardedAgainstTeleport?: boolean;
 };
 
 type WorldEdge = {
@@ -867,7 +905,14 @@ export type DialogueEffect =
   | { type: 'ALIGNMENT_SHIFT'; delta: number }
   // Phase 33: set faith affiliation on player or a contact (task 33a.4)
   // npcId: 'player' targets the player; any other value targets a contact by npcId.
-  | { type: 'SET_FAITH'; faithId: FaithId; npcId: string };
+  | { type: 'SET_FAITH'; faithId: FaithId; npcId: string }
+  // Phase 41: faction effects applied via dialogue choices (task 41a.5)
+  // FACTION_DELTA  — adjusts standing score; creates entry lazily if absent.
+  // JOIN_FACTION   — sets isMember:true; blocked if knightly order patron is unavailable.
+  // LEAVE_FACTION  — sets isMember:false; no-op if not already a member.
+  | { type: 'FACTION_DELTA';  factionId: string; delta: number }
+  | { type: 'JOIN_FACTION';   factionId: string; rank?: string }
+  | { type: 'LEAVE_FACTION';  factionId: string };
 
 // Conditions that gate a choice or node from being accessible.
 export type DialogueCondition =
@@ -886,7 +931,12 @@ export type DialogueCondition =
   // Phase 33: gate dialogue on faith affiliation of contextual NPC or player (task 33a.3)
   // Evaluated against the npcId arg in evaluateCondition: 'player' checks player.faithId,
   // any other value checks the matching contact's faithId.
-  | { type: 'FAITH';          faithId: FaithId };
+  | { type: 'FAITH';          faithId: FaithId }
+  // Phase 41: faction dialogue conditions (task 41a.4)
+  // FACTION_STANDING — score in the faction must be >= min (reads virtual standing when absent).
+  // FACTION_MEMBER   — player must currently be a member of the faction.
+  | { type: 'FACTION_STANDING'; factionId: string; min: number }
+  | { type: 'FACTION_MEMBER';   factionId: string };
 
 // A single choice the player can make at a node.
 export interface DialogueChoice {
@@ -1073,9 +1123,106 @@ export interface CharacterCreationOptions {
   allocatedStats: Record<string, number>;
 }
 
+// ─── Banking (Phase 38) ─────────────────────────────────────────────────────────
+// Simple deposit / withdraw / loan system.
+//
+// Account access: any WorldNode with 'bank' in features[] gives access to all
+// accounts regardless of which node the account was first opened at.
+//
+// Lazy init: BankAccountState is created on first deposit — no separate
+// openBankAccount() intent needed.
+//
+// Loan fee: baked into remainingDebt at borrow time as principal × (1 + flatFeeRate).
+// feeRate is reputation-gated: Renowned 0.05 / Liked 0.08 / Neutral 0.12.
+// Disliked / Infamous are refused outright.
+//
+// Overdue penalty: +2% of principal per overdue day added to remainingDebt.
+// Default threshold: total added penalty >= original principal (debt >= 2× principal).
+// On default: LOAN_DEFAULT emitted, reputation -30 in loan region, loan removed.
+export interface BankAccountState {
+  nodeId:      string;  // world node where account was first created (lore flavor)
+  balance:     number;  // current deposited balance
+  openedOnDay: number;  // calendar.day of first deposit
+}
+
+export interface LoanState {
+  nodeId:        string;  // world node that issued the loan (used for region reputation check)
+  principal:     number;  // original borrowed amount
+  flatFeeRate:   number;  // fraction baked in at creation (e.g. 0.12 for Neutral)
+  remainingDebt: number;  // principal × (1 + flatFeeRate) at creation; grows if overdue
+  dueOnDay:      number;  // calendar.day + 30 at creation
+  borrowedOnDay: number;  // calendar.day when loan was taken
+}
+
+export interface BankState {
+  accounts: BankAccountState[];  // one per node where the player has ever deposited
+  loans:    LoanState[];         // ultra-simple: at most 1 active loan at any time
+}
+
+// ─── Mind control (Phase 39) ──────────────────────────────────────────────────
+// MindControlParams is the catalog-driven config for every mind control and charm
+// skill effect. All costs, durations, resistance rules, and backlash are authored
+// per-skill so other lore paths can define entirely different mechanics without
+// touching the engine. Lives in gameState.ts so MindControlState can reference it
+// without creating a circular import with skillEngine.ts.
+export interface MindControlParams {
+  mpCostFlat:               number;  // flat MP deducted from caster at apply time
+  mpCostPerTargetMpRatio:   number;  // additional cost = target.mp.current × this
+  durationTurns:            number;  // how many player combat turns the control lasts
+  backlashHpPct:            number;  // HP drained from caster = caster.hp.max × this (0 = none)
+  resistBreakChancePerTurn: number;  // base per-turn probability the target breaks free
+  maxTargetMpRatio:         number;  // if target.mp.current > caster.mp.max × this → resisted
+  charmVariant?:            boolean; // true → no backlash, no resistance roll (Bard/Emissary path)
+}
+
+// Runtime state of one active mind control or charm effect.
+// Pushed to GameState.activeMindControls by skillEngine.applyMindControl();
+// ticked by tickMindControls() at the start of each player combat turn;
+// removed when remainingTurns reaches 0 or target breaks free.
+export interface MindControlState {
+  targetId:       string;          // id of the controlled character
+  casterId:       string;          // id of the caster (typically player.id)
+  remainingTurns: number;          // turns left before natural expiry
+  params:         MindControlParams;
+  isCharm:        boolean;         // true when triggered via CHARM intent
+  targetWis:      number;          // snapshot of target.stats.wis at apply time (for resistance roll)
+}
+
+// ─── Faction system (Phase 41) ────────────────────────────────────────────────
+// A catalog-driven standing-and-membership system. Factions cover guilds,
+// criminal networks, religious orders, knightly orders, and political bodies.
+// The `factions` root field on GameState is a sparse Record — entries are
+// created lazily on the first applyFactionDelta() call for that faction id.
+//
+// Knightly orders are a sub-type of faction gated on patron god status:
+// factionEngine.isKnightlyOrderActive() checks godStatusEngine.isGodFree()
+// and blocks joinFaction() when the patron god is ENSLAVED or DEAD.
+//
+// The engine (factionEngine.ts) is lore-agnostic. The FactionDef catalog
+// with Ojisan-specific entries lives in src/data/factionCatalog.ts (Phase 41d).
+
+// Six standing tiers from hostile to champion.
+// Tier thresholds are defined per-faction in FactionDef.tiers (see factionEngine.ts).
+export type FactionTier =
+  | 'HOSTILE'      // far below neutral; faction is actively hostile
+  | 'UNFRIENDLY'   // below neutral; cold reception, elevated prices
+  | 'NEUTRAL'      // baseline standing; no bonus or penalty
+  | 'FRIENDLY'     // above neutral; small discounts, quest access
+  | 'TRUSTED'      // high standing; member ranks accessible
+  | 'CHAMPION';    // maximum standing; title and elite access
+
+// Runtime record for one faction. Stored in GameState.factions[factionId].
+// isMember and memberRank are orthogonal to score/tier; a member can hold
+// any tier. Membership is set/cleared exclusively via joinFaction() / leaveFaction().
+export interface FactionStanding {
+  score:       number;        // [-100, +100]; cumulative standing
+  tier:        FactionTier;   // cached; recomputed by factionEngine on every delta
+  isMember:    boolean;
+  memberRank?: string;        // undefined when not a member; from FactionDef.memberRanks[]
+}
+
 export interface GameSettings {
   adultContentEnabled:    boolean;
-  nonConContentEnabled:   boolean;
   contactListCap:         number;  // default 400
   partyMaxSize:           number;  // default 3
   textSize:               'small' | 'medium' | 'large';
@@ -1143,6 +1290,31 @@ export interface GameState {
   // The specific god id strings are lore data in ojisan-data; this engine field
   // is generic and operates on whatever string ids it receives.
   gods: Record<string, GodState>;
+
+  // ── Phase 37: ending axis tracker ───────────────────────────────────────────────
+  // Accumulates story-significant axis values as the narrative progresses.
+  // Seeded at game init via endingTrackerEngine.createDefaultEndingAxes(seed).
+  // Axis names and valid values are lore data in ojisan-data (src/data/endingCatalog.ts).
+  endingAxes: EndingAxes;
+
+  // ── Phase 38: banking ────────────────────────────────────────────────────────────
+  // Deposit accounts and loans. Available at WorldNodes with 'bank' in features[].
+  // Default: no accounts, no loans.
+  bank: BankState;
+
+  // ── Phase 39: mind control ───────────────────────────────────────────────────────
+  // Active mind control and charm effects currently in play during combat.
+  // Populated by skillEngine.applyMindControl(); ticked per player turn by
+  // tickMindControls() in combatEngine; cleared on combat defeat via
+  // releaseAllMindControls() in dispatcher.processEventQueue().
+  activeMindControls: MindControlState[];
+
+  // ── Phase 41: faction system ────────────────────────────────────────────────────────
+  // Sparse record of faction standings; entries created lazily on first
+  // applyFactionDelta() call for that faction id. Default at game start: {}.
+  // The catalog of FactionDef entries lives in src/data/factionCatalog.ts.
+  // factionEngine.ts owns all mutations; UI reads via getFactionStanding().
+  factions: Record<string, FactionStanding>;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -1428,8 +1600,58 @@ export type GameEvent =
   // GOD_FREED:    a god's status changed from ENSLAVED back to FREE; fired by freeGod().
   // GOD_KILLED:   a god's status permanently changed to DEAD; fired by killGod().
   // All three events write flags['god_status_<godId>'] and call endingTrackerEngine
-  // via the dispatcher processEventQueue handler (Phase 36c.2).
+  // via the dispatcher processEventQueue handler (Phase 37c.1).
   | { type: 'GOD_ENSLAVED'; godId: string; enslavedById: string; day: number }
   | { type: 'GOD_FREED';    godId: string; day: number }
   | { type: 'GOD_KILLED';   godId: string; day: number }
+  // Phase 37 — Ending axis tracker event
+  // ENDING_AXIS_UPDATED: emitted by endingTrackerEngine.updateEndingAxis() on every change.
+  //   axis is a lore-specific axis id string; newValue is the new axis value string.
+  //   Idempotent writes (same value) do NOT emit this event.
+  | { type: 'ENDING_AXIS_UPDATED'; axis: string; newValue: string; day: number }
+  // Phase 38 — Banking events
+  // BANK_DEPOSIT:          gold moved from player wallet into a bank account.
+  // BANK_WITHDRAWAL:       gold moved from bank account back to player wallet.
+  // LOAN_TAKEN:            player borrowed gold; flatFee is the upfront interest baked in.
+  // LOAN_REPAID:           full or partial payment against the active loan.
+  // LOAN_INTEREST_ACCRUED: overdue loan grew by the daily 2%-of-principal penalty.
+  // LOAN_DEFAULT:          total added penalty reached the principal; loan removed, rep hit.
+  | { type: 'BANK_DEPOSIT';          nodeId: string; amount: number; newBalance: number }
+  | { type: 'BANK_WITHDRAWAL';       nodeId: string; amount: number; newBalance: number }
+  | { type: 'LOAN_TAKEN';            nodeId: string; principal: number; flatFee: number; dueOnDay: number }
+  | { type: 'LOAN_REPAID';           nodeId: string; amountPaid: number; remaining: number }
+  | { type: 'LOAN_INTEREST_ACCRUED'; nodeId: string; amount: number; newTotal: number }
+  | { type: 'LOAN_DEFAULT';          nodeId: string; totalDebt: number }
+  // Phase 39 — Mind Control events
+  // MIND_CONTROL_APPLIED:  control or charm successfully placed on target.
+  // MIND_CONTROL_RESISTED: blocked before MP was charged; reason names the gate that failed.
+  //   'MP_TOO_HIGH'             — target.mp.current exceeded caster.mp.max × maxTargetMpRatio.
+  //   'INSUFFICIENT_CASTER_MP'  — caster had no MP at all (0 mp.max); cost is non-zero flat.
+  //   'TARGET_NOT_FOUND'        — casterId did not resolve to a known character.
+  // MIND_CONTROL_BROKEN:  target passed the per-turn resistance roll early.
+  //   atTurn is CombatState.roundNumber when the break occurred.
+  // MIND_CONTROL_EXPIRED: remainingTurns reached 0; natural expiry.
+  | { type: 'MIND_CONTROL_APPLIED';  casterId: string; targetId: string; durationTurns: number; isCharm: boolean }
+  | { type: 'MIND_CONTROL_RESISTED'; casterId: string; targetId: string; reason: 'MP_TOO_HIGH' | 'INSUFFICIENT_CASTER_MP' | 'TARGET_NOT_FOUND' }
+  | { type: 'MIND_CONTROL_BROKEN';   targetId: string; atTurn: number }
+  | { type: 'MIND_CONTROL_EXPIRED';  targetId: string }
+  // Phase 40 — Teleportation ward
+  // Emitted when a FAST_TRAVEL or spire-travel attempt is blocked by a ward.
+  // nodeId  = the warded node that triggered the block.
+  // direction = OUTBOUND when the player is leaving a warded node;
+  //             INBOUND  when the destination is warded.
+  // Outbound is checked first; only one event fires per blocked attempt.
+  | { type: 'TELEPORT_WARD_BLOCKED'; nodeId: string; direction: 'INBOUND' | 'OUTBOUND' }
+  // Phase 41 — Faction system events
+  // FACTION_STANDING_CHANGED: score changed for a faction (delta applied or decay tick).
+  //   Always emitted by applyFactionDelta(). UI uses this to refresh standing displays.
+  // FACTION_TIER_CROSSED:     score crossed a tier boundary; emitted alongside the above.
+  //   from/to are the old and new FactionTier values.
+  // FACTION_JOINED:           player became a member of a faction via joinFaction().
+  //   rank is the initial member rank string, if provided.
+  // FACTION_LEFT:             player's membership was revoked via leaveFaction().
+  | { type: 'FACTION_STANDING_CHANGED'; factionId: string; delta: number; newScore: number; newTier: FactionTier }
+  | { type: 'FACTION_TIER_CROSSED';     factionId: string; from: FactionTier; to: FactionTier }
+  | { type: 'FACTION_JOINED';           factionId: string; rank?: string }
+  | { type: 'FACTION_LEFT';             factionId: string }
   ;

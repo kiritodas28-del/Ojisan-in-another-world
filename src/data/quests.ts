@@ -52,6 +52,25 @@ export interface QuestReward {
     readonly action:      'ENSLAVE' | 'FREE' | 'KILL';
     readonly enslaverId?: string;
   }>;
+  // Phase 37 (task 37c.2): optional ending axis effect applied on quest completion.
+  // questEngine.grantQuestReward() calls endingTrackerEngine.updateEndingAxis() when set.
+  // Axis names and valid values are documented in src/data/endingCatalog.ts.
+  // The kharrath, playerThrone, faith, and law axes are ONLY written via this field —
+  // no GameEvent drives them directly. The goddess axis can also be overridden here
+  // (e.g. quest 8.3 sets 'FREED_DIMINISHED' to override the 'FREED_RESTORED' default
+  // written by the dispatcher's GOD_FREED handler).
+  readonly endingAxisEffect?: {
+    readonly axis:  string;
+    readonly value: string;
+  };
+  // Phase 41 (task 41c.2): optional faction standing deltas applied on quest completion.
+  // questEngine.grantQuestReward() calls applyFactionDelta() for each entry.
+  // Positive delta increases standing; negative decreases it.
+  // Entry order is preserved; a quest can affect multiple factions simultaneously.
+  readonly factionDeltas?: ReadonlyArray<{
+    readonly factionId: string;
+    readonly delta:     number;
+  }>;
 }
 
 // ─── Quest definition ─────────────────────────────────────────────────────────

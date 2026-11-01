@@ -19,6 +19,7 @@ import type {
   GameState, GameEvent,
   SpireNetwork, SpireState,
 } from '../state/gameState';
+import { getWorldNode } from '../data/worldGraph';
 
 // ─── Default initial spire network ───────────────────────────────────────────
 /**
@@ -74,6 +75,19 @@ export function spireTravel(
 ): { state: GameState; events: GameEvent[] } {
   _assertSpireUnlocked(state, fromNodeId);
   _assertSpireUnlocked(state, toNodeId);
+
+  // Phase 40: Defense-in-depth ward check.
+  // worldEngine.fastTravel() checks wards before reaching this function, so this
+  // guard exists only to block direct callers from bypassing wards via spireTravel().
+  // Spires bypass gold cost but NOT teleportation wards.
+  const fromNode = getWorldNode(fromNodeId);
+  const toNode   = getWorldNode(toNodeId);
+  if (fromNode.wardedAgainstTeleport) {
+    throw new Error(`TELEPORT_WARD_BLOCKED:OUTBOUND:${fromNodeId}`);
+  }
+  if (toNode.wardedAgainstTeleport) {
+    throw new Error(`TELEPORT_WARD_BLOCKED:INBOUND:${toNodeId}`);
+  }
 
   const events: GameEvent[] = [
     { type: 'SPIRE_TRAVEL_USED', fromNodeId, toNodeId },

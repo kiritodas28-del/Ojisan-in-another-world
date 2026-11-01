@@ -35,6 +35,10 @@ import {
   resolveLootDrop,
   getItemDef,
   removeItem,
+  deposit,
+  withdraw,
+  takeLoan,
+  repayLoan,
 } from './economyEngine';
 import { QUEST_CATALOG } from '../data/quests';
 import {
@@ -73,6 +77,9 @@ import {
   unlockSkill,
   useActiveSkill,
   resetSkillTree,
+  applyMindControl,
+  releaseAllMindControls,
+  getSkillDef,
   type SkillTree,
 } from './skillEngine';
 import type { EquipmentSlot, ContactProfileView } from '../state/gameState';
@@ -161,6 +168,14 @@ import { awardCharterXP } from './charterEngine';
 import { advancePhase, resolveSleep } from './calendarEngine';
 // Task 9.1 — relationship engine wired for social-action sub-intents under TALK
 import { resolveSocialAction, type SocialAction } from './relationshipEngine';
+// Phase 37 — ending axis tracker
+import { updateEndingAxis } from './endingTrackerEngine';
+import {
+  deriveGodsAxisValue,
+  OJISAN_PROTECTED_GOD_IDS,
+  OJISAN_GODDESS_GOD_ID,
+  OJISAN_ENSLAVER_ID,
+} from '../data/endingCatalog';
 
 // ─── Intent union type ────────────────────────────────────────────────────────
 export type PlayerIntent =
@@ -292,7 +307,26 @@ export type PlayerIntent =
   | { type: 'ONSEN' }
   | { type: 'COMMIT_CRIME';    crimeType: CrimeType }
   | { type: 'GRANT_PARDON';    regionId: string; questId: string }
-  | { type: 'BUILD_STRONGHOLD' };
+  | { type: 'BUILD_STRONGHOLD' }
+  // ── Phase 38: Banking intents ─────────────────────────────────────────────────────────
+  // All four require nodeId to have the 'bank' LocationFeatureKey.
+  // DEPOSIT:    player gold → bank account (lazy-creates account on first use).
+  // WITHDRAW:   bank balance → player wallet (accessible from any bank node).
+  // TAKE_LOAN:  borrow gold; one active loan at a time; reputation ≥ Neutral.
+  // REPAY_LOAN: partial or full repayment of the active loan.
+  | { type: 'DEPOSIT';    nodeId: string; amount: number }
+  | { type: 'WITHDRAW';   nodeId: string; amount: number }
+  | { type: 'TAKE_LOAN';  nodeId: string; amount: number }
+  | { type: 'REPAY_LOAN'; nodeId: string; amount: number }
+  // ── Phase 39: Mind control intents ────────────────────────────────────────────────
+  // MIND_CONTROL: hard control — MindControlParams loaded from skill’s MIND_CONTROL effect;
+  //   backlash HP cost applies; per-turn resistance roll active.
+  // CHARM:        lightweight social influence — same routing with isCharm: true;
+  //   no backlash, no resistance roll; lasts exactly durationTurns.
+  // Both require skillId (to load MindControlParams) and target (the AnyCharacter to control).
+  // The caller must resolve target from their live CombatState.combatants[targetId].
+  | { type: 'MIND_CONTROL'; skillId: string; target: import('../state/gameState').AnyCharacter }
+  | { type: 'CHARM';        skillId: string; target: import('../state/gameState').AnyCharacter };
 
 // ─── Dispatch result ──────────────────────────────────────────────────────────
 export interface DispatchResult {
@@ -1462,6 +1496,101 @@ export function dispatch(state: GameState, intent: PlayerIntent): DispatchResult
     return { state, events, narrative };
   }
 
+  // ── Phase 38: Banking intents (38c.2) ───────────────────────────────────────────
+  if (intent.type === 'DEPOSIT') {
+    try {
+      const result = deposit(state, intent.nodeId, intent.amount);
+      state  = result.state;
+      events = [...events, ...result.events];
+      state  = processEventQueue(state, events);
+      const bal = state.bank.accounts.reduce((s, a) => s + a.balance, 0);
+      narrative.push(`${intent.amount}g deposited. Bank balance: ${bal}g.`);
+    } catch (err) {
+      narrative.push((err as Error).message);
+    }
+    return { state, events, narrative };
+  }
+
+  if (intent.type === 'WITHDRAW') {
+    try {
+      const result = withdraw(state, intent.nodeId, intent.amount);
+      state  = result.state;
+      events = [...events, ...result.events];
+      state  = processEventQueue(state, events);
+      const bal = state.bank.accounts.reduce((s, a) => s + a.balance, 0);
+      narrative.push(`${intent.amount}g withdrawn. Bank balance: ${bal}g. Wallet: ${state.player.gold}g.`);
+    } catch (err) {
+      narrative.push((err as Error).message);
+    }
+    return { state, events, narrative };
+  }
+
+  if (intent.type === 'TAKE_LOAN') {
+    try {
+      const result = takeLoan(state, intent.nodeId, intent.amount);
+      state  = result.state;
+      events = [...events, ...result.events];
+      state  = processEventQueue(state, events);
+      const loan = state.bank.loans[0];
+      narrative.push(
+        `Loan of ${intent.amount}g approved. Total owed: ${loan.remainingDebt}g by day ${loan.dueOnDay}.`,
+      );
+    } catch (err) {
+      narrative.push((err as Error).message);
+    }
+    return { state, events, narrative };
+  }
+
+  if (intent.type === 'REPAY_LOAN') {
+    try {
+      const result = repayLoan(state, intent.nodeId, intent.amount);
+      state  = result.state;
+      events = [...events, ...result.events];
+      state  = processEventQueue(state, events);
+      const remaining = state.bank.loans[0]?.remainingDebt ?? 0;
+      narrative.push(
+        remaining > 0
+          ? `${intent.amount}g paid. Remaining debt: ${remaining}g.`
+          : `Loan fully repaid.`,
+      );
+    } catch (err) {
+      narrative.push((err as Error).message);
+    }
+    return { state, events, narrative };
+  }
+
+  // ── MIND_CONTROL (Phase 39, 39c.2) ───────────────────────────────────────────────────────
+  // Hard mind control. Loads MindControlParams from the named skill’s MIND_CONTROL
+  // effect; applies backlash HP drain to caster; starts per-turn resistance ticking.
+  if (intent.type === 'MIND_CONTROL') {
+    const params = _getMindControlParams(intent.skillId);
+    const result = applyMindControl(state, state.player.id, intent.target, params, false);
+    state  = result.state;
+    events = [...events, ...result.events];
+    state  = processEventQueue(state, events);
+    const resisted = result.events.some(e => e.type === 'MIND_CONTROL_RESISTED');
+    narrative.push(resisted
+      ? `Your mind reaches out — but finds no purchase.`
+      : `${intent.target.name}’s will buckles under your command.`);
+    return { state, events, narrative };
+  }
+
+  // ── CHARM (Phase 39, 39c.2) ───────────────────────────────────────────────────────────────
+  // Lightweight charm. Same routing as MIND_CONTROL but isCharm: true —
+  // no backlash, no resistance roll, expires after exactly durationTurns.
+  if (intent.type === 'CHARM') {
+    const params = _getMindControlParams(intent.skillId);
+    const result = applyMindControl(state, state.player.id, intent.target, params, true);
+    state  = result.state;
+    events = [...events, ...result.events];
+    state  = processEventQueue(state, events);
+    const resisted = result.events.some(e => e.type === 'MIND_CONTROL_RESISTED');
+    narrative.push(resisted
+      ? `Your words ring hollow — she resists your suggestion.`
+      : `A quiet compliance settles over ${intent.target.name}.`);
+    return { state, events, narrative };
+  }
+
   throw new Error(`dispatch() not yet implemented for intent type: ${(intent as { type: string }).type}`);
 }
 
@@ -1762,6 +1891,34 @@ export function processEventQueue(state: GameState, events: GameEvent[]): GameSt
 
       // ── All other events pass through until their phase wires them ─────────
       // ── Phase 36: God status events ──────────────────────────────────────────
+      // ── Phase 39: PARTY_WIPED — release all active mind controls on defeat ──────
+      // Fired when combat ends in defeat (PLAYER_DEFEAT path).
+      // Victory / flee controls expire naturally through tickMindControls since
+      // enemy IDs are UUIDs and never collide across separate encounters.
+      case 'PARTY_WIPED': {
+        if (state.activeMindControls.length > 0) {
+          const mcRelease = releaseAllMindControls(state);
+          state = mcRelease.state;
+          events.push(...mcRelease.events);
+        }
+        break;
+      }
+
+      // ── Phase 39: MIND_CONTROL_EXPIRED / MIND_CONTROL_BROKEN ─────────────────
+      // Remove the entry from activeMindControls.
+      // combatEngine already patches its local gameState ref via Object.assign;
+      // this handler keeps the persisted GameState in sync for non-combat paths.
+      case 'MIND_CONTROL_EXPIRED':
+      case 'MIND_CONTROL_BROKEN': {
+        state = {
+          ...state,
+          activeMindControls: state.activeMindControls.filter(
+            mc => mc.targetId !== event.targetId,
+          ),
+        };
+        break;
+      }
+
       // GOD_ENSLAVED / GOD_FREED / GOD_KILLED:
       //   1. Write a story flag: flags['god_status_<godId>'] = event.type
       //      (e.g. 'GOD_ENSLAVED', 'GOD_FREED', 'GOD_KILLED').
@@ -1774,7 +1931,20 @@ export function processEventQueue(state: GameState, events: GameEvent[]): GameSt
           ...state,
           flags: { ...state.flags, [flagKey]: 'GOD_ENSLAVED' },
         };
-        // Phase 37 stub: endingTrackerEngine.updateEndingAxis(state, 'goddess', ...)
+        // Phase 37 (task 37c.1): update ending axes.
+        if (event.godId === OJISAN_GODDESS_GOD_ID) {
+          // Varan's axis: distinguish Kharrath's enslavement from a player power-end enslavement.
+          const goddessValue =
+            event.enslavedById === OJISAN_ENSLAVER_ID
+              ? 'ENSLAVED_BY_KHARRATH'
+              : 'ENSLAVED_BY_PLAYER';
+          const r = updateEndingAxis(state, 'goddess', goddessValue);
+          state = r.state; events.push(...r.events);
+        } else if (OJISAN_PROTECTED_GOD_IDS.has(event.godId)) {
+          // state.gods is already updated by godStatusEngine before this event fires.
+          const r = updateEndingAxis(state, 'gods', deriveGodsAxisValue(state.gods));
+          state = r.state; events.push(...r.events);
+        }
         break;
       }
 
@@ -1784,7 +1954,16 @@ export function processEventQueue(state: GameState, events: GameEvent[]): GameSt
           ...state,
           flags: { ...state.flags, [flagKey]: 'GOD_FREED' },
         };
-        // Phase 37 stub: endingTrackerEngine.updateEndingAxis(state, 'goddess', ...)
+        // Phase 37 (task 37c.1): update ending axes.
+        // Default for Varan is FREED_RESTORED. Quest 8.3 can override to FREED_DIMINISHED
+        // via QuestReward.endingAxisEffect, which runs after this in grantQuestReward().
+        if (event.godId === OJISAN_GODDESS_GOD_ID) {
+          const r = updateEndingAxis(state, 'goddess', 'FREED_RESTORED');
+          state = r.state; events.push(...r.events);
+        } else if (OJISAN_PROTECTED_GOD_IDS.has(event.godId)) {
+          const r = updateEndingAxis(state, 'gods', deriveGodsAxisValue(state.gods));
+          state = r.state; events.push(...r.events);
+        }
         break;
       }
 
@@ -1794,7 +1973,14 @@ export function processEventQueue(state: GameState, events: GameEvent[]): GameSt
           ...state,
           flags: { ...state.flags, [flagKey]: 'GOD_KILLED' },
         };
-        // Phase 37 stub: endingTrackerEngine.updateEndingAxis(state, 'goddess', ...)
+        // Phase 37 (task 37c.1): update ending axes.
+        if (event.godId === OJISAN_GODDESS_GOD_ID) {
+          const r = updateEndingAxis(state, 'goddess', 'KILLED');
+          state = r.state; events.push(...r.events);
+        } else if (OJISAN_PROTECTED_GOD_IDS.has(event.godId)) {
+          const r = updateEndingAxis(state, 'gods', deriveGodsAxisValue(state.gods));
+          state = r.state; events.push(...r.events);
+        }
         break;
       }
 
@@ -1818,6 +2004,34 @@ export function processEventQueue(state: GameState, events: GameEvent[]): GameSt
 }
 
 // ─── Internal helpers ─────────────────────────────────────────────────────────
+
+/**
+ * _getMindControlParams — loads the MIND_CONTROL effect params from a skill’s
+ * catalog definition. Returns safe defaults when the skill lacks the effect or
+ * the catalog has not yet been authored (Phase 42d).
+ * Lives here (not in skillEngine) to keep skillEngine free of default data.
+ */
+function _getMindControlParams(
+  skillId: string,
+): import('../state/gameState').MindControlParams {
+  try {
+    const def    = getSkillDef(skillId);
+    const effect = def.effects.find(e => e.type === 'MIND_CONTROL');
+    if (effect && effect.type === 'MIND_CONTROL') return effect.params;
+  } catch { /* skill not yet authored; fall through to defaults */ }
+
+  // Safe defaults: minimal cost, short duration, no backlash.
+  // Catalog skills authored in Phase 42d will override these entirely.
+  return {
+    mpCostFlat:               20,
+    mpCostPerTargetMpRatio:   0.05,
+    durationTurns:            2,
+    backlashHpPct:            0,
+    resistBreakChancePerTurn: 0.20,
+    maxTargetMpRatio:         2.0,
+    charmVariant:             false,
+  };
+}
 
 /**
  * Best-effort: infer the current region from worldState.currentLocationId.

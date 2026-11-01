@@ -29,6 +29,14 @@ import { QUEST_CATALOG }                from '../data/quests';
 import { incrementAchievementCounter }  from './achievementEngine';
 import { shiftAlignment, getDominantAlignment } from './alignmentEngine';
 import { CHARTER_XP_THRESHOLDS } from './charterEngine';
+import {
+  getFactionStanding,
+  isFactionMember,
+  applyFactionDelta,
+  joinFaction,
+  leaveFaction,
+} from './factionEngine';
+import { FACTION_CATALOG } from '../data/factionCatalog';
 
 // ─── Re-exports for consumers that previously imported from here ──────────────
 // The canonical types now live in gameState.ts. Re-export so that any
@@ -102,6 +110,18 @@ export function evaluateCondition(
       }
       const contact = gameState.contacts.find(c => c.character.npcId === npcId);
       return (contact?.character.faithId ?? undefined) === condition.faithId;
+    }
+    // Phase 41 (task 41c.3): gate dialogue on faction standing or membership.
+    // FACTION_STANDING: player's score in the faction must be >= condition.min.
+    //   Uses getFactionStanding() so the check is valid even before a state entry exists
+    //   (returns virtual standing from def.defaultScore for absent entries).
+    // FACTION_MEMBER: player must currently hold an active membership.
+    case 'FACTION_STANDING': {
+      const standing = getFactionStanding(gameState, condition.factionId, FACTION_CATALOG);
+      return standing.score >= condition.min;
+    }
+    case 'FACTION_MEMBER': {
+      return isFactionMember(gameState, condition.factionId);
     }
   }
 }
@@ -231,6 +251,33 @@ export function applyDialogueEffect(
       });
       events.push({ type: 'DIALOGUE_EFFECT_APPLIED', effect });
       return { state, events };
+    }
+
+    // Phase 41 (task 41c.4): faction effects applied via dialogue choices.
+    // FACTION_DELTA  — adjusts score; lazy-inits entry; emits standing/tier events.
+    // JOIN_FACTION   — sets isMember; throws (non-fatal) if knightly order patron unavailable.
+    // LEAVE_FACTION  — clears isMember; no-op if not a member.
+    case 'FACTION_DELTA': {
+      const result = applyFactionDelta(gameState, effect.factionId, effect.delta, FACTION_CATALOG);
+      events.push({ type: 'DIALOGUE_EFFECT_APPLIED', effect }, ...result.events);
+      return { state: result.state, events };
+    }
+    case 'JOIN_FACTION': {
+      try {
+        const result = joinFaction(gameState, effect.factionId, effect.rank, FACTION_CATALOG);
+        events.push({ type: 'DIALOGUE_EFFECT_APPLIED', effect }, ...result.events);
+        return { state: result.state, events };
+      } catch (err) {
+        // Knightly order patron unavailable — guard dialogue tree with FACTION_STANDING
+        // or a FLAG condition so this branch is normally unreachable.
+        console.warn(`applyDialogueEffect JOIN_FACTION: ${(err as Error).message}`);
+        return { state: gameState, events };
+      }
+    }
+    case 'LEAVE_FACTION': {
+      const result = leaveFaction(gameState, effect.factionId, FACTION_CATALOG);
+      events.push({ type: 'DIALOGUE_EFFECT_APPLIED', effect }, ...result.events);
+      return { state: result.state, events };
     }
   }
 }

@@ -28,8 +28,9 @@
  *   (composited in resolveSceneAction() step 13)
  */
 
-import type { GameState, GameEvent, CombatStats } from '../state/gameState';
+import type { GameState, GameEvent, CombatStats, MindControlParams, MindControlState } from '../state/gameState';
 import { applyStatus } from './statusEffectEngine';
+import { spendMp } from './statEngine';
 import type { AnyCharacter } from '../state/gameState';
 
 // ─── Re-exported schema types ─────────────────────────────────────────────────
@@ -47,12 +48,18 @@ export type SkillTree = 'BATTLE' | 'ARDOR';
  *                     Passive: summed by derivePassiveArousalBonus() each intimacy turn.
  *                     Active:  applied immediately to target arousal via useActiveSkill().
  * STATUS_APPLY      — active; applies status effect `statusId` to target with `chance` probability.
+ * MIND_CONTROL      — active; triggers applyMindControl() on the provided target.
+ *                     Requires a target to be supplied to useActiveSkill(); if none is present
+ *                     the effect is silently skipped (same pattern as STATUS_APPLY without target).
+ *                     isCharm is derived from MindControlParams.charmVariant.
  */
 export type SkillEffect =
   | { type: 'STAT_BOOST';        stat: keyof CombatStats; value: number }
   | { type: 'DAMAGE_MULTIPLIER'; value: number }
   | { type: 'AROUSAL_GAIN';      value: number }
-  | { type: 'STATUS_APPLY';      statusId: string; chance: number };
+  | { type: 'STATUS_APPLY';      statusId: string; chance: number }
+  // Phase 39: triggers applyMindControl() with params authored in the skill catalog.
+  | { type: 'MIND_CONTROL';      params: MindControlParams };
 
 export interface SkillDef {
   id:           string;
@@ -344,6 +351,17 @@ export function useActiveSkill(
         // Passive-only; no-op for active skill activation.
         break;
       }
+      case 'MIND_CONTROL': {
+        // Phase 39: delegate to applyMindControl(). Requires a target.
+        // isCharm is driven by MindControlParams.charmVariant so the catalog
+        // fully controls which variant fires — no separate CHARM skill type needed.
+        if (!updatedTarget) break;
+        const isCharm = effect.params.charmVariant === true;
+        const mcResult = applyMindControl(state, state.player.id, updatedTarget, effect.params, isCharm);
+        state = mcResult.state;
+        events.push(...mcResult.events);
+        break;
+      }
     }
   }
 
@@ -405,5 +423,195 @@ export function resetSkillTree(
     state:     { ...gameState, player: updatedPlayer },
     events,
     narrative: `${tree} skill tree reset. ${pointsRefunded} ${pointType} refunded.`,
+  };
+}
+
+// ─── Phase 39 — Mind control engine ──────────────────────────────────────────────────────────────
+
+/**
+ * applyMindControl — places a mind control or charm effect on a target.
+ *
+ * Resolution order:
+ *   1. Caster lookup: casterId must resolve to a character on GameState.
+ *      (player or a companion). Fails with TARGET_NOT_FOUND on miss.
+ *   2. MP gate: target.mp.current > caster.mp.max × params.maxTargetMpRatio → resisted.
+ *      This makes high-MP entities (gods, divine beings) immune to under-powered casters.
+ *   3. MP cost: mpCostFlat + floor(target.mp.current × mpCostPerTargetMpRatio).
+ *      Charged via spendMp(); overdraw into HP is allowed by spendMp — the
+ *      attempt always proceeds so long as the caster is alive after the spend.
+ *   4. Backlash HP drain (hard control only, isCharm false):
+ *      drain floor(caster.hp.max × params.backlashHpPct) from caster; clamped to min 1 HP.
+ *   5. Push MindControlState to activeMindControls.
+ *      Re-applying to the same targetId replaces the existing entry (extends duration);
+ *      no stacking, no double entries.
+ *   6. Emit MIND_CONTROL_APPLIED.
+ */
+export function applyMindControl(
+  gameState: GameState,
+  casterId:  string,
+  target:    AnyCharacter,
+  params:    MindControlParams,
+  isCharm:   boolean,
+): { state: GameState; events: GameEvent[] } {
+  // ── Caster lookup ──────────────────────────────────────────────────────────────────
+  const isPlayerCaster = casterId === gameState.player.id;
+  const caster: AnyCharacter | undefined = isPlayerCaster
+    ? (gameState.player as AnyCharacter)
+    : (gameState.party.companions.find(m => m.npcId === casterId) as AnyCharacter | undefined)
+      ?? (gameState.contacts.find(c => c.character.npcId === casterId)?.character as AnyCharacter | undefined);
+
+  if (!caster) {
+    return {
+      state:  gameState,
+      events: [{ type: 'MIND_CONTROL_RESISTED', casterId, targetId: target.id, reason: 'TARGET_NOT_FOUND' }],
+    };
+  }
+
+  // ── MP gate ──────────────────────────────────────────────────────────────────────
+  const targetMp    = target.vitals.mp.current;
+  const casterMpMax = caster.vitals.mp.max;
+  if (targetMp > casterMpMax * params.maxTargetMpRatio) {
+    return {
+      state:  gameState,
+      events: [{ type: 'MIND_CONTROL_RESISTED', casterId, targetId: target.id, reason: 'MP_TOO_HIGH' }],
+    };
+  }
+
+  // ── MP cost ────────────────────────────────────────────────────────────────────
+  const mpCost = params.mpCostFlat + Math.floor(targetMp * params.mpCostPerTargetMpRatio);
+  const spendResult = spendMp(gameState, casterId, mpCost);
+  let   state = spendResult.state;
+  const events: GameEvent[] = [...spendResult.events];
+
+  // ── Backlash HP drain (hard control only) ──────────────────────────────────────────
+  if (!isCharm && params.backlashHpPct > 0 && isPlayerCaster) {
+    const backlashHp = Math.floor(caster.vitals.hp.max * params.backlashHpPct);
+    if (backlashHp > 0) {
+      const newHp = Math.max(1, state.player.vitals.hp.current - backlashHp);
+      state = {
+        ...state,
+        player: {
+          ...state.player,
+          vitals: { ...state.player.vitals, hp: { ...state.player.vitals.hp, current: newHp } },
+        },
+      };
+    }
+  }
+
+  // ── Push MindControlState (replace if target already controlled) ──────────────────
+  const entry: MindControlState = {
+    targetId:       target.id,
+    casterId,
+    remainingTurns: params.durationTurns,
+    params,
+    isCharm,
+    targetWis:      target.stats.wis,
+  };
+  const existingIdx = state.activeMindControls.findIndex(mc => mc.targetId === target.id);
+  const newControls = existingIdx !== -1
+    ? state.activeMindControls.map((mc, i) => (i === existingIdx ? entry : mc))
+    : [...state.activeMindControls, entry];
+
+  state = { ...state, activeMindControls: newControls };
+
+  events.push({
+    type:          'MIND_CONTROL_APPLIED',
+    casterId,
+    targetId:      target.id,
+    durationTurns: params.durationTurns,
+    isCharm,
+  });
+
+  return { state, events };
+}
+
+/**
+ * tickMindControls — called at the start of each player combat turn.
+ *
+ * For each MindControlState in activeMindControls:
+ *   • Decrements remainingTurns by 1.
+ *   • remainingTurns ≤ 0  → emits MIND_CONTROL_EXPIRED, removes entry.
+ *   • !isCharm           → resistance break roll:
+ *       breaks when Math.random() < resistBreakChancePerTurn × (targetWis / 100)
+ *       On break: emits MIND_CONTROL_BROKEN, removes entry.
+ *   • isCharm entries never break early; they expire when remainingTurns reaches 0.
+ *
+ * atTurn — CombatState.roundNumber passed by combatEngine; included in MIND_CONTROL_BROKEN.
+ */
+export function tickMindControls(
+  gameState: GameState,
+  atTurn:    number = 0,
+): { state: GameState; events: GameEvent[] } {
+  if (gameState.activeMindControls.length === 0) {
+    return { state: gameState, events: [] };
+  }
+
+  const events:    GameEvent[]         = [];
+  const remaining: MindControlState[]  = [];
+
+  for (const mc of gameState.activeMindControls) {
+    const decremented: MindControlState = { ...mc, remainingTurns: mc.remainingTurns - 1 };
+
+    if (decremented.remainingTurns <= 0) {
+      events.push({ type: 'MIND_CONTROL_EXPIRED', targetId: mc.targetId });
+      continue;
+    }
+
+    if (!mc.isCharm) {
+      const breakChance = mc.params.resistBreakChancePerTurn * (mc.targetWis / 100);
+      if (Math.random() < breakChance) {
+        events.push({ type: 'MIND_CONTROL_BROKEN', targetId: mc.targetId, atTurn });
+        continue;
+      }
+    }
+
+    remaining.push(decremented);
+  }
+
+  return { state: { ...gameState, activeMindControls: remaining }, events };
+}
+
+/**
+ * isMindControlled — returns true when the entity has an active control entry.
+ * Pure read helper; no mutation.
+ */
+export function isMindControlled(gameState: GameState, targetId: string): boolean {
+  return gameState.activeMindControls.some(mc => mc.targetId === targetId);
+}
+
+/**
+ * getMindControl — returns the active MindControlState for a target, or undefined.
+ * Pure read helper; no mutation.
+ */
+export function getMindControl(
+  gameState: GameState,
+  targetId:  string,
+): MindControlState | undefined {
+  return gameState.activeMindControls.find(mc => mc.targetId === targetId);
+}
+
+/**
+ * releaseAllMindControls — removes all active mind control entries.
+ * Emits MIND_CONTROL_EXPIRED for each removed entry.
+ * Called by dispatcher.processEventQueue() when combat ends in defeat
+ * (PARTY_WIPED event). Victory/flee entries expire naturally through
+ * tickMindControls on subsequent turns since enemy IDs are UUIDs and
+ * won’t collide across encounters.
+ */
+export function releaseAllMindControls(
+  gameState: GameState,
+): { state: GameState; events: GameEvent[] } {
+  if (gameState.activeMindControls.length === 0) {
+    return { state: gameState, events: [] };
+  }
+
+  const events: GameEvent[] = gameState.activeMindControls.map(mc => ({
+    type:     'MIND_CONTROL_EXPIRED' as const,
+    targetId: mc.targetId,
+  }));
+
+  return {
+    state:  { ...gameState, activeMindControls: [] },
+    events,
   };
 }
