@@ -131,6 +131,55 @@ function repeatTier(count: number): 'once' | 'repeat' | 'extended' {
  * Builds a fallback chain of candidate fragment keys for the given layer.
  * Chain runs from most-specific to least-specific.
  * pickIntimateFragment() walks this array and returns the first hit.
+ *
+ * COMPLETE FALLBACK CHAIN ORDER (all six layers, most → least specific):
+ *
+ * NARRATION:
+ *   narration:<actionId>:tec_fail                       (if !tecSuccess)
+ *   narration:<actionId>:force_sleeping                 (if sceneStartType === FORCE_INTIMACY_SLEEPING)
+ *   narration:<actionId>:engagement_<eng>
+ *   narration:<actionId>
+ *   narration:generic
+ *
+ * BODY_POSITION:
+ *   body_pos:<positionId>:arousal_<band>
+ *   body_pos:<positionId>
+ *   body_pos:generic
+ *
+ * BODY_ACTION:
+ *   body_act:<actionId>:orgasm:<orgasmType>              (if isOrgasming)
+ *   body_act:<actionId>:arousal_<band>:subspace          (if subspaceActive)
+ *   body_act:<actionId>:arousal_<band>:engagement_<eng>  (if eng = resisting | fainted)
+ *   body_act:<actionId>:arousal_<band>:<repeatTier>
+ *   body_act:<actionId>:arousal_<band>
+ *   body_act:<bodyZone>:arousal_<band>
+ *   body_act:generic:arousal_<band>
+ *   body_act:generic
+ *
+ * SFX:
+ *   sfx:<actionId>:wetness_<level>
+ *   sfx:<actionId>
+ *   sfx:generic
+ *
+ * VOCAL  (monster races: each base key is preceded by vocal:race_<race>:<key-without-vocal-prefix>):
+ *   vocal:<actionId>:orgasm:<orgasmType>                              (if isOrgasming)
+ *   vocal:<actionId>:subspace                                         (if subspaceActive)
+ *   vocal:<actionId>:engagement_<eng>:arousal_<band>:<repeatTier>     (if eng = resisting | hesitant | fainted)
+ *   vocal:<actionId>:engagement_<eng>:arousal_<band>                  (if eng = resisting | hesitant | fainted)
+ *   vocal:<actionId>:engagement_<eng>                                 (if eng = resisting | hesitant | fainted)
+ *   vocal:<actionId>:shame_<tier>:arousal_<band>:<repeatTier>
+ *   vocal:<actionId>:arousal_<band>:<repeatTier>
+ *   vocal:<actionId>:arousal_<band>
+ *   vocal:<actionId>
+ *   vocal:generic:shame_<tier>:arousal_<band>
+ *   vocal:generic
+ *
+ * PLAYER_LINE:
+ *   player:<actionId>:tec_fail                          (if !tecSuccess)
+ *   player:<actionId>:force                             (if sceneStartType = FORCE_INTIMACY | FORCE_INTIMACY_SLEEPING)
+ *   player:<actionId>:arousal_<band>
+ *   player:<actionId>
+ *   player:generic
  */
 export function buildIntimateKey(
   layer: IntimateResponseLayer,
@@ -140,7 +189,7 @@ export function buildIntimateKey(
     actionId, positionId, bodyZone, tecSuccess,
     arousalBand, wetnessLevel, shameTier,
     isOrgasming, orgasmType, subspaceActive,
-    partnerEngagementStatus, partnerRace,
+    partnerEngagementStatus, sceneStartType, partnerRace,
     consecutiveRepeatCount, dirtyTalkTendency,
   } = ctx;
 
@@ -157,6 +206,10 @@ export function buildIntimateKey(
       const chain: string[] = [];
       if (!tecSuccess)
         chain.push(`narration:${actionId}:tec_fail`);
+      // 54c.1: sleeping-victim narration — non-responsive body; no engagement expression.
+      // Inserted between tec_fail and engagement so sleeping context is resolved first.
+      if (sceneStartType === 'FORCE_INTIMACY_SLEEPING')
+        chain.push(`narration:${actionId}:force_sleeping`);
       chain.push(
         `narration:${actionId}:engagement_${eng}`,
         `narration:${actionId}`,
@@ -182,6 +235,11 @@ export function buildIntimateKey(
         chain.push(`body_act:${actionId}:orgasm:${orgT}`);
       if (subspaceActive)
         chain.push(`body_act:${actionId}:arousal_${band}:subspace`);
+      // 54b.1: engagement key immediately after subspace position in chain.
+      // Only resisting/fainted — hesitant and higher fall through to the standard repeat-tier keys.
+      // Resisting = active opposition; fainted = involuntary reflexes. Neither is habituation.
+      if (eng === 'resisting' || eng === 'fainted')
+        chain.push(`body_act:${actionId}:arousal_${band}:engagement_${eng}`);
       chain.push(
         `body_act:${actionId}:arousal_${band}:${rt}`,
         `body_act:${actionId}:arousal_${band}`,
@@ -211,6 +269,16 @@ export function buildIntimateKey(
         baseChain.push(`vocal:${actionId}:orgasm:${orgT}`);
       if (subspaceActive)
         baseChain.push(`vocal:${actionId}:subspace`);
+      // 54a.1: engagement keys — after subspace, before shame-band chain.
+      // Only emitted for resisting/hesitant/fainted; skipped for aroused/horny/neutral
+      // so the standard shame-band path remains primary for willing partners.
+      if (eng === 'resisting' || eng === 'hesitant' || eng === 'fainted') {
+        baseChain.push(
+          `vocal:${actionId}:engagement_${eng}:arousal_${band}:${rt}`,
+          `vocal:${actionId}:engagement_${eng}:arousal_${band}`,
+          `vocal:${actionId}:engagement_${eng}`,
+        );
+      }
       baseChain.push(
         `vocal:${actionId}:shame_${shameTier}:arousal_${band}:${rt}`,
         `vocal:${actionId}:arousal_${band}:${rt}`,
@@ -220,7 +288,9 @@ export function buildIntimateKey(
         'vocal:generic',
       );
 
-      // If monster race: interleave race-prefixed keys before each base key
+      // 54a.2: Race overlay — interleaves vocal:race_<race>:<rest> before each base key.
+      // The replace loop automatically produces vocal:race_<race>:engagement_<eng>:...
+      // variants at the same position as the engagement keys in baseChain.
       if (partnerRace && MONSTER_RACES.has(partnerRace)) {
         const raceSlug = `race_${partnerRace.toLowerCase()}`;
         const withRace: string[] = [];
@@ -242,6 +312,10 @@ export function buildIntimateKey(
       const chain: string[] = [];
       if (!tecSuccess)
         chain.push(`player:${actionId}:tec_fail`);
+      // 54d.1: force key before arousal band — coercive possession tone,
+      // not dominant-assuring. Only fires on non-consensual start types.
+      if (sceneStartType === 'FORCE_INTIMACY' || sceneStartType === 'FORCE_INTIMACY_SLEEPING')
+        chain.push(`player:${actionId}:force`);
       chain.push(
         `player:${actionId}:arousal_${band}`,
         `player:${actionId}`,

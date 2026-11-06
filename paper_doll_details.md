@@ -7,6 +7,11 @@
 
 ---
 
+> **v3.3 changes (from v3.2)**
+> 1. **Breast shape is now explicit in the build pipeline.** Shape is baked into each breast sprite (it is not a separate overlay). Part 3 now includes a **breast shape quick-reference table** (one row per cup × age cell, primary shape listed first) immediately before the build grids. Phase 6 task list now carries a **Shape column** in every breast-sprite grid so you know exactly what shape to author for each sprite before you open HS2. The Part 3 intro paragraph is updated to state this clearly.
+> 2. **BreastSoftness and NippleType are also made explicit per sprite** in Part 3 — two new quick-reference tables (softness by cup × age; nipple by cup group) are cross-linked from Phase 6 so they are always visible during production.
+> 3. **No count changes.** Shape, softness and nipple type are attributes of the sprite, not additional sprites. The 8,412 breast sprites and 945 + 63 nipple sprites are unchanged.
+
 > **v3.2 changes (from v3.1)**
 > 1. **Height is now a key for breast sprites:** body type × age tier × height × cup, authored on that exact doll. Each sprite is exactly one valid body + cup composite.
 > 2. **Nipples are identical across age tiers** but each nipple type has **three arousal states** — `unaroused`, `light` (lightly aroused), `extreme` (extremely aroused). Key = body type × supported nipple × state. Male nipples get the same three states.
@@ -182,6 +187,15 @@ Not every cup is allowed on every body type — see Part 3 (compatibility table)
 | Arms | Slim |
 | AllowedCups (breast overlay) | AA–B |
 | SweetSpot | AA–A  (reference cup: A) |
+| BreastShape (ref cup A, Young) | Perky / Conical |
+| BreastShape (YoungAdult) | Perky |
+| BreastShape (RipeningMilf) | Perky |
+| BreastShape (RipeMilf) | Round |
+| BreastShape (MatureMilf) | Round |
+| BreastShape (OldMilf) | Sagging-slight |
+| BreastSoftness (Young, ref cup) | Firm |
+| NippleGroup | AA–A |
+| NippleTypes | Flat · Puffy · Inverted |
 
 ---
 
@@ -212,6 +226,33 @@ Not every cup is allowed on every body type — see Part 3 (compatibility table)
 | Arms | Slim, short |
 | AllowedCups (breast overlay) | AA–C |
 | SweetSpot | A–B  (reference cup: B) |
+| BreastShape (ref cup B, Young) | Perky / Round |
+| BreastShape (YoungAdult) | Round / Perky |
+| BreastShape (RipeningMilf) | Round |
+| BreastShape (RipeMilf) | Round |
+| BreastShape (MatureMilf) | Teardrop |
+| BreastShape (OldMilf) | Sagging-light |
+| BreastSoftness (Young, ref cup) | Firm |
+| NippleGroup | B–C |
+| NippleTypes | Puffy · Protruding · Flat |
+| BreastShape (ref cup B, Young) | Perky / Round |
+| BreastShape (YoungAdult) | Round / Perky |
+| BreastShape (RipeningMilf) | Round |
+| BreastShape (RipeMilf) | Round |
+| BreastShape (MatureMilf) | Teardrop |
+| BreastShape (OldMilf) | Sagging-light |
+| BreastSoftness (Young, ref cup) | Firm |
+| NippleGroup | B–C |
+| NippleTypes | Puffy · Protruding · Flat |
+| BreastShape (ref cup B, Young) | Perky / Round |
+| BreastShape (YoungAdult) | Round / Perky |
+| BreastShape (RipeningMilf) | Round |
+| BreastShape (RipeMilf) | Round |
+| BreastShape (MatureMilf) | Teardrop |
+| BreastShape (OldMilf) | Sagging-light |
+| BreastSoftness (Young, ref cup) | Firm |
+| NippleGroup | B–C |
+| NippleTypes | Puffy · Protruding · Flat |
 
 ---
 
@@ -242,6 +283,34 @@ Not every cup is allowed on every body type — see Part 3 (compatibility table)
 | Arms | Soft, short |
 | AllowedCups (breast overlay) | A–G |
 | SweetSpot | B–C  (reference cup: C) |
+| BreastShape (ref cup C, Young) | Round / Perky |
+| BreastShape (YoungAdult) | Round |
+| BreastShape (RipeningMilf) | Round |
+| BreastShape (RipeMilf) | Round-Teardrop |
+| BreastShape (MatureMilf) | Teardrop |
+| BreastShape (OldMilf) | Sagging |
+| BreastSoftness (Young, ref cup) | Firm |
+| NippleGroup | B–C |
+| NippleTypes | Puffy · Protruding · Flat |
+| BreastShape (ref cup C, Young) | Round / Perky |
+| BreastShape (YoungAdult) | Round |
+| BreastShape (RipeningMilf) | Round |
+| BreastShape (RipeMilf) | Round-Teardrop |
+| BreastShape (MatureMilf) | Teardrop |
+| BreastShape (OldMilf) | Sagging |
+| BreastSoftness (Young, ref cup) | Firm (+1) |
+| NippleGroup | B–C |
+| NippleTypes | Puffy · Protruding · Flat |
+| BreastNote | Athletic — authored one step firmer at every cup × age. |
+| BreastShape (ref cup C, Young) | Round / Perky |
+| BreastShape (YoungAdult) | Round |
+| BreastShape (RipeningMilf) | Round |
+| BreastShape (RipeMilf) | Round-Teardrop |
+| BreastShape (MatureMilf) | Teardrop |
+| BreastShape (OldMilf) | Sagging |
+| BreastSoftness (Young, ref cup) | Firm |
+| NippleGroup | B–C |
+| NippleTypes | Puffy · Protruding · Flat |
 
 ---
 
@@ -272,6 +341,15 @@ Not every cup is allowed on every body type — see Part 3 (compatibility table)
 | Arms | Long, slim |
 | AllowedCups (breast overlay) | AA–C |
 | SweetSpot | A–B  (reference cup: B) |
+| BreastShape (ref cup B, Young) | Perky / Round |
+| BreastShape (YoungAdult) | Round / Perky |
+| BreastShape (RipeningMilf) | Round |
+| BreastShape (RipeMilf) | Round |
+| BreastShape (MatureMilf) | Teardrop |
+| BreastShape (OldMilf) | Sagging-light |
+| BreastSoftness (Young, ref cup) | Firm |
+| NippleGroup | B–C |
+| NippleTypes | Puffy · Protruding · Flat |
 
 ---
 
@@ -305,6 +383,15 @@ Not every cup is allowed on every body type — see Part 3 (compatibility table)
 | Arms | Visible lean muscle |
 | AllowedCups (breast overlay) | A–H |
 | SweetSpot | B–C  (reference cup: C) |
+| BreastShape (ref cup B, Young) | Perky / Round |
+| BreastShape (YoungAdult) | Round / Perky |
+| BreastShape (RipeningMilf) | Round |
+| BreastShape (RipeMilf) | Round |
+| BreastShape (MatureMilf) | Teardrop |
+| BreastShape (OldMilf) | Sagging-light |
+| BreastSoftness (Young, ref cup) | Firm |
+| NippleGroup | B–C |
+| NippleTypes | Puffy · Protruding · Flat |
 
 ---
 
@@ -339,6 +426,15 @@ Waist-hip difference max 24 cm.
 | Arms | Slim |
 | AllowedCups (breast overlay) | AA–C |
 | SweetSpot | A–B  (reference cup: B) |
+| BreastShape (ref cup C, Young) | Round / Perky |
+| BreastShape (YoungAdult) | Round |
+| BreastShape (RipeningMilf) | Round |
+| BreastShape (RipeMilf) | Round-Teardrop |
+| BreastShape (MatureMilf) | Teardrop |
+| BreastShape (OldMilf) | Sagging |
+| BreastSoftness (Young, ref cup) | Firm |
+| NippleGroup | B–C |
+| NippleTypes | Puffy · Protruding · Flat |
 
 ---
 
@@ -372,6 +468,15 @@ Waist-hip difference max 24 cm.
 | Arms | Soft, slim |
 | AllowedCups (breast overlay) | B–F |
 | SweetSpot | C  (reference cup: C) |
+| BreastShape (ref cup B, Young) | Perky / Round |
+| BreastShape (YoungAdult) | Round / Perky |
+| BreastShape (RipeningMilf) | Round |
+| BreastShape (RipeMilf) | Round |
+| BreastShape (MatureMilf) | Teardrop |
+| BreastShape (OldMilf) | Sagging-light |
+| BreastSoftness (Young, ref cup) | Firm |
+| NippleGroup | B–C |
+| NippleTypes | Puffy · Protruding · Flat |
 
 ---
 
@@ -406,6 +511,15 @@ Waist-hip difference max 22 cm.
 | Arms | Slim |
 | AllowedCups (breast overlay) | AA–F |
 | SweetSpot | A–B  (reference cup: B) |
+| BreastShape (ref cup B, Young) | Perky / Round |
+| BreastShape (YoungAdult) | Round / Perky |
+| BreastShape (RipeningMilf) | Round |
+| BreastShape (RipeMilf) | Round |
+| BreastShape (MatureMilf) | Teardrop |
+| BreastShape (OldMilf) | Sagging-light |
+| BreastSoftness (Young, ref cup) | Firm |
+| NippleGroup | B–C |
+| NippleTypes | Puffy · Protruding · Flat |
 
 ---
 
@@ -439,6 +553,33 @@ Waist-hip difference max 22 cm.
 | Arms | Slim–Moderate |
 | AllowedCups (breast overlay) | AA–K (upper body lighter at default cup) |
 | SweetSpot | A–C  (reference cup: B) |
+| BreastShape (ref cup B, Young) | Perky / Round |
+| BreastShape (YoungAdult) | Round / Perky |
+| BreastShape (RipeningMilf) | Round |
+| BreastShape (RipeMilf) | Round |
+| BreastShape (MatureMilf) | Teardrop |
+| BreastShape (OldMilf) | Sagging-light |
+| BreastSoftness (Young, ref cup) | Firm |
+| NippleGroup | B–C |
+| NippleTypes | Puffy · Protruding · Flat |
+| BreastShape (ref cup B, Young) | Perky / Round |
+| BreastShape (YoungAdult) | Round / Perky |
+| BreastShape (RipeningMilf) | Round |
+| BreastShape (RipeMilf) | Round |
+| BreastShape (MatureMilf) | Teardrop |
+| BreastShape (OldMilf) | Sagging-light |
+| BreastSoftness (Young, ref cup) | Firm |
+| NippleGroup | B–C |
+| NippleTypes | Puffy · Protruding · Flat |
+| BreastShape (ref cup B, Young) | Perky / Round |
+| BreastShape (YoungAdult) | Round / Perky |
+| BreastShape (RipeningMilf) | Round |
+| BreastShape (RipeMilf) | Round |
+| BreastShape (MatureMilf) | Teardrop |
+| BreastShape (OldMilf) | Sagging-light |
+| BreastSoftness (Young, ref cup) | Firm |
+| NippleGroup | B–C |
+| NippleTypes | Puffy · Protruding · Flat |
 
 ---
 
@@ -473,6 +614,15 @@ Waist-hip difference max 22 cm.
 | Arms | Soft |
 | AllowedCups (breast overlay) | A–K |
 | SweetSpot | B–C  (reference cup: C) |
+| BreastShape (ref cup C, Young) | Round / Perky |
+| BreastShape (YoungAdult) | Round |
+| BreastShape (RipeningMilf) | Round |
+| BreastShape (RipeMilf) | Round-Teardrop |
+| BreastShape (MatureMilf) | Teardrop |
+| BreastShape (OldMilf) | Sagging |
+| BreastSoftness (Young, ref cup) | Firm |
+| NippleGroup | B–C |
+| NippleTypes | Puffy · Protruding · Flat |
 
 ---
 
@@ -507,6 +657,43 @@ Bust ≈ hip (within 6 cm). Waist 28–34 cm less than hip.
 | Arms | Slim–Soft |
 | AllowedCups (breast overlay) | A–F |
 | SweetSpot | B–D  (reference cup: C) |
+| BreastShape (ref cup C, Young) | Round / Perky |
+| BreastShape (YoungAdult) | Round |
+| BreastShape (RipeningMilf) | Round |
+| BreastShape (RipeMilf) | Round-Teardrop |
+| BreastShape (MatureMilf) | Teardrop |
+| BreastShape (OldMilf) | Sagging |
+| BreastSoftness (Young, ref cup) | Firm |
+| NippleGroup | B–C |
+| NippleTypes | Puffy · Protruding · Flat |
+| BreastShape (ref cup C, Young) | Round / Perky |
+| BreastShape (YoungAdult) | Round |
+| BreastShape (RipeningMilf) | Round |
+| BreastShape (RipeMilf) | Round-Teardrop |
+| BreastShape (MatureMilf) | Teardrop |
+| BreastShape (OldMilf) | Sagging |
+| BreastSoftness (Young, ref cup) | Firm (+1) |
+| NippleGroup | B–C |
+| NippleTypes | Puffy · Protruding · Flat |
+| BreastNote | MuscularFeminine — authored one step firmer at every cup × age. |
+| BreastShape (ref cup C, Young) | Round / Perky |
+| BreastShape (YoungAdult) | Round |
+| BreastShape (RipeningMilf) | Round |
+| BreastShape (RipeMilf) | Round-Teardrop |
+| BreastShape (MatureMilf) | Teardrop |
+| BreastShape (OldMilf) | Sagging |
+| BreastSoftness (Young, ref cup) | Firm |
+| NippleGroup | B–C |
+| NippleTypes | Puffy · Protruding · Flat |
+| BreastShape (ref cup C, Young) | Round / Perky |
+| BreastShape (YoungAdult) | Round |
+| BreastShape (RipeningMilf) | Round |
+| BreastShape (RipeMilf) | Round-Teardrop |
+| BreastShape (MatureMilf) | Teardrop |
+| BreastShape (OldMilf) | Sagging |
+| BreastSoftness (Young, ref cup) | Firm |
+| NippleGroup | B–C |
+| NippleTypes | Puffy · Protruding · Flat |
 
 ---
 
@@ -541,6 +728,25 @@ Bust ≈ hip (within 4 cm). Waist 30–36 cm less than hip.
 | Arms | Soft |
 | AllowedCups (breast overlay) | C–K |
 | SweetSpot | D–E  (reference cup: DD) |
+| BreastShape (ref cup DD, Young) | Round / Teardrop |
+| BreastShape (YoungAdult) | Teardrop / Round |
+| BreastShape (RipeningMilf) | Teardrop |
+| BreastShape (RipeMilf) | Wide-Teardrop |
+| BreastShape (MatureMilf) | Wide-Sagging |
+| BreastShape (OldMilf) | Pendulous |
+| BreastSoftness (Young, ref cup) | MediumFirm (+1) |
+| NippleGroup | D–DD |
+| NippleTypes | Protruding · Wide · Puffy |
+| BreastNote | CompactPower — authored one step firmer at every cup × age. |
+| BreastShape (ref cup DD, Young) | Round / Teardrop |
+| BreastShape (YoungAdult) | Teardrop / Round |
+| BreastShape (RipeningMilf) | Teardrop |
+| BreastShape (RipeMilf) | Wide-Teardrop |
+| BreastShape (MatureMilf) | Wide-Sagging |
+| BreastShape (OldMilf) | Pendulous |
+| BreastSoftness (Young, ref cup) | MediumFirm |
+| NippleGroup | D–DD |
+| NippleTypes | Protruding · Wide · Puffy |
 
 ---
 
@@ -575,6 +781,33 @@ Bust 10–16 cm larger than hip. Waist 32–40 cm less than bust.
 | Arms | Soft |
 | AllowedCups (breast overlay) | E–Q |
 | SweetSpot | F–H  (reference cup: G) |
+| BreastShape (ref cup G, Young) | Wide / Teardrop |
+| BreastShape (YoungAdult) | Wide |
+| BreastShape (RipeningMilf) | Wide |
+| BreastShape (RipeMilf) | Wide-Pendulous |
+| BreastShape (MatureMilf) | Pendulous |
+| BreastShape (OldMilf) | Pendulous |
+| BreastSoftness (Young, ref cup) | Soft |
+| NippleGroup | G–H |
+| NippleTypes | Wide · LargeProtruding · Long |
+| BreastShape (ref cup G, Young) | Wide / Teardrop |
+| BreastShape (YoungAdult) | Wide |
+| BreastShape (RipeningMilf) | Wide |
+| BreastShape (RipeMilf) | Wide-Pendulous |
+| BreastShape (MatureMilf) | Pendulous |
+| BreastShape (OldMilf) | Pendulous |
+| BreastSoftness (Young, ref cup) | Soft |
+| NippleGroup | G–H |
+| NippleTypes | Wide · LargeProtruding · Long |
+| BreastShape (ref cup G, Young) | Wide / Teardrop |
+| BreastShape (YoungAdult) | Wide |
+| BreastShape (RipeningMilf) | Wide |
+| BreastShape (RipeMilf) | Wide-Pendulous |
+| BreastShape (MatureMilf) | Pendulous |
+| BreastShape (OldMilf) | Pendulous |
+| BreastSoftness (Young, ref cup) | Soft |
+| NippleGroup | G–H |
+| NippleTypes | Wide · LargeProtruding · Long |
 
 ---
 
@@ -608,6 +841,15 @@ Bust 10–16 cm larger than hip. Waist 32–40 cm less than bust.
 | Arms | Soft |
 | AllowedCups (breast overlay) | D–Q |
 | SweetSpot | F–H  (reference cup: G) |
+| BreastShape (ref cup G, Young) | Wide / Teardrop |
+| BreastShape (YoungAdult) | Wide |
+| BreastShape (RipeningMilf) | Wide |
+| BreastShape (RipeMilf) | Wide-Pendulous |
+| BreastShape (MatureMilf) | Pendulous |
+| BreastShape (OldMilf) | Pendulous |
+| BreastSoftness (Young, ref cup) | Soft |
+| NippleGroup | G–H |
+| NippleTypes | Wide · LargeProtruding · Long |
 
 ---
 
@@ -641,6 +883,15 @@ Bust 10–16 cm larger than hip. Waist 32–40 cm less than bust.
 | Arms | Slim–Soft |
 | AllowedCups (breast overlay) | AA–E |
 | SweetSpot | A–C  (reference cup: B) |
+| BreastShape (ref cup B, Young) | Perky / Round |
+| BreastShape (YoungAdult) | Round / Perky |
+| BreastShape (RipeningMilf) | Round |
+| BreastShape (RipeMilf) | Round |
+| BreastShape (MatureMilf) | Teardrop |
+| BreastShape (OldMilf) | Sagging-light |
+| BreastSoftness (Young, ref cup) | Firm |
+| NippleGroup | B–C |
+| NippleTypes | Puffy · Protruding · Flat |
 
 ---
 
@@ -674,6 +925,24 @@ Bust 10–16 cm larger than hip. Waist 32–40 cm less than bust.
 | Arms | Soft |
 | AllowedCups (breast overlay) | D–Q |
 | SweetSpot | E–G  (reference cup: F) |
+| BreastShape (ref cup F, Young) | Teardrop / Wide |
+| BreastShape (YoungAdult) | Wide / Teardrop |
+| BreastShape (RipeningMilf) | Wide |
+| BreastShape (RipeMilf) | Wide |
+| BreastShape (MatureMilf) | Sagging-Pendulous |
+| BreastShape (OldMilf) | Pendulous |
+| BreastSoftness (Young, ref cup) | MediumFirm |
+| NippleGroup | E–F |
+| NippleTypes | Protruding · Wide · LargeProtruding |
+| BreastShape (ref cup F, Young) | Teardrop / Wide |
+| BreastShape (YoungAdult) | Wide / Teardrop |
+| BreastShape (RipeningMilf) | Wide |
+| BreastShape (RipeMilf) | Wide |
+| BreastShape (MatureMilf) | Sagging-Pendulous |
+| BreastShape (OldMilf) | Pendulous |
+| BreastSoftness (Young, ref cup) | MediumFirm |
+| NippleGroup | E–F |
+| NippleTypes | Protruding · Wide · LargeProtruding |
 
 ---
 
@@ -707,6 +976,15 @@ Bust 10–16 cm larger than hip. Waist 32–40 cm less than bust.
 | Arms | Soft, full |
 | AllowedCups (breast overlay) | E–Q |
 | SweetSpot | G–I  (reference cup: H) |
+| BreastShape (ref cup H, Young) | Wide / Pendulous |
+| BreastShape (YoungAdult) | Wide-Pendulous |
+| BreastShape (RipeningMilf) | Pendulous |
+| BreastShape (RipeMilf) | Pendulous |
+| BreastShape (MatureMilf) | Pendulous |
+| BreastShape (OldMilf) | Pendulous |
+| BreastSoftness (Young, ref cup) | Soft |
+| NippleGroup | G–H |
+| NippleTypes | Wide · LargeProtruding · Long |
 
 ---
 
@@ -740,6 +1018,15 @@ Bust 10–16 cm larger than hip. Waist 32–40 cm less than bust.
 | Arms | Full, soft |
 | AllowedCups (breast overlay) | D–K |
 | SweetSpot | F–H  (reference cup: G) |
+| BreastShape (ref cup G, Young) | Wide / Teardrop |
+| BreastShape (YoungAdult) | Wide |
+| BreastShape (RipeningMilf) | Wide |
+| BreastShape (RipeMilf) | Wide-Pendulous |
+| BreastShape (MatureMilf) | Pendulous |
+| BreastShape (OldMilf) | Pendulous |
+| BreastSoftness (Young, ref cup) | Soft |
+| NippleGroup | G–H |
+| NippleTypes | Wide · LargeProtruding · Long |
 
 ---
 
@@ -773,6 +1060,15 @@ Bust 10–16 cm larger than hip. Waist 32–40 cm less than bust.
 | Arms | Full, Soft |
 | AllowedCups (breast overlay) | F–Q |
 | SweetSpot | H–K  (reference cup: J) |
+| BreastShape (ref cup J, Young) | Wide / Pendulous |
+| BreastShape (YoungAdult) | Pendulous / Wide |
+| BreastShape (RipeningMilf) | Pendulous |
+| BreastShape (RipeMilf) | Pendulous |
+| BreastShape (MatureMilf) | Pendulous |
+| BreastShape (OldMilf) | Pendulous |
+| BreastSoftness (Young, ref cup) | VerySoft |
+| NippleGroup | I–K |
+| NippleTypes | LargeProtruding · Wide · Long |
 
 ---
 
@@ -806,6 +1102,16 @@ Bust 10–16 cm larger than hip. Waist 32–40 cm less than bust.
 | Arms | Visible lean muscle |
 | AllowedCups (breast overlay) | B–G |
 | SweetSpot | C–E  (reference cup: DD) |
+| BreastShape (ref cup DD, Young) | Round / Teardrop |
+| BreastShape (YoungAdult) | Teardrop / Round |
+| BreastShape (RipeningMilf) | Teardrop |
+| BreastShape (RipeMilf) | Wide-Teardrop |
+| BreastShape (MatureMilf) | Wide-Sagging |
+| BreastShape (OldMilf) | Pendulous |
+| BreastSoftness (Young, ref cup) | MediumFirm (+1) |
+| NippleGroup | D–DD |
+| NippleTypes | Protruding · Wide · Puffy |
+| BreastNote | AthleticCurvy — authored one step firmer at every cup × age. |
 
 ---
 
@@ -839,6 +1145,15 @@ Bust 10–16 cm larger than hip. Waist 32–40 cm less than bust.
 | Arms | Defined muscle, wide |
 | AllowedCups (breast overlay) | A–Q (muscle compresses apparent size) |
 | SweetSpot | B–D  (reference cup: C) |
+| BreastShape (ref cup F, Young) | Teardrop / Wide |
+| BreastShape (YoungAdult) | Wide / Teardrop |
+| BreastShape (RipeningMilf) | Wide |
+| BreastShape (RipeMilf) | Wide |
+| BreastShape (MatureMilf) | Sagging-Pendulous |
+| BreastShape (OldMilf) | Pendulous |
+| BreastSoftness (Young, ref cup) | MediumFirm |
+| NippleGroup | E–F |
+| NippleTypes | Protruding · Wide · LargeProtruding |
 
 ---
 
@@ -870,6 +1185,16 @@ Bust ≈ hip (within 4 cm). Waist 28–32 cm less than hip.
 | Arms | Slim, short |
 | AllowedCups (breast overlay) | A–G |
 | SweetSpot | B–D  (reference cup: C) |
+| BreastShape (ref cup DD, Young) | Round / Teardrop |
+| BreastShape (YoungAdult) | Teardrop / Round |
+| BreastShape (RipeningMilf) | Teardrop |
+| BreastShape (RipeMilf) | Wide-Teardrop |
+| BreastShape (MatureMilf) | Wide-Sagging |
+| BreastShape (OldMilf) | Pendulous |
+| BreastSoftness (Young, ref cup) | MediumFirm (+1) |
+| NippleGroup | D–DD |
+| NippleTypes | Protruding · Wide · Puffy |
+| BreastNote | CompactPower — authored one step firmer at every cup × age. |
 
 ---
 
@@ -900,6 +1225,15 @@ Bust ≈ hip (within 4 cm). Waist 28–32 cm less than hip.
 | Arms | Soft, short |
 | AllowedCups (breast overlay) | C–H |
 | SweetSpot | E–G  (reference cup: F) |
+| BreastShape (ref cup F, Young) | Teardrop / Wide |
+| BreastShape (YoungAdult) | Wide / Teardrop |
+| BreastShape (RipeningMilf) | Wide |
+| BreastShape (RipeMilf) | Wide |
+| BreastShape (MatureMilf) | Sagging-Pendulous |
+| BreastShape (OldMilf) | Pendulous |
+| BreastSoftness (Young, ref cup) | MediumFirm |
+| NippleGroup | E–F |
+| NippleTypes | Protruding · Wide · LargeProtruding |
 
 ---
 
@@ -934,6 +1268,16 @@ Bust ≈ hip (within 4 cm). Waist 28–32 cm less than hip.
 | Arms | Wide, muscled |
 | AllowedCups (breast overlay) | B–F |
 | SweetSpot | D–E  (reference cup: DD) |
+| BreastShape (ref cup DD, Young) | Round / Teardrop |
+| BreastShape (YoungAdult) | Teardrop / Round |
+| BreastShape (RipeningMilf) | Teardrop |
+| BreastShape (RipeMilf) | Wide-Teardrop |
+| BreastShape (MatureMilf) | Wide-Sagging |
+| BreastShape (OldMilf) | Pendulous |
+| BreastSoftness (Young, ref cup) | MediumFirm (+1) |
+| NippleGroup | D–DD |
+| NippleTypes | Protruding · Wide · Puffy |
+| BreastNote | CompactPower — authored one step firmer at every cup × age. |
 
 ---
 
@@ -1058,8 +1402,15 @@ A sprite is authored on **its own doll** (that body type, age tier and height) a
 
 ---
 
-## Breast shape by CupSize + AgeBodyCategory
+## Breast shape — role in the build pipeline
 
+**Shape is baked into each breast sprite.** It is not a separate overlay and does not add to the sprite count. When you author `breast_f_young_165_hourglass_curvy_D.png` you author it as **Teardrop / Round** (primary / blend). Look up the cup row and age column in the table below before you open HS2 for any sprite — or use the quick-reference card that follows it.
+
+**Reading the cells:** `X / Y` = primary shape with a secondary blend (≈70 % X, 30 % Y). `X-Y` = equal 50 / 50 blend. Author to the primary first; the blend softens the silhouette toward Y. When in doubt, favour the primary.
+
+**Where this appears in the task list:** every Phase 6 breast-sprite grid row now has an implicit **Shape** value — look up cup × age here, or use the quick-reference card, before starting each sprite.
+
+## Breast shape by CupSize + AgeBodyCategory
 
 | Cup | Young | YoungAdult | RipeningMilf | RipeMilf | MatureMilf | OldMilf |
 |-------|-------|------------|--------------|----------|------------|---------|
@@ -1077,12 +1428,34 @@ A sprite is authored on **its own doll** (that body type, age tier and height) a
 | L–N | Pendulous / Wide | Pendulous | Pendulous | Pendulous | Pendulous | Pendulous |
 | O–Q | Pendulous | Pendulous | Pendulous | Pendulous | Pendulous | Pendulous |
 
-*YoungAdult column and the L–N / O–Q rows are new in v2.1 (interpolated — review when you first see them rendered). "X / Y" = primary shape / secondary blend.*
+*YoungAdult column and the L–N / O–Q rows added in v2.1 (interpolated — review when you first render them). "X / Y" = primary / blend.*
 
 **Exception — supernatural tissue (Succubus, Goddess, Angel):**
-Round or Teardrop only at any cup. No age modification. Always high position. Always Firm or MediumFirm.
+Round (cup C and below) or Teardrop (cup D and above) only, at any cup size. No age drift. Always High position. Always Firm or MediumFirm softness. Author with no lateral spread or sag even at large cups — disable physics on the breast rig.
 
 ---
+
+## Breast shape quick-reference card *(pin this while building Phase 6)*
+
+> Same data as the full table, collapsed for fast lookup mid-build. Young and YoungAdult shown side by side separated by →.
+
+| Cup | Young shape | YoungAdult shape | RipeningMilf | RipeMilf | MatureMilf | OldMilf |
+|-----|------------|-----------------|-------------|----------|-----------|---------|
+| AA | Flat / Conical | Flat / Conical | Flat | Flat | Flat | Flat |
+| A | Perky / Conical | Perky | Perky | Round | Round | Sagging-slight |
+| B | Perky / Round | Round / Perky | Round | Round | Teardrop | Sagging-light |
+| C | Round / Perky | Round | Round | Round-Teardrop | Teardrop | Sagging |
+| D | Round / Teardrop | Teardrop / Round | Teardrop | Teardrop | Teardrop-Wide | Sagging-Pendulous |
+| DD | Round / Teardrop | Teardrop / Round | Teardrop | Wide-Teardrop | Wide-Sagging | Pendulous |
+| E | Round / Teardrop | Teardrop | Wide-Teardrop | Wide | Sagging | Pendulous |
+| F | Teardrop / Wide | Wide / Teardrop | Wide | Wide | Sagging-Pendulous | Pendulous |
+| G | Wide / Teardrop | Wide | Wide | Wide-Pendulous | Pendulous | Pendulous |
+| H | Wide / Pendulous | Wide-Pendulous | Pendulous | Pendulous | Pendulous | Pendulous |
+| I–K | Wide / Pendulous | Pendulous / Wide | Pendulous | Pendulous | Pendulous | Pendulous |
+| L–N | Pendulous / Wide | Pendulous | Pendulous | Pendulous | Pendulous | Pendulous |
+| O–Q | Pendulous | Pendulous | Pendulous | Pendulous | Pendulous | Pendulous |
+
+*Supernatural override: Round ≤C · Teardrop ≥D · always High · always Firm or MediumFirm · no sag · no spread.*
 
 ## Breast softness by CupSize + AgeBodyCategory
 
@@ -1102,6 +1475,21 @@ Round or Teardrop only at any cup. No age modification. Always high position. Al
 
 **Athletic / Muscular modifier:** +1 firmness step at any cup × age combination (applies to BT-F-05, 20, 21, 24); their sprites are authored one step firmer.
 **Supernatural exception:** Always Firm or MediumFirm regardless of cup or age.
+
+## Breast softness quick-reference card *(pin this while building Phase 6)*
+
+| Cup | Young | YoungAdult | RipeningMilf | RipeMilf | MatureMilf | OldMilf |
+|-----|-------|------------|-------------|----------|-----------|---------|
+| AA–A | Firm | Firm | Firm | MediumFirm | Soft | Soft |
+| B–C | Firm | Firm–MediumFirm | MediumFirm | Soft | Soft | VerySoft |
+| D–DD | MediumFirm | MediumFirm–Soft | Soft | Soft | VerySoft | Pillowy |
+| E–F | MediumFirm | MediumFirm–Soft | Soft | VerySoft | Pillowy | Pillowy |
+| G–H | Soft | Soft–VerySoft | VerySoft | Pillowy | Pillowy | Pillowy |
+| I–K | VerySoft | VerySoft–Pillowy | Pillowy | Pillowy | Pillowy | Pillowy |
+| L–N | VerySoft–Pillowy | Pillowy | Pillowy | Pillowy | Pillowy | Pillowy |
+| O–Q | Pillowy | Pillowy | Pillowy | Pillowy | Pillowy | Pillowy |
+
+*Athletic / Muscular (F-05, F-20, F-21, F-24): shift every cell one step firmer. Supernatural: always Firm or MediumFirm.*
 
 ---
 
@@ -1132,6 +1520,23 @@ Round or Teardrop only at any cup. No age modification. Always high position. Al
 | I–K | LargeProtruding · Wide · Long |
 | L–N | LargeProtruding · Wide · Long (areola scaled up with cup) |
 | O–Q | LargeProtruding · Wide · Long (areola scaled up with cup) |
+
+## Nipple type quick-reference card *(pin this while building Phase 6)*
+
+> Nipple sprites are per body type × cup group × arousal state — not per age or height. Each sprite covers all ages at that body type. Three states per sprite: `unaroused` · `light` · `extreme`.
+
+| Cup group | Primary nipple | Alternates | File token |
+|-----------|---------------|-----------|-----------|
+| AA–A | Flat | Puffy · Inverted | `flat_AA-A` |
+| B–C | Puffy | Protruding · Flat | `puffy_B-C` |
+| D–DD | Protruding | Wide · Puffy | `protruding_D-DD` |
+| E–F | Protruding | Wide · LargeProtruding | `protruding_E-F` |
+| G–H | Wide | LargeProtruding · Long | `wide_G-H` |
+| I–K | LargeProtruding | Wide · Long | `largeprotruding_I-K` |
+| L–N | LargeProtruding | Wide · Long (areola ++) | `largeprotruding_L-N` |
+| O–Q | LargeProtruding | Wide · Long (areola ++) | `largeprotruding_O-Q` |
+
+*Build all three alternates for each group — primary first, then the two alternates — each in all three arousal states. File name: `nipple_f_{bodytype}_{type}_{group}_{state}.png`.*
 
 ---
 
@@ -2573,6 +2978,11 @@ File: `body_m_oldmilf_{cm}_{token}.png` (+ `_uv.png` + `.json`) · cm: VSH=155, 
 - [ ] **P6-1.2** **Workflow rule:** build a doll's sprites **right after that doll passes QA**, while its preset is open (SOP-B B9). The grids in P6-2 mirror the doll grids of Phases 1–4 — one grid per (age tier × height).
 - [ ] **P6-1.3** Sprite canvas 512 × 512 at 8 px/cm; names `breast_f_{age}_{cm}_{token}_{cup}.png` and `nipple_f_{token}_{type}_{group}_{state}.png` (§4); JSON as P0-4.3.
 - [ ] **P6-1.4** Order inside a doll: cups low → high. Order across dolls: follow the doll phases (Young · Average first). Nipple sprites (P6-3) are independent of dolls and can be built any time after P0-6.
+- [ ] **P6-1.5** **Before starting any sprite, pull up all three quick-reference cards from Part 3:**
+  - **Breast shape card** — tells you which shape (Perky / Round / Teardrop / Wide / Pendulous) to author for this cup × age. Shape is baked into the sprite; it is not a separate overlay.
+  - **Breast softness card** — tells you the softness setting (Firm → Pillowy) for this cup × age. Athletic / Muscular body types are one step firmer.
+  - **Nipple type card** — tells you which nipple type is primary and which are alternates for this cup group. Each type needs three arousal states (unaroused · light · extreme). Build all three alternates per group.
+  - Supernatural sprites (Succubus, Goddess, Angel) override all three: shape = Round (≤C) or Teardrop (≥D); softness = Firm or MediumFirm; position = always High; no age drift.
 
 ## P6-2 Breast sprites — one grid per age tier × height
 

@@ -60,7 +60,7 @@ import {
   vacateSuite,
   collectPassiveResources,
 } from './manorEngine';
-import type { SceneEndPersistence } from './intimacyEngine';
+import type { SceneEndPersistence, PartnerEngagementStatus } from './intimacyEngine';
 import {
   checkExposureGate,
   checkAudienceGate,
@@ -91,9 +91,17 @@ import {
 } from './dialogueEngine';
 import { DIALOGUE_TREES } from '../data/dialogueTrees';
 import {
+  WetnessLevel,
+  PostOrgasmSensitivity,
+  ResistanceProfileType,
+  DirtyTalkTendency,
+  VocalTendency,
+} from '../spawn-engine/types/enums';
+import {
   assembleIntimateResponse,
   deriveArousalBand,
   deriveShameTier,
+  type IntimateFragmentContext,
 } from '../data/intimateResponseFragments';
 import type { IntimateResponse } from '../data/intimateResponseFragments';
 import {
@@ -621,11 +629,36 @@ export function dispatch(state: GameState, intent: PlayerIntent): DispatchResult
       return { state, events, narrative };
     }
     const mental = (npc.dynamicState as import('../spawn-engine/character/dynamicState').CharacterDynamicState)?.mental;
-    const corruptionCurrent = mental?.corruptionCurrent ?? 0;
-    const shameCurrent      = mental?.shameCurrent      ?? 100;
+    const shameCurrent = mental?.shameCurrent ?? 100;
     const arousalBand  = deriveArousalBand(npc.vitals?.arousal ?? 0);
-    const shameTier    = deriveShameTier(corruptionCurrent, shameCurrent);
-    const intimateResp = assembleIntimateResponse(intent.actionId, arousalBand, shameTier);
+    const shameTier    = deriveShameTier(shameCurrent);
+    // TODO(Phase 55 / full-scene wiring): most fields below are safe stubs — they only
+    // affect fragment lookup, and INTIMATE_RESPONSE_LIBRARY is empty until content
+    // sessions populate it. Replace stubs once IntimacyScene is in dispatcher scope
+    // (full scene state lives on the client, not here).
+    const intimateCtx: IntimateFragmentContext = {
+      actionId:                intent.actionId,
+      positionId:              intent.positionId,
+      positionChanged:         false,
+      bodyZone:                'body',
+      tecSuccess:              true,
+      arousalBand,
+      wetnessLevel:            WetnessLevel.Dry,
+      shameTier,
+      isOrgasming:             false,
+      subspaceActive:          false,
+      neckGrabActive:          false,
+      postOrgasmState:         PostOrgasmSensitivity.Normal,
+      partnerEngagementStatus: 'NEUTRAL' as PartnerEngagementStatus,
+      sceneStartType:          'CONSENSUAL',
+      resistanceProfileType:   ResistanceProfileType.Comply,
+      hiddenDesireAligned:     false,
+      orgasmDeniedThisScene:   false,
+      consecutiveRepeatCount:  0,
+      dirtyTalkTendency:       DirtyTalkTendency.None,
+      vocalTendency:           VocalTendency.Quiet,
+    };
+    const intimateResp = assembleIntimateResponse(intimateCtx);
     state = processEventQueue(state, events);
     return { state, events, narrative, intimateResponse: intimateResp ?? undefined };
   }

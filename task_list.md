@@ -2439,6 +2439,66 @@
 
 ### 53e. Intimacy Catalog Expansion
 
-- [ ] **53e.1** Expand `src/data/intimacyCatalog.ts` — author `IntimacySceneDef` entries for each of the 29+ primary characters plus 6 goddesses. Each character: minimum 1 unlockable scene with `trustRequirement`, `loveRequirement`, `isRepeatable`, `actionSequence[]`, `npcResponseFragmentIds[]`. Characters with multiple leans (e.g. Ceira: MASOCHIST/SURRENDER/DEGRADATION) get 2–3 scene variants unlocking at different trust tiers.
-- [ ] **53e.2** Expand `src/data/intimacyFragments.ts` — add authored response fragment pools keyed by `npcId` for each primary cast member and goddess. Each pool: minimum 3 fragment entries per arousal tier (LOW / MED / HIGH / PEAK) covering the character's dominant lean. Fragment text must be consistent with the character's psychology profile and the 6 writing conventions from game_lore.
+- [ ] **53e.1** Expand `src/data/intimacyCatalog.ts` — author `IntimacySceneDef` entries for each of the 29+ primary characters plus 6 goddesses. Each character: minimum 1 unlockable scene with `trustRequirement`, `loveRequirement`, `isRepeatable`, `actionSequence[]`. ~~`npcResponseFragmentIds[]` removed (Phase 55c.3) — System 1 field, never implemented.~~ Characters with multiple leans (e.g. Ceira: MASOCHIST/SURRENDER/DEGRADATION) get 2–3 scene variants unlocking at different trust tiers.
+- ~~[ ] **53e.2** Expand `src/data/intimacyFragments.ts` — add authored response fragment pools keyed by `npcId` for each primary cast member and goddess.~~ ⚠️ **Superseded by Phase 55** — `intimacyFragments.ts` (System 1) is being removed. NPC character-specific fragments should be authored in `intimateResponseFragments.ts` (System 2) instead. See Phase 55.
 - [ ] **53e.3** Expand `src/data/intimateResponseFragments.ts` — add post-scene emotional response fragments per character (keyed by npcId + scene outcome: SATISFIED / OVERWHELMED / FAINTED / BROKEN). Each fragment: 2–3 lines of in-character NPC dialogue that plays in the intimacy scene wind-down phase.
+
+---
+
+## Phase 54: Forced Intimacy Gap — Key Chain Extensions
+
+> Extends `buildIntimateKey()` to surface forced-intimacy context in the VOCAL, BODY_ACTION, and PLAYER_LINE fragment chains. References: Fragment Authoring Reference doc, `src/data/intimateResponseFragments.ts`, `src/engines/dialogueEngine.ts`. Complete authoring session (Phase 25.21) before starting 54a.3/54b.2/54c.2/54d.2.
+
+### 54a. Wire `partnerEngagementStatus` into VOCAL chain
+
+- [x] **54a.1** Extend `buildIntimateKey()` for the VOCAL layer — insert `engagement_<eng>` segment after `subspace` and before `shame_<tier>` in the fallback chain. New tiers at this position: `vocal:<actionId>:engagement_<eng>:arousal_<band>:<repeatTier>` → `vocal:<actionId>:engagement_<eng>:arousal_<band>` → `vocal:<actionId>:engagement_<eng>`. Derive `<eng>` as `ctx.partnerEngagementStatus.toLowerCase()`. Only emit these keys when `eng` is `resisting`, `hesitant`, or `fainted`; skip for `aroused`/`horny`/`neutral` to keep the standard shame-band chain as primary for willing partners.
+- [x] **54a.2** Extend the race overlay pass to include `vocal:race_<race>:engagement_<eng>:...` prefixed variants at the same position — same fallback behaviour as all other race-prefixed keys.
+- [ ] **54a.3** Author initial `engagement_resisting` VOCAL buckets for the 5 primary penetrative actions (`thrust_slow`, `thrust_fast`, `thrust_deep`, `vaginal_pound`, `anal_thrust`) — minimum 4 strings per action covering `arousal_low:once`, `arousal_low:repeat`, `arousal_low:extended`, `arousal_mid:once`. Follow authoring conventions in the Fragment Authoring Reference doc.
+
+### 54b. Wire `partnerEngagementStatus` into BODY_ACTION chain
+
+- [x] **54b.1** Extend `buildIntimateKey()` for the BODY_ACTION layer — add `body_act:<actionId>:arousal_<band>:engagement_<eng>` key tier immediately after `body_act:<actionId>:arousal_<band>:subspace` in the fallback chain. Only emit this key when `eng` is `resisting` or `fainted`; skip for all other engagement states.
+- [ ] **54b.2** Author `body_act:<actionId>:arousal_<band>:engagement_resisting` buckets for `thrust_slow`, `thrust_fast`, `anal_thrust` across all four arousal bands — minimum 3 strings each. Resisting body response is distinct from the `arousal_low:once` habituation path: habituation is resignation over time; resisting is active opposition regardless of arousal level.
+
+### 54c. Wire `sceneStartType` into NARRATION chain
+
+- [x] **54c.1** Extend `buildIntimateKey()` for the NARRATION layer — add `narration:<actionId>:force_sleeping` key tier, fired only when `ctx.sceneStartType === 'FORCE_INTIMACY_SLEEPING'`, inserted between `narration:<actionId>:tec_fail` and `narration:<actionId>:engagement_<eng>`. Sleeping-victim narration has no engagement expression: the partner is physically non-responsive or only reflexively moving.
+- [ ] **54c.2** Author `narration:<actionId>:force_sleeping` buckets for the 5 primary penetrative actions — minimum 3 strings each. All strings must read as third-person observation of a non-responsive body: no resistance, no dialogue, no visible expression of will.
+
+### 54d. Add `player:<actionId>:force` PLAYER_LINE bucket
+
+- [x] **54d.1** Extend `buildIntimateKey()` for the PLAYER_LINE layer — add `player:<actionId>:force` key tier, fired only when `ctx.sceneStartType` is `FORCE_INTIMACY` or `FORCE_INTIMACY_SLEEPING`, inserted before `player:<actionId>:arousal_<band>`. These lines are coercive rather than dominant-assuring.
+- [ ] **54d.2** Author `player:<actionId>:force` buckets for `thrust_slow`, `thrust_fast`, `force_hold`, `choke` — minimum 4 strings each. Tone: cold possession, dismissive of resistance. Not theatrical dominance — control without performance.
+
+### 54e. Documentation
+
+- [ ] **54e.1** Update the Fragment Authoring Reference doc (claude.ai) — replace the ⚠️ “Forced Intimacy Gap” section with a “Resolved” note, and add the new key patterns to each affected layer’s “All Keys × Variables” table.
+- [x] **54e.2** Add inline JSDoc comment to `buildIntimateKey()` listing the complete fallback chain order for all six layers, including the new tiers, so the key structure is self-documenting.
+
+---
+
+## Phase 55: Remove System 1 — Deprecate and Delete `intimacyFragments.ts`
+
+> System 1 (`src/data/intimacyFragments.ts` and its call sites in `src/engines/intimacyEngine.ts`) is fully superseded by System 2 (`src/data/intimateResponseFragments.ts`). This phase removes all System 1 code paths. **Prerequisite: Phase 54 complete** (System 2 must cover forced-intimacy paths before System 1 is deleted).
+
+### 55a. Audit
+
+- [x] **55a.1** Full import and usage audit — find every file that imports from `intimacyFragments.ts` or calls `pickFragment()` against the System 1 library. List all call sites. Expected primary consumer: `intimacyEngine.ts`; also check `dispatcher.ts`, `testSpawn.ts`, and any test harness files. **Result:** zero consumers — System 1 was never wired into the live engine path; all four files are clean.
+- [x] **55a.2** Audit `intimacyCatalog.ts` `npcResponseFragmentIds[]` field — confirm whether any `IntimacySceneDef` entries reference System 1 fragment keys. If so, document each one before removal so content can be re-authored in System 2. **Result:** field was never added to any `IntimacySceneDef` entry; nothing to migrate.
+
+### 55b. Migrate call sites
+
+- [x] **55b.1** In `intimacyEngine.ts`: replace all `pickFragment(FRAGMENT_LIBRARY, key)` calls with the equivalent System 2 path (`assembleIntimateResponse(ctx)` or targeted layer picker). For any call site with no System 2 equivalent yet, stub it with `null` + `// TODO Phase 55` rather than leaving dead System 1 code. **Result:** `intimacyEngine.ts` had zero System 1 calls. Fixed `dispatcher.ts` `INTIMACY_ACTION` handler: corrected `deriveShameTier(corruptionCurrent, shameCurrent)` → `deriveShameTier(shameCurrent)` (wrong arg order bug); replaced wrong-arity `assembleIntimateResponse(intent.actionId, arousalBand, shameTier)` call with a properly typed `IntimateFragmentContext` stub; added five enum imports and `PartnerEngagementStatus` type import.
+- [x] **55b.2** Remove all `FragmentLibrary`, `FRAGMENT_LIBRARY`, and `pickFragment` imports and usages from `intimacyEngine.ts` and any other consumer files found in 55a.1. **Result:** no such imports existed anywhere; no-op.
+- [x] **55b.3** Remove or migrate the `npcResponseFragmentIds` field from `IntimacySceneDef` in `intimacyCatalog.ts` — remove it if it was exclusively serving System 1 key lookup; migrate it to a System 2 key reference if it still has a use. **Result:** field was never present; no-op.
+
+### 55c. Delete
+
+- [x] **55c.1** Delete `src/data/intimacyFragments.ts`. **Done:** file overwritten with tombstone comment. Physical `git rm` can follow at next commit.
+- [ ] **55c.2** Verify TypeScript compilation passes with zero errors after deletion. Fix any residual import errors.
+- [x] **55c.3** Update task **53e.1** (`intimacyCatalog.ts` expansion spec) — remove the `npcResponseFragmentIds[]` field from the spec if that field was removed in 55b.3. **Done:** removed `npcResponseFragmentIds[]` from the 53e.1 spec (see below).
+
+### 55d. Verify
+
+- [ ] **55d.1** Run the existing test harness (`testSpawn.ts` or equivalent) — confirm no runtime errors referencing missing System 1 symbols.
+- [ ] **55d.2** Trigger a test intimacy scene end-to-end through the dispatcher — confirm `DispatchResult.intimateResponse` is populated via System 2 only with no System 1 fallback paths remaining.
