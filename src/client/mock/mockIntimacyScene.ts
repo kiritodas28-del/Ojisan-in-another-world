@@ -60,7 +60,7 @@ export const mockIntimacyScene: IntimacyScene = {
   currentWetness: WetnessLevel.Wet,
 
   // Pleasure track (minimal shape; full impl is in patches.ts createPleasureTrack)
-  pleasureTrack: { current: 0.28, peak: 0.42, decayRate: 0.05, buildRate: 0.12 },
+  pleasureTrack: { current: 0.28, peakThisEncounter: 0.42, decayRate: 0.05, buildRate: 0.12 },
 
   // In-scene modifiers
   sensitivityModifier: 0,
@@ -75,8 +75,8 @@ export const mockIntimacyScene: IntimacyScene = {
   consecutiveRepeatCount: 2,   // used same action twice; next use triggers overstim penalty
 
   // Sub-state trackers (idle defaults)
-  subspaceTracker:  { active: false, depth: 0, turnsInSubspace: 0 },
-  afterglowTracker: { active: false, intensity: 0, turnsRemaining: 0 },
+  subspaceTracker:  { active: false, turnsInSubspace: 0 },
+  afterglowTracker: { active: false, turnsRemaining: 0 },
 
   // No consumables active
   activeConsumables: [],

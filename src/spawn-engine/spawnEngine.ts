@@ -113,11 +113,11 @@ export function weightedRandom<T extends string>(weights: Record<T, number>): T 
         roll -= weight;
         if (roll <= 0) return key;
     }
-    return filtered[filtered.length - 1][0];
+    return filtered[filtered.length - 1]![0];
 }
 
 function randomFrom<T>(arr: T[]): T {
-    return arr[Math.floor(Math.random() * arr.length)];
+    return arr[Math.floor(Math.random() * arr.length)]!;
 }
 
 function randomInRange(min: number, max: number): number {
@@ -141,7 +141,7 @@ function cupSizeToIndex(cup: CupSize): number {
 
 function cupSizeFromIndex(index: number): CupSize {
     const cups = Object.values(CupSize);
-    return cups[clamp(index, 0, cups.length - 1)];
+    return cups[clamp(index, 0, cups.length - 1)]!;
 }
 
 function physicsCapBust(bustCm: number, heightCm: number): number {
@@ -449,7 +449,7 @@ function generateSexualPsychology(
             ? SexualConfidence.None
             : randomFrom(Object.values(SexualConfidence)),
         sexualLean: config.defaultSexualLean,
-        acquiredKinks: startingKinks,
+        acquiredKinks: [...startingKinks],
         kinkAcquisitionRate: randomInRange(0.05, 0.2),
         resistanceProfile,
         corruptionShame,
@@ -528,7 +528,7 @@ function generateFemaleSexualPhysiology(
     ));
 
     const orgasmProfile: OrgasmProfile = {
-        acquiredTypes: new Set([dominantOrgasm]),
+        acquiredTypes: [dominantOrgasm],
         dominantType: dominantOrgasm,
         ease: randomFrom(Object.values(OrgasmEase)),
         postSensitivity: randomFrom(Object.values(PostOrgasmSensitivity)),
@@ -609,7 +609,7 @@ function generateFemaleMeasurements(
     const assSizes = Object.values(AssSize);
     const minAssIndex = assSizes.indexOf(def.assSizeRange[0]);
     const maxAssIndex = assSizes.indexOf(def.assSizeRange[1]);
-    const assSize = assSizes[clamp(Math.round(randomInRange(minAssIndex, maxAssIndex)), 0, assSizes.length - 1)];
+    const assSize = assSizes[clamp(Math.round(randomInRange(minAssIndex, maxAssIndex)), 0, assSizes.length - 1)]!;
 
     const stomachType = randomFrom(def.stomachTypes);
     const stomachSoftness = randomFrom(def.stomachSoftness);
@@ -951,12 +951,12 @@ function generateFemaleMeasurementsWithHeight(
     const cups = Object.values(CupSize);
     const minCupIndex = cups.indexOf(def.cupSizeRange[0]);
     const maxCupIndex = cups.indexOf(def.cupSizeRange[1]);
-    const cupSize = cups[clamp(Math.round(randomInRange(minCupIndex, maxCupIndex)), 0, cups.length - 1)];
+    const cupSize = cups[clamp(Math.round(randomInRange(minCupIndex, maxCupIndex)), 0, cups.length - 1)]!;
 
     const assSizes = Object.values(AssSize);
     const minAssIndex = assSizes.indexOf(def.assSizeRange[0]);
     const maxAssIndex = assSizes.indexOf(def.assSizeRange[1]);
-    const assSize = assSizes[clamp(Math.round(randomInRange(minAssIndex, maxAssIndex)), 0, assSizes.length - 1)];
+    const assSize = assSizes[clamp(Math.round(randomInRange(minAssIndex, maxAssIndex)), 0, assSizes.length - 1)]!;
 
     const stomachType = randomFrom(def.stomachTypes);
     const stomachSoftness = randomFrom(def.stomachSoftness);

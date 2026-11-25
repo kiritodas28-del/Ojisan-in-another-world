@@ -416,7 +416,7 @@ function cupSizeToIndex(cup: CupSize): number {
 
 function cupSizeFromIndex(index: number): CupSize {
     const cups = Object.values(CupSize);
-    return cups[clamp(index, 0, cups.length - 1)];
+    return cups[clamp(index, 0, cups.length - 1)]!;
 }
 
 function assSizeToIndex(ass: AssSize): number {
@@ -425,7 +425,7 @@ function assSizeToIndex(ass: AssSize): number {
 
 function assSizeFromIndex(index: number): AssSize {
     const sizes = Object.values(AssSize);
-    return sizes[clamp(index, 0, sizes.length - 1)];
+    return sizes[clamp(index, 0, sizes.length - 1)]!;
 }
 
 function breastSoftnessToIndex(s: BreastSoftness): number {
@@ -434,7 +434,7 @@ function breastSoftnessToIndex(s: BreastSoftness): number {
 
 function breastSoftnessFromIndex(index: number): BreastSoftness {
     const values = Object.values(BreastSoftness);
-    return values[clamp(index, 0, values.length - 1)];
+    return values[clamp(index, 0, values.length - 1)]!;
 }
 
 function assSoftnessToIndex(s: AssSoftness): number {
@@ -443,7 +443,7 @@ function assSoftnessToIndex(s: AssSoftness): number {
 
 function assSoftnessFromIndex(index: number): AssSoftness {
     const values = Object.values(AssSoftness);
-    return values[clamp(index, 0, values.length - 1)];
+    return values[clamp(index, 0, values.length - 1)]!;
 }
 
 function stomachSoftnessToIndex(s: StomachSoftness): number {
@@ -452,7 +452,7 @@ function stomachSoftnessToIndex(s: StomachSoftness): number {
 
 function stomachSoftnessFromIndex(index: number): StomachSoftness {
     const values = Object.values(StomachSoftness);
-    return values[clamp(index, 0, values.length - 1)];
+    return values[clamp(index, 0, values.length - 1)]!;
 }
 
 function physicsCapBust(bustCm: number, heightCm: number): number {
@@ -523,7 +523,7 @@ export function applyAgeMod(
     // Stomach type bias
     const stomachType = mod.stomachTypeBias[
         Math.floor(Math.random() * mod.stomachTypeBias.length)
-    ];
+    ]!;
 
     // Body fat
     const fatAdd = Math.round(randomInRange(...mod.bodyFatAddPercent));
@@ -635,7 +635,7 @@ export function selectBodyTypeWithAgeBias(
         roll -= weight;
         if (roll <= 0) return key;
     }
-    return filtered[filtered.length - 1][0];
+    return filtered[filtered.length - 1]![0];
 }
 
 export function isPetiteByHeightTag(heightTag: HeightTag): boolean {

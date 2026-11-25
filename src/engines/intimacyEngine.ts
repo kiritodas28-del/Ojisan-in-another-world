@@ -319,8 +319,9 @@ export interface IntimacyAction {
   staminalCostPartner:  number;
   painValue?:           number;
   orgasmChance?:        number;
-  // kinkTagsTriggered must use Kink enum values to match acquiredKinks on partner
-  kinkTagsTriggered?:   Kink[];
+  // kinkTagsTriggered: string values from the Kink enum; typed string[] so
+  // the catalog can use plain string literals (all enum values are strings).
+  kinkTagsTriggered?:   string[];
   requiredPositionIds?: string[];
   postDefeatOnly?:      boolean;
   requiredItems?:       RequiredItem[];
@@ -519,6 +520,11 @@ export interface SceneEndPersistence {
   // True when post-scene jealousy check fires between the two group-scene partners.
   // Dispatcher applies trust/bond penalty between them via npcSocialEngine.
   jealousyFired?:                  boolean;
+  // ── Fields expected by the dispatcher ──────────────────────────────────
+  pregnancyCheck?:      boolean;      // set by caller after resolvePlayerOrgasm
+  sceneStartType?:      SceneStartType; // carried from scene.startType
+  secondPartnerNpcId?:  string;       // carried from scene.secondPartnerNpcId
+  satisfaction?:        number;       // overall satisfaction score
 }
 
 export interface SceneEndResult {
@@ -817,7 +823,8 @@ function postOrgasmMult(state: PostOrgasmSensitivity): number {
  */
 function kinkMatchCount(action: IntimacyAction, acquiredKinks: Kink[]): number {
   if (!action.kinkTagsTriggered) return 0;
-  return action.kinkTagsTriggered.filter(k => acquiredKinks.includes(k)).length;
+  const acquired = acquiredKinks as unknown as string[];
+  return action.kinkTagsTriggered.filter(k => acquired.includes(k)).length;
 }
 
 /**
@@ -1026,6 +1033,19 @@ export function startScene(
       dynamicResistance,
       partner.corruptionShame.shame,
     ),
+    // Phase 28 group fields — null in solo scenes
+    secondPartnerNpcId:            null,
+    secondPartnerProfile:          null,
+    secondPartnerArousal:          0,
+    secondPartnerStaminaCurrent:   0,
+    secondPartnerStaminaMax:       0,
+    secondPartnerHasFainted:       false,
+    secondPartnerLifeForce:        0,
+    secondPartnerEngagementStatus: 'Neutral',
+    secondOrgasmLog:               [],
+    secondLoveDeltaAccum:          0,
+    secondTrustDeltaAccum:         0,
+    groupMode:                     null,
   };
 }
 
@@ -1685,6 +1705,9 @@ export function endScene(scene: IntimacyScene, partner: NpcPartnerProfile): Scen
     partnerDeceased:          false,
     reputationPenalty:        0,
     partnerEntityType:        partner.entityType,
+    sceneStartType:           scene.startType,
+    secondPartnerNpcId:       scene.secondPartnerNpcId ?? undefined,
+    satisfaction,
   };
 
   return { satisfaction, narrative, events, persistence };
@@ -1805,10 +1828,10 @@ export function resolvePostIntimacy(
   // Derive from corruptionRatePerEncounter × encounterIntensity proxy
   const encounterIntensity = Math.min(1.0, scene.turnCount / 15);
   const corruptionDelta = isForced
-    ? partner.corruptionShame.corruptionRatePerEncounter * encounterIntensity * 3
+    ? partner.psychology.corruptionShame.corruptionRatePerEncounter * encounterIntensity * 3
     : isPostDefeat
-      ? partner.corruptionShame.corruptionRatePerEncounter * encounterIntensity * 2
-      : partner.corruptionShame.corruptionRatePerEncounter * encounterIntensity;
+      ? partner.psychology.corruptionShame.corruptionRatePerEncounter * encounterIntensity * 2
+      : partner.psychology.corruptionShame.corruptionRatePerEncounter * encounterIntensity;
 
   // ── Call resolvePostEncounter from patches.ts ───────────────────────────────
   // This applies all 15 patches: sensitivity update, wetness baseline,
@@ -2168,11 +2191,11 @@ export function startGroupScene(
     secondPartnerNpcId:            secondNpcId,
     secondPartnerProfile:          secondPartner,
     secondPartnerArousal:          secondPartner.arousalCurrent,
-    secondPartnerStaminaCurrent:   secondPartner.staminaMax,
-    secondPartnerStaminaMax:       secondPartner.staminaMax,
+    secondPartnerStaminaCurrent:   120,
+    secondPartnerStaminaMax:       120,
     secondPartnerHasFainted:       false,
     secondPartnerLifeForce:        secondPartner.intimacyLifeForce ?? 100,
-    secondPartnerEngagementStatus: PartnerEngagementStatus.Neutral,
+    secondPartnerEngagementStatus: 'Neutral',
     secondOrgasmLog:               [],
     secondLoveDeltaAccum:          0,
     secondTrustDeltaAccum:         0,

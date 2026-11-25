@@ -9,13 +9,13 @@ import {
     BreastSoftness, AssSoftness, CupSize, AssSize,
     MoodValue, BondType, PregnancyStage, SensitivityLevel,
     FemaleBodyType, HeightTag, SkinTone, RegionOfOrigin, CockType, CockTextureType
-} from "./types/enums";
-import { WetnessTrack, OrgasmProfile, FemaleSexualPhysiology, SensitivityTrack } from "../src/spawn-engine/character/sexualPhysiology";
-import { SexualPsychology, ResistanceProfile, CorruptionShameTrack } from "../src/spawn-engine/character/psychologyCore";
-import { SexualActFlags } from "../src/spawn-engine/character/historyProfile";
-import { CharacterDynamicState, PhysicalState, StaminaTrack } from "../src/spawn-engine/character/dynamicState";
-import { ExperienceHistory } from "../src/spawn-engine/character/historyProfile";
-import { updateBondType, updateBrokenFlag } from "../src/spawn-engine/character/dynamicState";
+} from "../types/enums";
+import { WetnessTrack, OrgasmProfile, FemaleSexualPhysiology, SensitivityTrack } from "../character/sexualPhysiology";
+import { SexualPsychology, ResistanceProfile, CorruptionShameTrack } from "../character/psychologyCore";
+import { SexualActFlags } from "../character/historyProfile";
+import { CharacterDynamicState, PhysicalState, StaminaTrack } from "../character/dynamicState";
+import { ExperienceHistory } from "../character/historyProfile";
+import { updateBondType, updateBrokenFlag } from "../character/dynamicState";
 
 // ============================================================
 // PATCH 1: Pleasure level as distinct from arousal
@@ -87,7 +87,7 @@ export function calculateCurrentWetness(
     );
     const maxIndex = WETNESS_ORDER.length - 1;
     const targetIndex = Math.round(baselineIndex + arousalProgress * (maxIndex - baselineIndex));
-    return WETNESS_ORDER[Math.min(targetIndex, maxIndex)];
+    return WETNESS_ORDER[Math.min(targetIndex, maxIndex)]!;
 }
 
 export function syncWetnessToArousal(
@@ -137,7 +137,7 @@ export function updateWetnessBaselineFromHistory(
     else if (totalEncounterCount > 100) newIndex = Math.min(baseIndex + 2, 4);
     else if (totalEncounterCount > 50) newIndex = Math.min(baseIndex + 1, 3);
     else if (totalEncounterCount > 20) newIndex = Math.min(baseIndex + 1, 2);
-    return { ...track, baseline: WETNESS_ORDER[newIndex] };
+    return { ...track, baseline: WETNESS_ORDER[newIndex]! };
 }
 
 // ============================================================
@@ -170,7 +170,7 @@ export function tryAcquireOrgasmType(
 
     return {
         ...profile,
-        acquiredTypes: acquired,
+        acquiredTypes: [...acquired],
         multipleCapacity,
         squirtCapacity
     };
@@ -449,7 +449,7 @@ export function tryAcquireKinkFromAct(
     if (encounterCount > 50 && Math.random() < rate * 0.5) acquired.add(Kink.Edging);
     if (encounterCount > 30 && actsPerformed.squirtingAchieved) acquired.add(Kink.Overstimulation);
 
-    return { ...psychology, acquiredKinks: acquired };
+    return { ...psychology, acquiredKinks: [...acquired] };
 }
 
 

@@ -62,6 +62,7 @@ export const mockCombatState: CombatState = {
   purificationProgress: 15,
   bossPhaseScripts:     {},
   killedEnemies:        [],
+  weakNodeHits:         [],
   log:                  [
     { round: 1, actorId: 'player-001',    message: 'Player strikes the wolf for 18 damage.' },
     { round: 1, actorId: 'enemy-wolf-1',  message: 'Forest Wolf bites the player for 11 damage.' },

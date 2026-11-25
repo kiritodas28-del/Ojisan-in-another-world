@@ -93,7 +93,6 @@ export function addCompanion(
     stats:               deriveCompanionStats(npc),
     activeStatusEffects: [],
     isDown:              false,
-    equippedWeaponId:    undefined,
     equippedArmorId:     undefined,
   };
 

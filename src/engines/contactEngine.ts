@@ -201,8 +201,8 @@ export function assembleProfileView(
     companionLevel:     npc.companionLevel,
 
     // Tab 2 — spawn-engine unknowns passed through for UI to cast later
-    measurements:       npc.measurements,
-    physicalDetail:     npc.physicalDetail,
+    measurements:       npc.measurements as (FemaleMeasurements | MaleMeasurements | undefined),
+    physicalDetail:     npc.physicalDetail as (FemalePhysicalDetail | MalePhysicalDetail | undefined),
     gender:             npc.gender,
     race:               npc.race,
     bodyType:           npc.bodyType,

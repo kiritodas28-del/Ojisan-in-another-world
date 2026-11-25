@@ -822,7 +822,7 @@ function cupSizeToIndex(cup: CupSize): number {
 
 function cupSizeFromIndex(index: number): CupSize {
     const cups = Object.values(CupSize);
-    return cups[clamp(index, 0, cups.length - 1)];
+    return cups[clamp(index, 0, cups.length - 1)]!;
 }
 
 function stomachSoftnessToIndex(s: StomachSoftness): number {
@@ -831,7 +831,7 @@ function stomachSoftnessToIndex(s: StomachSoftness): number {
 
 function stomachSoftnessFromIndex(i: number): StomachSoftness {
     const v = Object.values(StomachSoftness);
-    return v[clamp(i, 0, v.length - 1)];
+    return v[clamp(i, 0, v.length - 1)]!;
 }
 
 function breastSoftnessToIndex(s: BreastSoftness): number {
@@ -840,7 +840,7 @@ function breastSoftnessToIndex(s: BreastSoftness): number {
 
 function breastSoftnessFromIndex(i: number): BreastSoftness {
     const v = Object.values(BreastSoftness);
-    return v[clamp(i, 0, v.length - 1)];
+    return v[clamp(i, 0, v.length - 1)]!;
 }
 
 function assSoftnessToIndex(s: AssSoftness): number {
@@ -849,7 +849,7 @@ function assSoftnessToIndex(s: AssSoftness): number {
 
 function assSoftnessFromIndex(i: number): AssSoftness {
     const v = Object.values(AssSoftness);
-    return v[clamp(i, 0, v.length - 1)];
+    return v[clamp(i, 0, v.length - 1)]!;
 }
 
 export interface PostpartumResult {

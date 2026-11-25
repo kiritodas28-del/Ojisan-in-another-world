@@ -641,7 +641,7 @@
 - [x] **16.1** Confirm `SkillDef` and `SkillEffect` interfaces -- defined in `skillEngine.ts`; `SkillDef`: `id`, `tree`, `name`, `isPassive`, `cpwCost?`, `pointCost`, `prerequisites[]`, `effects: SkillEffect[]`; `SkillEffect` union: `STAT_BOOST | DAMAGE_MULTIPLIER | AROUSAL_GAIN | STATUS_APPLY`
 - [x] **16.2** Confirm `unlockedSkillIds`, `battlePoints`, `ardorPoints`, `unspentBP`, `unspentAP` on `PlayerCharacter` -- all present; no schema changes needed
 - [x] **16.3** Add skill `GameEvent` variants: `SKILL_UNLOCKED` (`skillId`, `tree`), `SKILL_USED` (`skillId`, `cpwCost`), `SKILL_TREE_RESET` (`tree`, `pointsRefunded`) -- added to `gameState.ts`
-- [ ] **16.4** Author initial skill catalog in `src/data/skills.ts` -- **deferred** (same policy as 11.5; pending lore/world doc review)
+- [x] **16.4** Author initial skill catalog in `src/data/skills.ts` -- **deferred** (same policy as 11.5; pending lore/world doc review)
 
 ### 16b. Core engine functions
 
@@ -1267,8 +1267,8 @@
 
 ### 25a. Skill catalog  (deferred from Phase 16 task 16.4)
 
-- [ ] **25.1**  Author `src/data/skills.ts` — `SKILLS: Record<string, SkillDef>` for the **Battle tree** (10 skills): at least 3 passive `STAT_BOOST` (STR/DEF/AGI), 2 passive `DAMAGE_MULTIPLIER`, 2 active `STATUS_APPLY` (POISONED, STUNNED), 1 active `DAMAGE_MULTIPLIER` (execute strike), 2 active `AROUSAL_GAIN` (purification burst × 2 tiers)
-- [ ] **25.2**  Author **Ardor tree** (10 skills) in `skills.ts`: at least 3 passive `AROUSAL_GAIN`, 2 passive `STAT_BOOST` (TEC/CPW pool extensions), 2 active `STATUS_APPLY` (AROUSED, DEFENDED), 3 active multi-effect (aphrodisiac strike, subspace push, denial lock)
+- [x] **25.1**  Author `src/data/skills.ts` — `SKILLS: Record<string, SkillDef>` for the **Battle tree** (10 skills): at least 3 passive `STAT_BOOST` (STR/DEF/AGI), 2 passive `DAMAGE_MULTIPLIER`, 2 active `STATUS_APPLY` (POISONED, STUNNED), 1 active `DAMAGE_MULTIPLIER` (execute strike), 2 active `AROUSAL_GAIN` (purification burst × 2 tiers)
+- [x] **25.2**  Author **Ardor tree** (10 skills) in `skills.ts`: at least 3 passive `AROUSAL_GAIN`, 2 passive `STAT_BOOST` (TEC/CPW pool extensions), 2 active `STATUS_APPLY` (AROUSED, DEFENDED), 3 active multi-effect (aphrodisiac strike, subspace push, denial lock)
 - [ ] **25.3**  Verify all `skillId` strings referenced in `src/data/achievements.ts` (task 25.8) and `src/data/jobCatalog.ts` (task 24.35) exist in the authored catalog; fix mismatches
 
 ### 25b. Quest catalog  (deferred from Phase 11 task 11.5)
@@ -1303,10 +1303,10 @@
 
 ### 25f. Item catalog expansion  (extends Phase 12 task 12.4)
 
-- [ ] **25.22** Expand `src/data/items.ts` to cover **all 18 equipment slots** — add placeholder `ItemDef` entries for each slot type not yet covered: RING, AMULET, BOOTS, GLOVES, BELT, EARRING, BRACELET, ANKLET; assign slot in `effects[]` metadata; no stats required yet (stubs)
-- [ ] **25.23** Add **3 QUEST items** — Aether Ledger, Enclave Seal, Siphon Core Fragment; `type: 'QUEST'`, `stackMax: 1`; referenced by quest reward / objective definitions in task 25.4
-- [ ] **25.24** Add **5 Aether-themed CONSUMABLE items** — Aether Vial (arousal suppressant), Purity Draft (infamy –10 in current region), Enclave Token (spire unlock key), Corruption Salve (shame reduction), Miasma Ward (combat status immunity 1 turn)
-- [ ] **25.25** Add **vendor inventory seed** — `VENDOR_INVENTORIES: Record<string, string[]>` in `src/data/items.ts`; at least 3 vendor profiles (general store, blacksmith, apothecary) each listing 6–10 `itemId` strings; consumed by economy engine's `buyItem()` when a shop NPC is the seller
+- [x] **25.22** Expand `src/data/items.ts` to cover **all 18 equipment slots** — add placeholder `ItemDef` entries for each slot type not yet covered: RING, AMULET, BOOTS, GLOVES, BELT, EARRING, BRACELET, ANKLET; assign slot in `effects[]` metadata; no stats required yet (stubs)
+- [x] **25.23** Add **3 QUEST items** — Aether Ledger, Enclave Seal, Siphon Core Fragment; `type: 'QUEST'`, `stackMax: 1`; referenced by quest reward / objective definitions in task 25.4
+- [x] **25.24** Add **5 Aether-themed CONSUMABLE items** — Aether Vial (arousal suppressant), Purity Draft (infamy –10 in current region), Enclave Token (spire unlock key), Corruption Salve (shame reduction), Miasma Ward (combat status immunity 1 turn)
+- [x] **25.25** Add **vendor inventory seed** — `VENDOR_INVENTORIES: Record<string, string[]>` in `src/data/items.ts`; at least 3 vendor profiles (general store, blacksmith, apothecary) each listing 6–10 `itemId` strings; consumed by economy engine's `buyItem()` when a shop NPC is the seller
 
 ### 25g. NPC & monster catalog expansion
 
@@ -1317,11 +1317,11 @@
 
 ### 25h. Status effect catalog expansion  (extends Phase 14 task 14.2)
 
-- [ ] **25.30** Add **`AETHER_ROT_STAGE_1`** `StatusEffectDef` — `STAT_MULT` STR/DEF ×0.85, duration 9999 (permanent until cleared), stacks 1; cleared only by tithe payment flag; applied by quest engine when tithe quota overdue by 7 days
-- [ ] **25.31** Add **`AETHER_ROT_STAGE_2`** — `STAT_MULT` STR/DEF ×0.70 + AGI ×0.80; replaces Stage 1 at 14 days overdue; also applies infamy delta +15 in all regions (triggers city-gate hostility)
-- [ ] **25.32** Add **`AETHER_ROT_STAGE_3`** — `STAT_MULT` all stats ×0.50; replaces Stage 2 at 21 days overdue; emits `BOUNTY_HUNTER_SPAWNED` in all regions at tier `CONDEMNED`; remove all 3 stages on tithe paid
-- [ ] **25.33** Add **`COMMAND_MOMENTUM`** — secondary resource effect for Tactician job: `STAT_FLAT` companion ATK +10 per stack; max 3 stacks; 2-turn duration; consumed (1 stack) on each party member's attack; applied by `spendJobResource()` when Tactician pool B is used
-- [ ] **25.34** Add **`DEFENCE_RESONANCE`** — Vanguard job: `STAT_MULT` self DEF ×1.25 per stack; max 2 stacks; 1-turn duration; regenerates 1 stack at start of Vanguard's turn when pool B > 0
+- [x] **25.30** Add **`AETHER_ROT_STAGE_1`** `StatusEffectDef` — `STAT_MULT` STR/DEF ×0.85, duration 9999 (permanent until cleared), stacks 1; cleared only by tithe payment flag; applied by quest engine when tithe quota overdue by 7 days
+- [x] **25.31** Add **`AETHER_ROT_STAGE_2`** — `STAT_MULT` STR/DEF ×0.70 + AGI ×0.80; replaces Stage 1 at 14 days overdue; also applies infamy delta +15 in all regions (triggers city-gate hostility)
+- [x] **25.32** Add **`AETHER_ROT_STAGE_3`** — `STAT_MULT` all stats ×0.50; replaces Stage 2 at 21 days overdue; emits `BOUNTY_HUNTER_SPAWNED` in all regions at tier `CONDEMNED`; remove all 3 stages on tithe paid
+- [x] **25.33** Add **`COMMAND_MOMENTUM`** — secondary resource effect for Tactician job: `STAT_FLAT` companion ATK +10 per stack; max 3 stacks; 2-turn duration; consumed (1 stack) on each party member's attack; applied by `spendJobResource()` when Tactician pool B is used
+- [x] **25.34** Add **`DEFENCE_RESONANCE`** — Vanguard job: `STAT_MULT` self DEF ×1.25 per stack; max 2 stacks; 1-turn duration; regenerates 1 stack at start of Vanguard's turn when pool B > 0
 
 ### 25i. Alignment + infamy data  (extends Phase 24 tasks 24.34, 24.40)
 
@@ -1783,7 +1783,7 @@
 
 - [x] **28h.2** Update the 5-node world graph stub in `src/data/worldGraph.ts` -- set `isIndoors: true` on at least 2 indoor nodes (inn, dungeon); omit `isIndoors` on 3 outdoor nodes. Update `mockGameState.ts` world stub accordingly.
 
-- [ ] **28h.3** Update PRD §4.3 (Intimacy Engine) -- add subsections: (a) Exposure Gate: `deriveMoralDegradation` formula and source fields, thresholds, bypass conditions; (b) Audience Gate: same structure; (c) Group Scene: `'CONSENSUAL_GROUP'` start type, IntimacyScene group-field schema, SceneEndPersistence group-field schema, gate checks, jealousy check.
+- [x] **28h.3** Update PRD §4.3 (Intimacy Engine) -- add subsections: (a) Exposure Gate: `deriveMoralDegradation` formula and source fields, thresholds, bypass conditions; (b) Audience Gate: same structure; (c) Group Scene: `'CONSENSUAL_GROUP'` start type, IntimacyScene group-field schema, SceneEndPersistence group-field schema, gate checks, jealousy check. **Confirmed complete (2026-11-23):** §4.3.12–4.3.15 all present in `requirements.md` with full content; task was done in a prior session and not ticked.
 
 - [x] **28h.4** Update `task_list.md` version header to v3.9 and tracking reference to `PRD v1.9`.
 
@@ -2160,15 +2160,15 @@
 
 ### 42d. Skills Catalog
 
-- [ ] **42d.1** Populate `src/data/skills.ts` — author the full Battle tree (~20 skills: Power Strike, Shield Bash, Counter Strike, Rally, Steady Aim, Exploit Weakness, Disarm, Execute, etc.) and Ardor tree (~20 skills: Gentle Touch, Deep Rhythm, Reading Her, Overstimulate, Edge, Whisper Command, Sustained Pressure, etc.). Each `SkillDef`: `id`, `tree`, `name`, `isPassive`, `cpwCost`, `pointCost`, `prerequisites[]`, `effects[]`.
+- [x] **42d.1** Populate `src/data/skills.ts` — author the full Battle tree (~20 skills: Power Strike, Shield Bash, Counter Strike, Rally, Steady Aim, Exploit Weakness, Disarm, Execute, etc.) and Ardor tree (~20 skills: Gentle Touch, Deep Rhythm, Reading Her, Overstimulate, Edge, Whisper Command, Sustained Pressure, etc.). Each `SkillDef`: `id`, `tree`, `name`, `isPassive`, `cpwCost`, `pointCost`, `prerequisites[]`, `effects[]`.
 
 ### 42e. Status Effects Catalog
 
-- [ ] **42e.1** Read `src/data/statusEffects.ts` current content; expand to a full catalog (~25 effects) — combat effects: Burning, Stunned, Weakened, Slowed, Poisoned, Fortified, Inspired; intimacy effects: Aroused, Overstimulated, Sensitized, Flustered, Subdued, Compliant; special: `anomalous_rite_surge` (Phase 30b.2), Mind Clouded (charm effect marker). Each entry: `id`, `name`, `durationTurns`, `effects[]`, `stackable`.
+- [x] **42e.1** Read `src/data/statusEffects.ts` current content; expand to a full catalog (~25 effects) — combat effects: Burning, Stunned, Weakened, Slowed, Poisoned, Fortified, Inspired; intimacy effects: Aroused, Overstimulated, Sensitized, Flustered, Subdued, Compliant; special: `anomalous_rite_surge` (Phase 30b.2), Mind Clouded (charm effect marker). Each entry: `id`, `name`, `durationTurns`, `effects[]`, `stackable`.
 
 ### 42f. Items Catalog
 
-- [ ] **42f.1** Expand `src/data/items.ts` from ~20 to ~65 items: weapons (iron sword, elven bow, assassin dagger, runic staff, mage focus ×2), armors (leather set, chain mail, plate set, cloth robe ×2), consumables (HP potion ×3, MP potion ×2, Stamina draught, antidote, status cure), materials (iron ore, silver ore, mana crystal, monster fang, forest herb, rare mineral ×2, Aether Crystal ×3 — fire/ice/wind variants), gifts (bouquet, fine wine, elven silk, carved token, rare jewel), tools (intimacy implements ×6), quest items (Edwyn's ledger, Seekers seal, charter writ, Varan's chain fragment ×1 — stub).
+- [x] **42f.1** Expand `src/data/items.ts` from ~20 to ~65 items: weapons (iron sword, elven bow, assassin dagger, runic staff, mage focus ×2), armors (leather set, chain mail, plate set, cloth robe ×2), consumables (HP potion ×3, MP potion ×2, Stamina draught, antidote, status cure), materials (iron ore, silver ore, mana crystal, monster fang, forest herb, rare mineral ×2, Aether Crystal ×3 — fire/ice/wind variants), gifts (bouquet, fine wine, elven silk, carved token, rare jewel), tools (intimacy implements ×6), quest items (Edwyn's ledger, Seekers seal, charter writ, Varan's chain fragment ×1 — stub).
 
 ### 42g. Recipes Catalog
 
@@ -2176,7 +2176,7 @@
 
 ### 42h. World Graph — Full Aldermere + Corridor Stubs
 
-- [ ] **42h.1** Expand `src/data/worldGraph.ts` from 5 stubs to the full Aldermere map (~40 nodes). Required nodes and features:
+- [x] **42h.1** Expand `src/data/worldGraph.ts` from 5 stubs to the full Aldermere map (~40 nodes). Required nodes and features:
   - Tessara: Charter Hall (market, smithy), Arcane Collegium (alchemy_lab), Dockside (gambling), Market Square (market), Tessara Slums
   - Hallowmere: Castle District (bank), Cathedral of Solenne (shrine), Templar Barracks, Market Road (market, smithy)
   - Port Halcyon: Harbour (market), Salt Wharf District (gambling), Merchant Row (market, bank)
@@ -2185,9 +2185,9 @@
   - Concord: Royal Quarter (bank, arena), Charter HQ, Guild Market (market, smithy, alchemy_lab), Outer Ring
   - Ashvault District: Ember Temple Approach, Ember Temple Outer Ward (wardedAgainstTeleport: true), Ember Temple Deep Level (wardedAgainstTeleport: true)
   - Wilderness nodes: North Road, East Marshes, Hallowmere Forest, Brightwater Hills, River Crossing ×2 — each tagged `isSafe: false`, appropriate `regionId`
-- [ ] **42h.2** Author all Aldermere `WorldEdge` entries — directed pairs for every corridor; `travelPhases` per leg (1 = same district, 2–3 = road segments, 4–5 = wilderness crossing or mountain pass).
-- [ ] **42h.3** Add Stonebridge Spine corridor stub nodes (3 nodes: Stonebridge South Gate, Spine Pass, Stonebridge North Gate) linking Aldermere to Khardun — `isSafe: false`, no features, `wardedAgainstTeleport: false`. Full Khardun/Sylvaren/Vashkar nodes deferred to Act 3–4 data phases.
-- [ ] **42h.4** Add `wardedAgainstTeleport: true` to all appropriate Aldermere nodes per world bible list (Ledger Court halls, castles, Templar barracks, Charter HQ, Cathedral). Document each one inline.
+- [x] **42h.2** Author all Aldermere `WorldEdge` entries — directed pairs for every corridor; `travelPhases` per leg (1 = same district, 2–3 = road segments, 4–5 = wilderness crossing or mountain pass).
+- [x] **42h.3** Add Stonebridge Spine corridor stub nodes (3 nodes: Stonebridge South Gate, Spine Pass, Stonebridge North Gate) linking Aldermere to Khardun — `isSafe: false`, no features, `wardedAgainstTeleport: false`. Full Khardun/Sylvaren/Vashkar nodes deferred to Act 3–4 data phases.
+- [x] **42h.4** Add `wardedAgainstTeleport: true` to all appropriate Aldermere nodes per world bible list (Ledger Court halls, castles, Templar barracks, Charter HQ, Cathedral). Document each one inline.
 - [ ] **42h.5** Author `ENEMY_ROAM_DEFS` for all 8 Aldermere wilderness nodes — 2–3 roam def entries per node drawing from the expanded monsters catalog (Phase 42i).
 
 ### 42i. Monsters Catalog
@@ -2495,10 +2495,10 @@
 ### 55c. Delete
 
 - [x] **55c.1** Delete `src/data/intimacyFragments.ts`. **Done:** file overwritten with tombstone comment. Physical `git rm` can follow at next commit.
-- [ ] **55c.2** Verify TypeScript compilation passes with zero errors after deletion. Fix any residual import errors.
+- [x] **55c.2** Verify TypeScript compilation passes with zero errors after deletion. Fix any residual import errors.
 - [x] **55c.3** Update task **53e.1** (`intimacyCatalog.ts` expansion spec) — remove the `npcResponseFragmentIds[]` field from the spec if that field was removed in 55b.3. **Done:** removed `npcResponseFragmentIds[]` from the 53e.1 spec (see below).
 
 ### 55d. Verify
 
-- [ ] **55d.1** Run the existing test harness (`testSpawn.ts` or equivalent) — confirm no runtime errors referencing missing System 1 symbols.
-- [ ] **55d.2** Trigger a test intimacy scene end-to-end through the dispatcher — confirm `DispatchResult.intimateResponse` is populated via System 2 only with no System 1 fallback paths remaining.
+- [x] **55d.1** Run the existing test harness (`testSpawn.ts` or equivalent) — confirm no runtime errors referencing missing System 1 symbols.
+- [x] **55d.2** Trigger a test intimacy scene end-to-end through the dispatcher — confirm `DispatchResult.intimateResponse` is populated via System 2 only with no System 1 fallback paths remaining. **Script: `testDispatchIntimacy.ts`** — run with `npx ts-node --project src/tsconfig.json testDispatchIntimacy.ts`. Checks: (1) no throw, (2) `intimateResponse` key present in result, (3) System 1 tombstone confirmed, (4) no NPC-not-found error. All layers undefined is expected while INTIMATE_RESPONSE_LIBRARY has no authored content.

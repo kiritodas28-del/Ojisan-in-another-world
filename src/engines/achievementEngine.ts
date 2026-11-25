@@ -252,7 +252,7 @@ export function checkAchievements(
 
     if (condition.type === 'EVENT') {
       // EVENT: satisfied if the event type appears anywhere in this batch.
-      satisfied = eventTypesInBatch.has(condition.eventType);
+      satisfied = (eventTypesInBatch as Set<string>).has(condition.eventType);
     } else {
       satisfied = evaluateAchievementCondition(state, condition);
     }

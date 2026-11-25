@@ -3,7 +3,7 @@
  * Realistic GameState for UI development without a running backend.
  * All values satisfy the interfaces defined in src/state/gameState.ts.
  *
- * Scenario: Day 4, Afternoon. Player (Kenji, level 3) is in the Village Square
+ * Scenario: Day 4, Afternoon. Player (Kenji, level 3) is in Tessara Market Square
  * with 2 party companions, 3 contacts, 2 active quests.
  *
  * Task UI-2.1  (TileMap added: Task UI-5.1 / UI-5.3)
@@ -209,10 +209,10 @@ const mockMeira: NpcCharacter = {
   faithId: 'radiant_faith',               // Phase 33: Human default faith
 } as unknown as NpcCharacter;
 
-// ─── Mock tile map — village_square ───────────────────────────────────────────
+// ─── Mock tile map — tessara_market_square ────────────────────────────────────
 // 30×30 grid. Outer border = EMPTY_EDGE (shapes the location boundary so it
 // isn't a full filled square). Row 5, cols 2–12 = inn façade wall; col 7 = DOOR.
-function buildVillageSquareTileMap(): TileMap {
+function buildTessaraMarketSquareTileMap(): TileMap {
   const ROWS = 30;
   const COLS = 30;
 
@@ -237,7 +237,7 @@ function buildVillageSquareTileMap(): TileMap {
   );
 
   return {
-    locationId:  'village_square',
+    locationId:  'tessara_market_square',
     safetyTier:  'SAFE',
     tiles,
     spawnPoints: {
@@ -278,14 +278,14 @@ export const mockGameState: GameState = {
 
   world: {
     // Phase 17: currentNodeId is canonical; currentLocationId is an alias kept in sync.
-    currentNodeId:      'village_square',
-    currentLocationId:  'village_square',
-    discoveredNodeIds:  ['village_square', 'forest_entrance', 'old_mill'],
-    lastSafeNodeId:     'village_square',
-    lastSafeLocationId: 'village_square',
-    tileMap:            buildVillageSquareTileMap(),
+    currentNodeId:      'tessara_market_square',
+    currentLocationId:  'tessara_market_square',
+    discoveredNodeIds:  ['tessara_market_square', 'tessara_charter_hall', 'tessara_dockside'],
+    lastSafeNodeId:     'tessara_market_square',
+    lastSafeLocationId: 'tessara_market_square',
+    tileMap:            buildTessaraMarketSquareTileMap(),
     occupantPositions:  mockOccupantPositions,
-    // No roam defs for village_square (SAFE node). Authored in Task 17.DATA.
+    // No roam defs for tessara_market_square (SAFE node). Authored in Task 17.DATA.
     enemyRoamDefs:      [],
   },
 
@@ -336,28 +336,28 @@ export const mockGameState: GameState = {
   } satisfies QuestLog,
 
   // 5 regions covering all 5 reputation tiers (Task 10.14):
-  //   region_start    +120 → Liked
-  //   region_plains    +450 → Renowned
-  //   region_forest    -30  → Neutral (negative but above Disliked threshold)
-  //   region_swamp    -250  → Disliked
-  //   region_abyss    -550  → Infamous  (also has an active bounty)
+  //   tessara       +120 → Liked      (player start region)
+  //   brightwater    +450 → Renowned   (helped extensively)
+  //   varnhold        -30 → Neutral    (no history yet)
+  //   port_halcyon   -250 → Disliked   (past trouble)
+  //   vashkar        -550 → Infamous   (enemy territory; also has an active bounty)
   reputation: {
-    region_start:  120,
-    region_plains: 450,
-    region_forest: -30,
-    region_swamp:  -250,
-    region_abyss:  -550,
+    tessara:      120,
+    brightwater:  450,
+    varnhold:     -30,
+    port_halcyon: -250,
+    vashkar:      -550,
   },
 
   // Phase 23a: dark/shadow faction reputation (task 23a.5).
-  // Seeded with region_abyss at 55 so shadow faction is accessible there;
+  // Seeded with vashkar at 55 so shadow faction is accessible there;
   // all others start at 0 (shadow faction locked until events push score >= 40).
   darkReputation: {
-    region_start:  0,
-    region_plains: 0,
-    region_forest: 0,
-    region_swamp:  0,
-    region_abyss:  55,
+    tessara:      0,
+    brightwater:  0,
+    varnhold:     0,
+    port_halcyon: 0,
+    vashkar:      55,
   },
 
   // Phase 19: tier 2 unlocked; Elara assigned to suite_1.
@@ -389,7 +389,6 @@ export const mockGameState: GameState = {
 
   settings: {
     adultContentEnabled:  true,
-    nonConContentEnabled: false,
     contactListCap:       400,
     partyMaxSize:         3,
     textSize:             'medium',

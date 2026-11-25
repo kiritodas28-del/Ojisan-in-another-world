@@ -198,6 +198,9 @@ export function captureMonster(
     captureDay:            state.calendar.day,
     tamingProgress:        0,
     interactionCountToday: 0,
+    talkCountToday:        0,
+    touchCountToday:       0,
+    flirtCountToday:       0,
     relationshipTrust:     0,
     relationshipLove:      0,
   };
@@ -594,7 +597,7 @@ export function resolveCaptiveAction(
       };
     }
     // Consume item
-    const removeResult = removeItem(state, itemId, 1, 'GIVEN');
+    const removeResult = removeItem(state, itemId, 1, 'GIFTED');
     state  = removeResult.state;
     events.push(...removeResult.events);
     // Reload cell after state mutation

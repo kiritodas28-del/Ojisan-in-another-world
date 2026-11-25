@@ -29,7 +29,7 @@
  *   - Emits no events — caller gets a clean-slate GameState ready for day 1.
  */
 
-import type { GameState, RegionId } from '../state/gameState';
+import type { GameState, RegionId, Season } from '../state/gameState';
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -337,7 +337,7 @@ export function startNewGamePlus(gameState: GameState): GameState {
     party:             { companions: [], maxSize: settings.partyMaxSize },
     contacts:          [],
     world:             resetWorld,
-    calendar:          { day: 1, phase: 'Morning', actionCount: 0, phaseActionLimit: 15 },
+    calendar:          { day: 1, phase: 'Morning' as const, season: 'Spring' as Season, actionCount: 0, phaseActionLimit: 15 },
     offspring:         [],
     quests:            { entries: [] },
     reputation:        {},

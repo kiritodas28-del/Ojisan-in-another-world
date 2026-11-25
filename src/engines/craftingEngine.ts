@@ -68,7 +68,7 @@ export function getUpgradeFailRate(currentTier: number, hasAlchemyLab: boolean):
 // =============================================================================
 
 // Which item types are valid for each equipment slot.
-const SLOT_VALID_TYPES: Record<EquipmentSlot, string[]> = {
+const SLOT_VALID_TYPES: Partial<Record<EquipmentSlot, string[]>> = {
   WEAPON:   ['WEAPON'],
   OFF_HAND: ['WEAPON', 'TOOL'],
   HEAD:     ['ARMOR'],

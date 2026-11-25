@@ -275,7 +275,7 @@ export function getDesireSurfaceDescription(
 // ─── GENERATOR ──────────────────────────────────────────────
 
 function randomFrom<T>(arr: T[]): T {
-    return arr[Math.floor(Math.random() * arr.length)];
+    return arr[Math.floor(Math.random() * arr.length)]!;
 }
 
 function randomInRange(min: number, max: number): number {

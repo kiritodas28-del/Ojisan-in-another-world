@@ -36,6 +36,9 @@ import type {
   AlignmentState, AlignmentAxis, RegionId,
 } from '../state/gameState';
 
+// Re-export so dispatcher can import AlignmentAxis from one place
+export type { AlignmentAxis } from '../state/gameState';
+
 // ─── Tuning constants ─────────────────────────────────────────────────────────
 // A player is "dominant" on an axis when the score exceeds this threshold...
 const DOMINANT_THRESHOLD = 20;

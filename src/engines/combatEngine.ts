@@ -738,7 +738,7 @@ export function startCombat(
         const jobDef = JOB_CATALOG?.[activeJobId];
         if (jobDef) {
           const restored = restoreJobResources(state, jobDef as Parameters<typeof restoreJobResources>[1]);
-          state = restored.state;
+          state = restored;
         }
       }
     } catch { /* job catalog not yet authored; safe to skip */ }
@@ -972,7 +972,7 @@ export function resolveCombatAction(
   // ── Defeat check (Task 7.8) ───────────────────────────────────────────────
   if (state.status === 'RUNNING') {
     checkCombatantsDowned(state, gameState, events, log);
-    if (state.status === 'PLAYER_DEFEAT') {
+    if ((state.status as string) === 'PLAYER_DEFEAT') {
       emitDefeatOutcome(state, gameState, events, log);
     }
   }
@@ -1027,8 +1027,9 @@ function _applyDamage(
     const weakHit = state.weakNodeHits.find(w => w.enemyId === updatedTarget.id);
     if (weakHit) {
       try {
-        const fractured = applyArmorFracture(updatedTarget, weakHit.bonusDamage);
-        state.combatants[updatedTarget.id] = fractured;
+        const fractureResult = applyArmorFracture(gameState, updatedTarget.id, 30, 3);
+        events.push(...fractureResult.events);
+        Object.assign(gameState, fractureResult.state);
         // Remove from weakNodeHits so the fracture doesn't apply again this round.
         state.weakNodeHits = state.weakNodeHits.filter(w => w.enemyId !== updatedTarget.id);
         log.push({ round: state.roundNumber, actorId: 'system', message: `${updatedTarget.name}'s weak node fractured! DEF reduced.` });
@@ -1077,8 +1078,14 @@ function _advanceTurn(state: CombatState, gameState: GameState): void {
         .map(id => state.combatants[id])
         .filter(Boolean) as AnyCharacter[];
       if (enemies.length > 0) {
-        const hits = detectWeakNodes(gameState, enemies);
-        state.weakNodeHits = hits as WeakNodeHit[];
+        const weakNodeResult = detectWeakNodes(
+          gameState,
+          { hasWeakNodeScan: true } as import('./jobEngine').JobDef,
+          enemies,
+          gameState.player.stats.per ?? 10,
+          state.roundNumber,
+        );
+        state.weakNodeHits = weakNodeResult.hits.map(h => ({ enemyId: h.targetId, bonusDamage: h.bonusDamage }));
       } else {
         state.weakNodeHits = [];
       }

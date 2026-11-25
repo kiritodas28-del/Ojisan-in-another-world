@@ -4,7 +4,7 @@
 
 import {
     FemaleBodyType, FemaleAttractiveness, AgeBodyCategory, Race
-} from "../src/spawn-engine/types/enums";
+} from "../types/enums";
 
 // Body type to attractiveness bias
 // These are ADDITIVE weights on top of population config
@@ -333,7 +333,7 @@ export const RACE_ATTRACTIVENESS_BIAS: Partial<Record<Race, Partial<Record<Femal
 
 export function rollAttractivenessWithBias(
     baseWeights: Record<FemaleAttractiveness, number>,
-    bodyType: import("../src/spawn-engine/types/enums").FemaleBodyType,
+    bodyType: import("../types/enums").FemaleBodyType,
     ageCategory: AgeBodyCategory,
     race: Race
 ): FemaleAttractiveness {
@@ -365,5 +365,5 @@ export function rollAttractivenessWithBias(
         roll -= weight;
         if (roll <= 0) return key;
     }
-    return filtered[filtered.length - 1][0];
+    return filtered[filtered.length - 1]![0];
 }

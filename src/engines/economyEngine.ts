@@ -41,8 +41,9 @@ export type ItemType =
   | 'CONSUMABLE'
   | 'MATERIAL'
   | 'GIFT'
-  | 'TOOL'     // intimacy implements — reusable, non-consumable, non-stackable
-  | 'QUEST';   // never takes a slot; cannot be sold or dropped
+  | 'TOOL'      // intimacy implements — reusable, non-consumable, non-stackable
+  | 'CLOTHING'  // wearable outfits / lingerie for intimacy / outfit system; no equipment slot
+  | 'QUEST';    // never takes a slot; cannot be sold or dropped
 
 /**
  * Effect applied when consumeItem() is called.

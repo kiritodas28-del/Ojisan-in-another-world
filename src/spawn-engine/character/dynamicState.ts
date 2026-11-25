@@ -6,9 +6,14 @@ import {
     MoodValue, BondType, PregnancyStage, WetnessLevel
 } from "../types/enums";
 import { SexualActFlags } from "./historyProfile";
-import { PleasureTrack, createPleasureTrack } from "../../../Project/patches";
-import { SubspaceTracker, createSubspaceTracker, AfterglowTracker, createAfterglowTracker } from "../../../Project/patches";
-import { SuppressionState } from "./personalityExpansion";
+import { PleasureTrack, createPleasureTrack, SubspaceTracker, createSubspaceTracker, AfterglowTracker, createAfterglowTracker } from "../encounter/patches";
+
+// SuppressionState — defined inline; personalityExpansion.ts not yet authored
+export interface SuppressionState {
+    cracked:       boolean;
+    crackLevel:    number;    // 0–100; how far suppression has broken down
+    crackTrigger:  string | null;
+}
 
 // ─── STAMINA TRACK ──────────────────────────────────────────
 export interface StaminaTrack {
@@ -179,8 +184,8 @@ function createEmptyRelationshipActFlags(): SexualActFlags {
         breastSwing: false,
         fingeringReceived: false,
         handjobGiven: false,
-        orgasmTypesExperienced: new Set(),
-        kinksExperienced: new Set(),
+        orgasmTypesExperienced: [],
+        kinksExperienced:        [],
         bondageExperienced: false,
         impactExperienced: false,
         chokingExperienced: false,
